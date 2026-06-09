@@ -11,9 +11,16 @@ import swaggerUi from 'swagger-ui-express';
 import logger from './utils/logger.util.js';
 
 // Import Routes
-import userRoutes from './routes/user.routes.js';
+import routes from './routes/index.routes.js';
+import { globalErrorHandler } from './middlewares/error.middleware.js';
+import { seedSuperAdmin } from './seeders/super-admin.seeder.js';
 
 const app = express();
+
+// ==========================================
+// SEEDERS (Comment out after first run!)
+// ==========================================
+seedSuperAdmin();
 
 // 1. GLOBAL MIDDLEWARES
 app.use(helmet()); // Set security HTTP headers
@@ -45,9 +52,10 @@ app.use((req, res, next) => {
 // Swagger Documentation Setup
 const swaggerDocument = JSON.parse(fs.readFileSync('./src/docs/swagger.json', 'utf8'));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+app.get('/api-docs.json', (req, res) => res.json(swaggerDocument));
 
 // 3. ROUTES
-app.use('/api/v1', userRoutes);
+app.use('/api/v1', routes);
 
 // 4. UNHANDLED ROUTES
 app.all('*', (req, res, next) => {
@@ -58,14 +66,6 @@ app.all('*', (req, res, next) => {
 });
 
 // 5. GLOBAL ERROR HANDLER
-app.use((err, req, res, next) => {
-  logger.error(err);
-  const statusCode = err.statusCode || 500;
-  res.status(statusCode).json({
-    success: false,
-    message: err.message,
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
-  });
-});
+app.use(globalErrorHandler);
 
 export default app;

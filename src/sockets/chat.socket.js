@@ -1,5 +1,5 @@
 import logger from '../utils/logger.util.js';
-import redisClient from '../database/redis.js';
+import redisClient from '../config/redis.js';
 
 export const handleChatEvents = (io, socket) => {
   // Assuming auth middleware attached user to socket

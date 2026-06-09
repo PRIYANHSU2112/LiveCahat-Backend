@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import { Server } from 'socket.io';
 import { createAdapter } from '@socket.io/redis-adapter';
-import { pubClient, subClient, connectRedis } from './database/redis.js';
+import { pubClient, subClient, connectRedis } from './config/redis.js';
 import app from './app.js';
 import logger from './utils/logger.util.js';
 

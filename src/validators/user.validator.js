@@ -1,14 +1,51 @@
 import Joi from 'joi';
+import { GENDERS } from '../constants/enum.constant.js';
 
-/**
- * Defines Joi schemas to validate incoming requests.
- * Used alongside a validation middleware.
- */
-export const registerUserSchema = Joi.object({
+export const updateUserProfileSchema = Joi.object({
   body: Joi.object({
-    name: Joi.string().required().min(3).max(50),
-    email: Joi.string().required().email(),
-    password: Joi.string().required().min(8).regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).*$/)
-      .message('Password must contain at least one uppercase letter, one lowercase letter, and one number'),
+    firstName: Joi.string().trim().min(2).max(50),
+    lastName: Joi.string().trim().min(2).max(50),
+    email: Joi.string().email().allow(null, ''),
+    gender: Joi.string().valid(...GENDERS),
+    dateOfBirth: Joi.date().iso().max(new Date(Date.now() - 18 * 365.25 * 24 * 60 * 60 * 1000)).message('You must be at least 18 years old'),
+  })
+});
+
+export const queryUserSchema = Joi.object({
+  query: Joi.object({
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(10),
+    search: Joi.string().allow('', null),
+    sortBy: Joi.string().default('createdAt'),
+    sortOrder: Joi.string().valid('asc', 'desc').default('desc'),
+    type: Joi.string().valid('CUSTOMER', 'LISTENER', 'ADMIN'),
+    isBlocked: Joi.boolean(),
+  })
+});
+
+export const blockUserSchema = Joi.object({
+  body: Joi.object({
+    isBlocked: Joi.boolean().required(),
+  })
+});
+
+export const createAdminSchema = Joi.object({
+  body: Joi.object({
+    firstName: Joi.string().required().trim(),
+    lastName: Joi.string().required().trim(),
+    email: Joi.string().email().required().trim().lowercase(),
+    password: Joi.string().min(6).required(),
+    mobileNumber: Joi.string().required().trim(),
+    roleId: Joi.string().hex().length(24).required(),
+  })
+});
+
+export const createListenerSchema = Joi.object({
+  body: Joi.object({
+    firstName: Joi.string().required().trim(),
+    lastName: Joi.string().required().trim(),
+    mobileNumber: Joi.string().required().trim(),
+    dateOfBirth: Joi.date().iso().max(new Date(Date.now() - 18 * 365.25 * 24 * 60 * 60 * 1000)).message('Listener must be at least 18 years old').required(),
+    gender: Joi.string().valid(...GENDERS).required(),
   })
 });
