@@ -1,0 +1,56 @@
+import BaseRepository from './base.repository.js';
+import PaymentTransaction from '../modules/payment-transaction.model.js';
+
+class PaymentTransactionRepository extends BaseRepository {
+  constructor() {
+    super(PaymentTransaction);
+  }
+
+  async getPaginatedTransactions(matchQuery, sort, skip, limit) {
+    const pipeline = [
+      { $match: matchQuery },
+      { $sort: sort },
+      {
+        $facet: {
+          metadata: [{ $count: 'total' }],
+          data: [
+            { $skip: skip },
+            { $limit: limit },
+            {
+              $lookup: {
+                from: 'users',
+                localField: 'userId',
+                foreignField: '_id',
+                as: 'user'
+              }
+            },
+            { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+            {
+              $lookup: {
+                from: 'coinpacks',
+                localField: 'coinPackId',
+                foreignField: '_id',
+                as: 'coinPack'
+              }
+            },
+            { $unwind: { path: '$coinPack', preserveNullAndEmptyArrays: true } },
+            {
+              $project: {
+                'user.password': 0,
+                'user.refreshToken': 0
+              }
+            }
+          ]
+        }
+      }
+    ];
+
+    const result = await this.aggregate(pipeline);
+    const total = result[0].metadata[0] ? result[0].metadata[0].total : 0;
+    const data = result[0].data;
+
+    return { total, data };
+  }
+}
+
+export default new PaymentTransactionRepository();

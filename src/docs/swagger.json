@@ -36,6 +36,14 @@
     {
       "name": "Languages",
       "description": "Language CRUD operations"
+    },
+    {
+      "name": "Wallets",
+      "description": "Wallet and transaction management"
+    },
+    {
+      "name": "Follows",
+      "description": "Follow/Unfollow system, favourites, and analytics"
     }
   ],
   "paths": {
@@ -274,7 +282,7 @@
         "requestBody": {
           "required": true,
           "content": {
-            "application/json": {
+            "multipart/form-data": {
               "schema": {
                 "type": "object",
                 "properties": {
@@ -288,7 +296,9 @@
                     }
                   },
                   "introVideo": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Upload intro video file (MP4, MOV, WebM up to 50MB)"
                   },
                   "categories": {
                     "type": "array",
@@ -1177,10 +1187,54 @@
         }
       }
     },
-    "/payments/create-order": {
+    "/wallets/me": {
+      "get": {
+        "summary": "Get current user's wallet details",
+        "tags": ["Wallets"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Wallet details fetched successfully" }
+        }
+      }
+    },
+    "/wallets/me/coin-transactions": {
+      "get": {
+        "summary": "Get current user's coin transaction history",
+        "tags": ["Wallets"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "query", "name": "page", "schema": { "type": "integer" } },
+          { "in": "query", "name": "limit", "schema": { "type": "integer" } },
+          { "in": "query", "name": "sortBy", "schema": { "type": "string" } },
+          { "in": "query", "name": "sortOrder", "schema": { "type": "string", "enum": ["asc", "desc"] } },
+          { "in": "query", "name": "type", "schema": { "type": "string", "enum": ["CREDIT", "DEBIT"] } }
+        ],
+        "responses": {
+          "200": { "description": "Coin transactions fetched successfully" }
+        }
+      }
+    },
+    "/wallets/me/payment-transactions": {
+      "get": {
+        "summary": "Get current user's payment transaction history",
+        "tags": ["Wallets"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "query", "name": "page", "schema": { "type": "integer" } },
+          { "in": "query", "name": "limit", "schema": { "type": "integer" } },
+          { "in": "query", "name": "sortBy", "schema": { "type": "string" } },
+          { "in": "query", "name": "sortOrder", "schema": { "type": "string", "enum": ["asc", "desc"] } },
+          { "in": "query", "name": "status", "schema": { "type": "string", "enum": ["PENDING", "SUCCESS", "FAILED", "REFUNDED"] } }
+        ],
+        "responses": {
+          "200": { "description": "Payment transactions fetched successfully" }
+        }
+      }
+    },
+    "/wallets/payments/create-order": {
       "post": {
         "summary": "Create a Coin Pack Purchase Order",
-        "tags": ["Payments"],
+        "tags": ["Wallets"],
         "security": [{ "bearerAuth": [] }],
         "requestBody": {
           "required": true,
@@ -1201,10 +1255,29 @@
         }
       }
     },
-    "/payments/webhook-mock": {
+    "/wallets/payments/webhook": {
+      "post": {
+        "summary": "Razorpay Payment Webhook Callback",
+        "tags": ["Wallets"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Webhook processed successfully" }
+        }
+      }
+    },
+    "/wallets/payments/webhook-mock": {
       "post": {
         "summary": "Mock Razorpay Webhook (Testing Only)",
-        "tags": ["Payments"],
+        "tags": ["Wallets"],
         "requestBody": {
           "required": true,
           "content": {
@@ -1221,6 +1294,366 @@
         },
         "responses": {
           "200": { "description": "Mock webhook processed successfully" }
+        }
+      }
+    },
+    "/wallets": {
+      "get": {
+        "summary": "List and search all user wallets (Admin)",
+        "tags": ["Wallets"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "query", "name": "page", "schema": { "type": "integer" } },
+          { "in": "query", "name": "limit", "schema": { "type": "integer" } },
+          { "in": "query", "name": "search", "schema": { "type": "string" } },
+          { "in": "query", "name": "status", "schema": { "type": "string", "enum": ["ACTIVE", "FROZEN", "BLOCKED"] } },
+          { "in": "query", "name": "sortBy", "schema": { "type": "string" } },
+          { "in": "query", "name": "sortOrder", "schema": { "type": "string", "enum": ["asc", "desc"] } }
+        ],
+        "responses": {
+          "200": { "description": "Wallets list fetched successfully" }
+        }
+      }
+    },
+    "/wallets/coin-transactions": {
+      "get": {
+        "summary": "List all coin transactions across the system (Admin)",
+        "tags": ["Wallets"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "query", "name": "page", "schema": { "type": "integer" } },
+          { "in": "query", "name": "limit", "schema": { "type": "integer" } },
+          { "in": "query", "name": "userId", "schema": { "type": "string" } },
+          { "in": "query", "name": "type", "schema": { "type": "string", "enum": ["CREDIT", "DEBIT"] } },
+          { "in": "query", "name": "referenceType", "schema": { "type": "string" } },
+          { "in": "query", "name": "sortBy", "schema": { "type": "string" } },
+          { "in": "query", "name": "sortOrder", "schema": { "type": "string", "enum": ["asc", "desc"] } }
+        ],
+        "responses": {
+          "200": { "description": "Coin transactions list fetched successfully" }
+        }
+      }
+    },
+    "/wallets/payment-transactions": {
+      "get": {
+        "summary": "List all payment transactions across the system (Admin)",
+        "tags": ["Wallets"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "query", "name": "page", "schema": { "type": "integer" } },
+          { "in": "query", "name": "limit", "schema": { "type": "integer" } },
+          { "in": "query", "name": "userId", "schema": { "type": "string" } },
+          { "in": "query", "name": "status", "schema": { "type": "string", "enum": ["PENDING", "SUCCESS", "FAILED", "REFUNDED"] } },
+          { "in": "query", "name": "sortBy", "schema": { "type": "string" } },
+          { "in": "query", "name": "sortOrder", "schema": { "type": "string", "enum": ["asc", "desc"] } }
+        ],
+        "responses": {
+          "200": { "description": "Payment transactions list fetched successfully" }
+        }
+      }
+    },
+    "/wallets/{id}": {
+      "get": {
+        "summary": "Get specific wallet details (Admin)",
+        "tags": ["Wallets"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Wallet details fetched successfully" }
+        }
+      }
+    },
+    "/wallets/user/{userId}/credit-debit": {
+      "post": {
+        "summary": "Manually credit or debit user coins (Admin)",
+        "tags": ["Wallets"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "path", "name": "userId", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["amount", "type", "referenceType"],
+                "properties": {
+                  "amount": { "type": "integer", "minimum": 1 },
+                  "type": { "type": "string", "enum": ["CREDIT", "DEBIT"] },
+                  "referenceType": { "type": "string", "enum": ["BONUS", "PENALTY"] },
+                  "description": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Coins adjusted successfully" }
+        }
+      }
+    },
+    "/wallets/{id}/status": {
+      "put": {
+        "summary": "Update user wallet status (Admin)",
+        "tags": ["Wallets"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["status"],
+                "properties": {
+                  "status": { "type": "string", "enum": ["ACTIVE", "FROZEN", "BLOCKED"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Wallet status updated successfully" }
+        }
+      }
+    },
+    "/follows/{listenerId}": {
+      "post": {
+        "summary": "Follow a listener",
+        "description": "Follow a listener. Idempotent — duplicate follows are silently acknowledged without error.",
+        "tags": ["Follows"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "path", "name": "listenerId", "required": true, "schema": { "type": "string" }, "description": "The User ObjectId of the listener to follow" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Followed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "followed": { "type": "boolean" },
+                        "alreadyFollowing": { "type": "boolean" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Cannot follow yourself / Can only follow listeners" },
+          "404": { "description": "Listener not found" }
+        }
+      },
+      "delete": {
+        "summary": "Unfollow a listener",
+        "description": "Unfollow a listener. Returns error if not currently following.",
+        "tags": ["Follows"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "path", "name": "listenerId", "required": true, "schema": { "type": "string" }, "description": "The User ObjectId of the listener to unfollow" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unfollowed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "unfollowed": { "type": "boolean" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "You are not following this listener" }
+        }
+      }
+    },
+    "/follows/following": {
+      "get": {
+        "summary": "Get my following list",
+        "description": "Get paginated list of listeners the current user is following, with populated listener profile data.",
+        "tags": ["Follows"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "query", "name": "page", "schema": { "type": "integer", "default": 1 } },
+          { "in": "query", "name": "limit", "schema": { "type": "integer", "default": 10, "maximum": 100 } },
+          { "in": "query", "name": "sortOrder", "schema": { "type": "string", "enum": ["asc", "desc"], "default": "desc" } }
+        ],
+        "responses": {
+          "200": { "description": "Following list fetched successfully" }
+        }
+      }
+    },
+    "/follows/favorites": {
+      "get": {
+        "summary": "Get my favourite listeners",
+        "description": "Get paginated list of listeners the current user has marked as favourite (subset of following list).",
+        "tags": ["Follows"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "query", "name": "page", "schema": { "type": "integer", "default": 1 } },
+          { "in": "query", "name": "limit", "schema": { "type": "integer", "default": 10, "maximum": 100 } },
+          { "in": "query", "name": "sortOrder", "schema": { "type": "string", "enum": ["asc", "desc"], "default": "desc" } }
+        ],
+        "responses": {
+          "200": { "description": "Favourites list fetched successfully" }
+        }
+      }
+    },
+    "/follows/followers/{listenerId}": {
+      "get": {
+        "summary": "Get followers of a listener",
+        "description": "Get paginated list of users following a specific listener.",
+        "tags": ["Follows"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "path", "name": "listenerId", "required": true, "schema": { "type": "string" }, "description": "The User ObjectId of the listener" },
+          { "in": "query", "name": "page", "schema": { "type": "integer", "default": 1 } },
+          { "in": "query", "name": "limit", "schema": { "type": "integer", "default": 10, "maximum": 100 } },
+          { "in": "query", "name": "sortOrder", "schema": { "type": "string", "enum": ["asc", "desc"], "default": "desc" } }
+        ],
+        "responses": {
+          "200": { "description": "Followers list fetched successfully" }
+        }
+      }
+    },
+    "/follows/counts/{userId}": {
+      "get": {
+        "summary": "Get follow counts for a user",
+        "description": "Get follower count, following count, and whether the user is a listener. Reads from denormalized fields for O(1) performance.",
+        "tags": ["Follows"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "path", "name": "userId", "required": true, "schema": { "type": "string" }, "description": "The User ObjectId" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Follow counts fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "followingCount": { "type": "integer" },
+                        "followersCount": { "type": "integer" },
+                        "isListener": { "type": "boolean" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/follows/status/{listenerId}": {
+      "get": {
+        "summary": "Check follow status",
+        "description": "Check if the current authenticated user follows a specific listener and whether they are marked as favourite.",
+        "tags": ["Follows"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "path", "name": "listenerId", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Follow status fetched",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "isFollowing": { "type": "boolean" },
+                        "isFavorite": { "type": "boolean" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/follows/favorite/{listenerId}": {
+      "patch": {
+        "summary": "Toggle favourite status",
+        "description": "Toggle a followed listener as favourite/not favourite. Must already be following the listener.",
+        "tags": ["Follows"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "path", "name": "listenerId", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Favourite status toggled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "isFavorite": { "type": "boolean" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "You must follow this listener before marking as favourite" }
+        }
+      }
+    },
+    "/follows/top": {
+      "get": {
+        "summary": "Get top followed listeners (Admin)",
+        "description": "Analytics endpoint — returns listeners sorted by follower count in descending order.",
+        "tags": ["Follows"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "query", "name": "limit", "schema": { "type": "integer", "default": 10, "maximum": 50 }, "description": "Number of top listeners to return" }
+        ],
+        "responses": {
+          "200": { "description": "Top followed listeners fetched" },
+          "403": { "description": "Admin access required" }
         }
       }
     }

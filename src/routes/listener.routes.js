@@ -1,7 +1,7 @@
 import express from 'express';
 import listenerController from '../controllers/listener.controller.js';
 import { authenticate, restrictTo } from '../middlewares/auth.middleware.js';
-import { uploadKYCDocuments, processAndUploadImage } from '../middlewares/upload.middleware.js';
+import { uploadKYCDocuments, uploadIntroVideo, processAndUploadImage } from '../middlewares/upload.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 import { updateListenerProfileSchema, updateRatesSchema, updateAvailabilitySchema, updateKycStatusSchema } from '../validators/listener.validator.js';
 
@@ -14,7 +14,7 @@ router.use(restrictTo('LISTENER', 'CUSTOMER')); // Customer can become a listene
 
 router.get('/profile', listenerController.getProfile);
 
-router.put('/profile', validate(updateListenerProfileSchema), listenerController.updateProfile);
+router.put('/profile', uploadIntroVideo, processAndUploadImage, validate(updateListenerProfileSchema), listenerController.updateProfile);
 
 router.post('/kyc', uploadKYCDocuments, processAndUploadImage, listenerController.submitKyc);
 

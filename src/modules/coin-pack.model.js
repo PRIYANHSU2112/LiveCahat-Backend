@@ -4,17 +4,14 @@ const coinPackSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: true,
       trim: true,
     },
     coins: {
       type: Number,
-      required: true,
       min: 1,
     },
     price: {
       type: Number,
-      required: true,
       min: 0,
     },
     currency: {

@@ -13,6 +13,7 @@ import logger from './utils/logger.util.js';
 // Import Routes
 import routes from './routes/index.routes.js';
 import { globalErrorHandler } from './middlewares/error.middleware.js';
+import { responseTimeTracker } from './middlewares/response-time.middleware.js';
 import { seedSuperAdmin } from './seeders/super-admin.seeder.js';
 
 const app = express();
@@ -43,11 +44,8 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter);
 
-// Request Logger
-app.use((req, res, next) => {
-  logger.info(`Incoming Request: ${req.method} ${req.url}`);
-  next();
-});
+// Request Logger & Response Timer
+app.use(responseTimeTracker);
 
 // Swagger Documentation Setup
 const swaggerDocument = JSON.parse(fs.readFileSync('./src/docs/swagger.json', 'utf8'));

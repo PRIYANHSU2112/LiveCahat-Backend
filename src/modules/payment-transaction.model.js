@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { PAYMENT_GATEWAYS, PAYMENT_STATUSES } from '../constants/enum.constant.js';
 
 const paymentTransactionSchema = new mongoose.Schema(
   {
@@ -25,7 +26,7 @@ const paymentTransactionSchema = new mongoose.Schema(
     },
     paymentGateway: {
       type: String,
-      enum: ['RAZORPAY', 'STRIPE', 'APPLE_PAY', 'GOOGLE_PAY'],
+      enum: PAYMENT_GATEWAYS,
       default: 'RAZORPAY',
     },
     OrderId: {
@@ -41,7 +42,7 @@ const paymentTransactionSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['PENDING', 'SUCCESS', 'FAILED', 'REFUNDED'],
+      enum:PAYMENT_STATUSES,
       default: 'PENDING',
       index: true,
     },

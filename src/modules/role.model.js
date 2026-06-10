@@ -7,14 +7,20 @@ const roleSchema = new mongoose.Schema(
       trim: true,
     },
 
+    slug: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
     description: {
       type: String,
       trim: true,
     },
     permissions: [
       {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Permission',
+        type: String,
       },
     ],
     isSystemRole: {
@@ -30,8 +36,6 @@ const roleSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
-
-roleSchema.index({ slug: 1 });
 
 const Role = mongoose.model('Role', roleSchema);
 export default Role;

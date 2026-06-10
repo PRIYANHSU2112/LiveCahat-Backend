@@ -1,0 +1,408 @@
+import BaseService from './base.service.js';
+import walletRepository from '../repositories/wallet.repository.js';
+import coinTransactionRepository from '../repositories/coin-transaction.repository.js';
+import paymentTransactionRepository from '../repositories/payment-transaction.repository.js';
+import coinPackRepository from '../repositories/coin-pack.repository.js';
+import userRepository from '../repositories/user.repository.js';
+import { razorpayInstance, verifyWebhookSignature } from '../config/razorpay.config.js';
+import { getPaginationOptions, formatPaginatedResponse } from '../utils/pagination.util.js';
+import { getCache, setCache, deleteCache, bumpCacheVersion, getCacheVersion } from '../utils/redis.util.js';
+import ApiError from '../utils/ApiError.js';
+import mongoose from 'mongoose';
+import CoinTransaction from '../modules/coin-transaction.model.js';
+import PaymentTransaction from '../modules/payment-transaction.model.js';
+import Wallet from '../modules/wallet.model.js';
+
+class WalletService extends BaseService {
+  constructor() {
+    super(walletRepository);
+  }
+
+  /**
+   * Get user wallet (Create one if it does not exist)
+   */
+  async getOrCreateWallet(userId) {
+    const cacheKey = `wallet:user:${userId}`;
+    const cachedWallet = await getCache(cacheKey);
+    if (cachedWallet) return cachedWallet;
+
+    let wallet = await this.repository.findByUserId(userId, false);
+    if (!wallet) {
+      wallet = await this.repository.create({
+        userId,
+        coinBalance: 0,
+        totalRecharge: 0,
+        totalSpent: 0,
+        totalEarned: 0,
+        totalWithdrawn: 0,
+        status: 'ACTIVE'
+      });
+    }
+
+    const walletObj = wallet.toObject ? wallet.toObject() : wallet;
+    await setCache(cacheKey, walletObj, 300); // Cache for 5 mins
+    return walletObj;
+  }
+
+  /**
+   * Get user's coin transactions with caching and pagination
+   */
+  async getUserCoinTransactions(userId, queryParams) {
+    const version = await getCacheVersion(`coin_transactions:user:${userId}`);
+    const cacheKey = `coin_transactions:user:${userId}:list:v${version}:${JSON.stringify(queryParams)}`;
+    
+    const cachedData = await getCache(cacheKey);
+    if (cachedData) return cachedData;
+
+    const { page, limit, skip, sort } = getPaginationOptions(queryParams);
+    const matchQuery = { userId: new mongoose.Types.ObjectId(userId) };
+
+    if (queryParams.type) {
+      matchQuery.type = queryParams.type;
+    }
+
+    const { total, data } = await coinTransactionRepository.getPaginatedTransactions(matchQuery, sort, skip, limit);
+    const response = formatPaginatedResponse(data, total, page, limit);
+
+    await setCache(cacheKey, response, 300); // Cache for 5 mins
+    return response;
+  }
+
+  /**
+   * Get user's payment transactions with caching and pagination
+   */
+  async getUserPaymentTransactions(userId, queryParams) {
+    const version = await getCacheVersion(`payment_transactions:user:${userId}`);
+    const cacheKey = `payment_transactions:user:${userId}:list:v${version}:${JSON.stringify(queryParams)}`;
+
+    const cachedData = await getCache(cacheKey);
+    if (cachedData) return cachedData;
+
+    const { page, limit, skip, sort } = getPaginationOptions(queryParams);
+    const matchQuery = { userId: new mongoose.Types.ObjectId(userId) };
+
+    if (queryParams.status) {
+      matchQuery.status = queryParams.status;
+    }
+
+    const { total, data } = await paymentTransactionRepository.getPaginatedTransactions(matchQuery, sort, skip, limit);
+    const response = formatPaginatedResponse(data, total, page, limit);
+
+    await setCache(cacheKey, response, 300); // Cache for 5 mins
+    return response;
+  }
+
+  /**
+   * Create coin pack Razorpay order
+   */
+  async createCoinPackOrder(userId, coinPackId) {
+    const coinPack = await coinPackRepository.findById(coinPackId);
+    if (!coinPack || !coinPack.isActive) {
+      throw new ApiError(404, 'Coin pack not found or inactive');
+    }
+
+    const options = {
+      amount: Math.round(coinPack.price * 100),
+      currency: 'INR',
+      receipt: `rcpt_${userId.toString().slice(-8)}_${Date.now()}`
+    };
+
+    const order = await razorpayInstance.orders.create(options);
+
+    const transaction = await paymentTransactionRepository.create({
+      userId,
+      coinPackId,
+      amount: coinPack.price,
+      currency: 'INR',
+      paymentGateway: 'RAZORPAY',
+      OrderId: order.id,
+      status: 'PENDING'
+    });
+
+    // Invalidate payment list cache version for this user
+    await bumpCacheVersion(`payment_transactions:user:${userId}`);
+    await bumpCacheVersion('admin:payment_transactions');
+
+    return {
+      transactionId: transaction._id,
+      razorpayOrderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      coinPack
+    };
+  }
+
+  /**
+   * Handle Razorpay webhook with full transactional isolation
+   */
+  async handleRazorpayWebhook(payload, signature, secret) {
+    if (!verifyWebhookSignature(payload, signature, secret)) {
+      throw new ApiError(400, 'Invalid webhook signature');
+    }
+
+    const event = JSON.parse(payload);
+    if (event.event !== 'payment.captured') {
+      return { status: 'ignored', reason: `Unhandled event: ${event.event}` };
+    }
+
+    const paymentData = event.payload.payment.entity;
+    const orderId = paymentData.order_id;
+    const paymentId = paymentData.id;
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      const transaction = await PaymentTransaction.findOne({ OrderId: orderId }).session(session);
+      if (!transaction) {
+        throw new Error(`Transaction with orderId ${orderId} not found`);
+      }
+
+      if (transaction.status === 'SUCCESS') {
+        await session.abortTransaction();
+        session.endSession();
+        return { status: 'already_processed' };
+      }
+
+      // Update payment transaction
+      transaction.status = 'SUCCESS';
+      transaction.gatewayTransactionId = paymentId;
+      transaction.metadata = paymentData;
+      await transaction.save({ session });
+
+      const coinPack = await coinPackRepository.findById(transaction.coinPackId);
+      if (!coinPack) {
+        throw new Error('Associated coin pack not found');
+      }
+
+      // Find or initialize wallet
+      let wallet = await Wallet.findOne({ userId: transaction.userId }).session(session);
+      if (!wallet) {
+        wallet = new Wallet({
+          userId: transaction.userId,
+          coinBalance: 0,
+          totalRecharge: 0
+        });
+      }
+
+      const coinsToAdd = coinPack.coins;
+      wallet.coinBalance += coinsToAdd;
+      wallet.totalRecharge += transaction.amount;
+      await wallet.save({ session });
+
+      // Create Coin Transaction ledger entry
+      await CoinTransaction.create([{
+        userId: transaction.userId,
+        type: 'CREDIT',
+        amount: coinsToAdd,
+        balanceAfter: wallet.coinBalance,
+        referenceType: 'PURCHASE',
+        referenceId: transaction._id,
+        description: `Purchased ${coinsToAdd} coins via pack ${coinPack.name}`
+      }], { session });
+
+      await session.commitTransaction();
+      session.endSession();
+
+      // Clear caches asynchronously
+      const userIdStr = transaction.userId.toString();
+      await Promise.all([
+        deleteCache(`wallet:user:${userIdStr}`),
+        bumpCacheVersion(`coin_transactions:user:${userIdStr}`),
+        bumpCacheVersion(`payment_transactions:user:${userIdStr}`),
+        bumpCacheVersion('admin:wallets'),
+        bumpCacheVersion('admin:coin_transactions'),
+        bumpCacheVersion('admin:payment_transactions')
+      ]);
+
+      return { status: 'success', coinsAdded: coinsToAdd };
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      throw error;
+    }
+  }
+
+  // --- ADMIN SERVICES ---
+
+  /**
+   * Admin: List all wallets with pagination & search filtering
+   */
+  async adminGetAllWallets(queryParams) {
+    const version = await getCacheVersion('admin:wallets');
+    const cacheKey = `admin:wallets:list:v${version}:${JSON.stringify(queryParams)}`;
+    
+    const cachedData = await getCache(cacheKey);
+    if (cachedData) return cachedData;
+
+    const { page, limit, skip, sort } = getPaginationOptions(queryParams);
+    const matchQuery = {};
+
+    if (queryParams.status) {
+      matchQuery.status = queryParams.status;
+    }
+
+    if (queryParams.search) {
+      const users = await userRepository.findMany({
+        $or: [
+          { firstName: { $regex: queryParams.search, $options: 'i' } },
+          { lastName: { $regex: queryParams.search, $options: 'i' } },
+          { mobileNumber: { $regex: queryParams.search, $options: 'i' } },
+          { email: { $regex: queryParams.search, $options: 'i' } }
+        ]
+      }, '_id');
+      const userIds = users.map(u => u._id);
+      matchQuery.userId = { $in: userIds };
+    }
+
+    const { total, data } = await this.repository.getPaginatedWallets(matchQuery, sort, skip, limit);
+    const response = formatPaginatedResponse(data, total, page, limit);
+
+    await setCache(cacheKey, response, 300);
+    return response;
+  }
+
+  /**
+   * Admin: List all coin transactions with pagination & filters
+   */
+  async adminGetAllCoinTransactions(queryParams) {
+    const version = await getCacheVersion('admin:coin_transactions');
+    const cacheKey = `admin:coin_transactions:list:v${version}:${JSON.stringify(queryParams)}`;
+
+    const cachedData = await getCache(cacheKey);
+    if (cachedData) return cachedData;
+
+    const { page, limit, skip, sort } = getPaginationOptions(queryParams);
+    const matchQuery = {};
+
+    if (queryParams.userId) {
+      matchQuery.userId = new mongoose.Types.ObjectId(queryParams.userId);
+    }
+    if (queryParams.type) {
+      matchQuery.type = queryParams.type;
+    }
+    if (queryParams.referenceType) {
+      matchQuery.referenceType = queryParams.referenceType;
+    }
+
+    const { total, data } = await coinTransactionRepository.getPaginatedTransactions(matchQuery, sort, skip, limit);
+    const response = formatPaginatedResponse(data, total, page, limit);
+
+    await setCache(cacheKey, response, 300);
+    return response;
+  }
+
+  /**
+   * Admin: List all payment transactions with pagination & filters
+   */
+  async adminGetAllPaymentTransactions(queryParams) {
+    const version = await getCacheVersion('admin:payment_transactions');
+    const cacheKey = `admin:payment_transactions:list:v${version}:${JSON.stringify(queryParams)}`;
+
+    const cachedData = await getCache(cacheKey);
+    if (cachedData) return cachedData;
+
+    const { page, limit, skip, sort } = getPaginationOptions(queryParams);
+    const matchQuery = {};
+
+    if (queryParams.userId) {
+      matchQuery.userId = new mongoose.Types.ObjectId(queryParams.userId);
+    }
+    if (queryParams.status) {
+      matchQuery.status = queryParams.status;
+    }
+
+    const { total, data } = await paymentTransactionRepository.getPaginatedTransactions(matchQuery, sort, skip, limit);
+    const response = formatPaginatedResponse(data, total, page, limit);
+
+    await setCache(cacheKey, response, 300);
+    return response;
+  }
+
+  /**
+   * Admin: Manual credit/debit coins
+   */
+  async adminCreditDebitCoins(userId, data) {
+    const { amount, type, referenceType, description } = data;
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      let wallet = await Wallet.findOne({ userId }).session(session);
+      if (!wallet) {
+        wallet = new Wallet({
+          userId,
+          coinBalance: 0,
+          totalRecharge: 0,
+          totalSpent: 0,
+          totalEarned: 0,
+          totalWithdrawn: 0
+        });
+      }
+
+      if (type === 'DEBIT') {
+        if (wallet.coinBalance < amount) {
+          throw new ApiError(400, 'Insufficient coin balance in user wallet');
+        }
+        wallet.coinBalance -= amount;
+        wallet.totalSpent += amount;
+      } else {
+        wallet.coinBalance += amount;
+        wallet.totalEarned += amount;
+      }
+
+      await wallet.save({ session });
+
+      const coinTx = await CoinTransaction.create([{
+        userId,
+        type,
+        amount,
+        balanceAfter: wallet.coinBalance,
+        referenceType,
+        description: description || `Admin adjustment: ${type} of ${amount} coins`
+      }], { session });
+
+      await session.commitTransaction();
+      session.endSession();
+
+      // Clear caches
+      const userIdStr = userId.toString();
+      await Promise.all([
+        deleteCache(`wallet:user:${userIdStr}`),
+        bumpCacheVersion(`coin_transactions:user:${userIdStr}`),
+        bumpCacheVersion('admin:wallets'),
+        bumpCacheVersion('admin:coin_transactions')
+      ]);
+
+      return {
+        wallet,
+        transaction: coinTx[0]
+      };
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      throw error;
+    }
+  }
+
+  /**
+   * Admin: Update wallet status (ACTIVE, FROZEN, BLOCKED)
+   */
+  async adminUpdateWalletStatus(walletId, status) {
+    const wallet = await this.repository.updateById(walletId, { status });
+    if (!wallet) {
+      throw new ApiError(404, 'Wallet not found');
+    }
+
+    const userIdStr = wallet.userId.toString();
+    await Promise.all([
+      deleteCache(`wallet:user:${userIdStr}`),
+      bumpCacheVersion('admin:wallets')
+    ]);
+
+    return wallet;
+  }
+}
+
+export const walletService = new WalletService();

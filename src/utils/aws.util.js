@@ -47,6 +47,26 @@ export const uploadToS3 = async (buffer, originalName, mimetype) => {
 };
 
 /**
+ * Uploads a file buffer or stream directly using a pre-generated fileName
+ */
+export const uploadToS3Direct = async (bufferOrStream, fileName, mimetype) => {
+  const params = {
+    Bucket: BUCKET_NAME,
+    Key: fileName,
+    Body: bufferOrStream,
+    ContentType: mimetype,
+    ACL: 'public-read',
+  };
+
+  const command = new PutObjectCommand(params);
+  await s3Client.send(command);
+
+  const endpointUrl = new URL(process.env.LINODE_OBJECT_STORAGE_ENDPOINT);
+  const fileUrl = `https://${BUCKET_NAME}.${endpointUrl.hostname}/${fileName}`;
+  return fileUrl;
+};
+
+/**
  * Deletes a file from S3 compatible storage
  * @param {String} fileUrl - URL of the file to delete
  */

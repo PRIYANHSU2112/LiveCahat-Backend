@@ -34,6 +34,7 @@ class UserService extends BaseService {
     
     await Promise.all([
       deleteCache(`user:${userId}`),
+      deleteCache(`auth:user:${userId}`),
       bumpCacheVersion('users')
     ]);
 
@@ -45,6 +46,7 @@ class UserService extends BaseService {
     
     await Promise.all([
       deleteCache(`user:${userId}`),
+      deleteCache(`auth:user:${userId}`),
       bumpCacheVersion('users')
     ]);
 
@@ -90,6 +92,7 @@ class UserService extends BaseService {
 
     await Promise.all([
       deleteCache(`user:${userId}`),
+      deleteCache(`auth:user:${userId}`),
       bumpCacheVersion('users')
     ]);
 

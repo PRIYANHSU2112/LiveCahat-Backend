@@ -101,13 +101,17 @@ const listenerProfileSchema = new mongoose.Schema(
     featuredUntil: {
       type: Date,
     },
+    followersCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
   {
     timestamps: true,
   }
 );
 
-listenerProfileSchema.index({ userId: 1 });
 listenerProfileSchema.index({ kycStatus: 1 });
 listenerProfileSchema.index({ availability: 1 });
 listenerProfileSchema.index({ isFeatured: 1 });

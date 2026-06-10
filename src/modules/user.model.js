@@ -86,6 +86,11 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    followingCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
   {
     timestamps: true,
@@ -112,8 +117,6 @@ userSchema.pre('save', async function (next) {
 });
 
 // Indexes
-userSchema.index({ mobileNumber: 1 });
-userSchema.index({ email: 1 });
 userSchema.index({ type: 1 });
 userSchema.index({ isDeleted: 1 });
 

@@ -48,6 +48,6 @@ export const seedSuperAdmin = async () => {
       }
     }
   } catch (error) {
-    logger.error('Failed to seed Super Admin:', error);
+    logger.error(error, 'Failed to seed Super Admin:');
   }
 };

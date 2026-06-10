@@ -2,6 +2,7 @@ import { verifyToken } from '../utils/jwt.util.js';
 import ApiError from '../utils/ApiError.js';
 import User from '../modules/user.model.js';
 import catchAsync from '../utils/catchAsync.util.js';
+import { getCache, setCache } from '../utils/redis.util.js';
 
 /**
  * Middleware to protect routes via JWT
@@ -19,7 +20,16 @@ export const authenticate = catchAsync(async (req, res, next) => {
   try {
     const decoded = verifyToken(token);
     
-    const currentUser = await User.findById(decoded.id).lean();
+    const cacheKey = `auth:user:${decoded.id}`;
+    let currentUser = await getCache(cacheKey);
+
+    if (!currentUser) {
+      currentUser = await User.findById(decoded.id).lean();
+      if (currentUser) {
+        await setCache(cacheKey, currentUser, 60); // Cache authenticated profile for 60 seconds
+      }
+    }
+
     if (!currentUser) {
       throw new ApiError(401, 'The user belonging to this token does no longer exist.');
     }
