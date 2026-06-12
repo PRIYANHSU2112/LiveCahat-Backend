@@ -50,7 +50,7 @@ class WalletService extends BaseService {
   async getUserCoinTransactions(userId, queryParams) {
     const version = await getCacheVersion(`coin_transactions:user:${userId}`);
     const cacheKey = `coin_transactions:user:${userId}:list:v${version}:${JSON.stringify(queryParams)}`;
-    
+
     const cachedData = await getCache(cacheKey);
     if (cachedData) return cachedData;
 
@@ -120,8 +120,10 @@ class WalletService extends BaseService {
     });
 
     // Invalidate payment list cache version for this user
-    await bumpCacheVersion(`payment_transactions:user:${userId}`);
-    await bumpCacheVersion('admin:payment_transactions');
+    await Promise.all([
+      bumpCacheVersion(`payment_transactions:user:${userId}`),
+      bumpCacheVersion('admin:payment_transactions')
+    ]);
 
     return {
       transactionId: transaction._id,
@@ -231,7 +233,7 @@ class WalletService extends BaseService {
   async adminGetAllWallets(queryParams) {
     const version = await getCacheVersion('admin:wallets');
     const cacheKey = `admin:wallets:list:v${version}:${JSON.stringify(queryParams)}`;
-    
+
     const cachedData = await getCache(cacheKey);
     if (cachedData) return cachedData;
 

@@ -1,24 +1,22 @@
 import cron from 'node-cron';
+import billingService from '../services/billing.service.js';
 import logger from '../utils/logger.util.js';
 
 /**
- * Example background job running every minute to process wallet billing
- * for active Agora calls.
+ * Background billing cron job initialized on server startup.
+ * Runs every 60 seconds (1 minute) to process wallet deductions for active sessions.
+ * 
+ * @param {Object} io - Socket.io Server instance
  */
-export const initializeJobs = () => {
-  cron.schedule('* * * * *', async () => {
+export const initializeBillingJob = (io) => {
+  cron.schedule('*/1 * * * *', async () => {
     logger.info('[CRON] Running session billing calculation...');
-    
     try {
-      // 1. Fetch active sessions from Redis
-      // 2. Compute billable minutes
-      // 3. Deduct from User Wallets in MongoDB
-      // 4. Update ledger
-      
+      await billingService.processBillingCycle(io);
     } catch (error) {
       logger.error(`[CRON Error] Session billing failed: ${error.message}`);
     }
   });
 
-  logger.info('Background cron jobs initialized.');
+  logger.info('Background billing cron job initialized.');
 };

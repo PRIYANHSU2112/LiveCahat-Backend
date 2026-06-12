@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LiveChat Real-Time Testing Dashboard</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-color: #0b0f19;
+      --panel-bg: rgba(22, 29, 49, 0.7);
+      --panel-border: rgba(255, 255, 255, 0.08);
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --customer-bubble: #1e293b;
+      --listener-bubble: #312e81;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
+      padding: 20px 40px;
+      border-bottom: 1px solid var(--panel-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    header h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      background: linear-gradient(to right, #a5b4fc, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .main-container {
+      display: flex;
+      flex: 1;
+      gap: 24px;
+      padding: 24px;
+      height: calc(100vh - 180px);
+      min-height: 500px;
+    }
+
+    .console-column {
+      flex: 1;
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+      position: relative;
+    }
+
+    .console-header {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--panel-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .console-header h2 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: var(--danger);
+    }
+
+    .badge.connected {
+      background-color: var(--success);
+      box-shadow: 0 0 8px var(--success);
+    }
+
+    .auth-section {
+      padding: 18px 24px;
+      background: rgba(0, 0, 0, 0.15);
+      border-bottom: 1px solid var(--panel-border);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    input,
+    select,
+    textarea {
+      flex: 1;
+      background-color: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text-main);
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: var(--primary);
+    }
+
+    button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    button:hover {
+      background-color: var(--primary-hover);
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    button.btn-danger {
+      background-color: var(--danger);
+    }
+
+    button.btn-danger:hover {
+      background-color: #dc2626;
+    }
+
+    button.btn-success {
+      background-color: var(--success);
+    }
+
+    button.btn-success:hover {
+      background-color: #059669;
+    }
+
+    button.btn-secondary {
+      background-color: #374151;
+    }
+
+    button.btn-secondary:hover {
+      background-color: #4b5563;
+    }
+
+    .workspace-area {
+      flex: 1;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+    }
+
+    .listeners-card-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 250px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .listener-item {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--panel-border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .listener-item:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: var(--primary);
+    }
+
+    .listener-item.selected {
+      background: rgba(99, 102, 241, 0.15);
+      border-color: var(--primary);
+    }
+
+    .listener-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .listener-name {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .listener-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .listener-status {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 20px;
+    }
+
+    .status-online {
+      background-color: rgba(16, 185, 129, 0.15);
+      color: var(--success);
+    }
+
+    .status-busy {
+      background-color: rgba(245, 158, 11, 0.15);
+      color: var(--warning);
+    }
+
+    .status-offline {
+      background-color: rgba(239, 68, 68, 0.15);
+      color: var(--danger);
+    }
+
+    .request-banner {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%);
+      border: 1px solid var(--primary);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      animation: pulseBorder 2s infinite;
+    }
+
+    @keyframes pulseBorder {
+      0% {
+        border-color: var(--primary);
+      }
+
+      50% {
+        border-color: var(--success);
+      }
+
+      100% {
+        border-color: var(--primary);
+      }
+    }
+
+    .banner-text {
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .banner-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .chat-section {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      height: 100%;
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .chat-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--panel-border);
+      background: rgba(255, 255, 255, 0.02);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .chat-messages {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 150px;
+    }
+
+    .msg-bubble {
+      max-width: 75%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.4;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .msg-bubble.sent {
+      align-self: flex-end;
+      border-bottom-right-radius: 2px;
+    }
+
+    .customer-panel .msg-bubble.sent {
+      background-color: var(--primary);
+      color: white;
+    }
+
+    .customer-panel .msg-bubble.received {
+      background-color: var(--customer-bubble);
+      align-self: flex-start;
+      border-bottom-left-radius: 2px;
+    }
+
+    .listener-panel .msg-bubble.sent {
+      background-color: var(--primary);
+      color: white;
+    }
+
+    .listener-panel .msg-bubble.received {
+      background-color: var(--listener-bubble);
+      align-self: flex-start;
+      border-bottom-left-radius: 2px;
+    }
+
+    .msg-time {
+      font-size: 9px;
+      color: rgba(255, 255, 255, 0.5);
+      align-self: flex-end;
+    }
+
+    .typing-indicator {
+      font-size: 12px;
+      color: var(--text-muted);
+      padding: 4px 16px;
+      font-style: italic;
+      min-height: 20px;
+    }
+
+    .chat-input-row {
+      padding: 12px;
+      border-top: 1px solid var(--panel-border);
+      display: flex;
+      gap: 10px;
+    }
+
+    /* Logs Panel */
+    .logs-panel {
+      height: 120px;
+      background-color: #070913;
+      border-top: 1px solid var(--panel-border);
+      padding: 12px 24px;
+      font-family: monospace;
+      font-size: 12px;
+      color: var(--success);
+      overflow-y: auto;
+    }
+
+    .log-line {
+      margin-bottom: 4px;
+      display: flex;
+      gap: 12px;
+    }
+
+    .log-time {
+      color: var(--text-muted);
+    }
+
+    .log-content {
+      flex: 1;
+    }
+
+    /* Info card helper */
+    .test-helper-card {
+      background: rgba(99, 102, 241, 0.05);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .test-helper-card strong {
+      color: var(--text-main);
+    }
+  </style>
+
+  <!-- Socket.io client script -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="http://localhost:5000/socket.io/socket.io.js"></script>
+  <script>
+    if (typeof io === 'undefined') {
+      document.write('<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"><\/script>');
+    }
+  </script>
+</head>
+
+<body>
+
+  <header>
+    <div>
+      <h1>LiveChat Real-Time Testing Dashboard</h1>
+      <div class="subtitle">Simulate Customer & Listener workflows in a single sandbox environment</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <label style="font-size: 12px; font-weight: 600; color: var(--text-muted);">Backend URL:</label>
+      <input type="text" id="backendUrl" value="http://localhost:5000"
+        style="width: 220px; padding: 6px 10px; font-size: 13px; background-color: rgba(15, 23, 42, 0.9);">
+    </div>
+  </header>
+
+  <div class="main-container">
+
+    <!-- CUSTOMER PANEL (Left Column) -->
+    <div class="console-column customer-panel" id="customerPanel">
+      <div class="console-header">
+        <h2>🧑‍💼 Customer Console</h2>
+        <div class="badge" id="customerStatus"></div>
+      </div>
+
+      <div class="auth-section">
+        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">CUSTOMER JWT TOKEN</label>
+        <div class="input-row">
+          <input type="text" id="customerToken" placeholder="Paste customer token here...">
+          <button id="btnConnectCustomer">Connect</button>
+        </div>
+      </div>
+
+      <div class="workspace-area" id="customerWorkspace" style="display: none;">
+        <!-- Fetch Listeners -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <label style="font-size: 13px; font-weight: 600;">Listeners Directory</label>
+            <button class="btn-secondary" style="padding: 4px 8px; font-size: 11px;" id="btnLoadListeners">Refresh
+              List</button>
+          </div>
+
+          <div class="listeners-card-list" id="listenersList">
+            <div style="text-align: center; font-size: 13px; color: var(--text-muted); padding: 20px;">
+              Click 'Refresh List' to search for listeners.
+            </div>
+          </div>
+        </div>
+
+        <!-- Request Chat Actions -->
+        <div id="requestArea" style="display: none;">
+          <div class="test-helper-card">
+            Selected Listener: <strong id="selectedListenerName">None</strong><br>
+            Listener ID: <strong id="selectedListenerId">None</strong><br>
+            Rate: <strong id="selectedListenerRate">0</strong> coins/min
+          </div>
+          <button class="btn-success" style="width: 100%; margin-top: 12px; padding: 12px;" id="btnRequestChat">
+            🚀 Request 1-to-1 Chat
+          </button>
+        </div>
+
+        <div id="customerSessionStatusBanner" class="request-banner" style="display: none;">
+          <div class="banner-text" id="customerBannerText">Request sent. Waiting for listener response... (30s timeout)
+          </div>
+          <div class="banner-actions">
+            <button class="btn-danger" style="width: 100%; font-size: 12px; padding: 6px 12px;"
+              id="btnCancelRequest">Cancel</button>
+          </div>
+        </div>
+
+        <!-- Chat Room -->
+        <div class="chat-section" id="customerChatBox" style="display: none;">
+          <div class="chat-header">
+            <span>Session ID: <span id="customerSessionIdVal" style="color: var(--text-main);"></span></span>
+            <button class="btn-danger" style="padding: 4px 8px; font-size: 11px;" id="btnCustomerEndChat">End Chat</button>
+          </div>
+          <div class="chat-messages" id="customerMessages"></div>
+          <div class="typing-indicator" id="customerTypingInd"></div>
+          <div class="chat-input-row">
+            <input type="text" id="customerMsgInput" placeholder="Type a message...">
+            <button id="btnCustomerSend">Send</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="workspace-area" id="customerPrompt"
+        style="justify-content: center; align-items: center; text-align: center; color: var(--text-muted);">
+        <p>Please paste a valid Customer JWT Token and click **Connect** to initialize the customer console.</p>
+      </div>
+    </div>
+
+    <!-- LISTENER PANEL (Right Column) -->
+    <div class="console-column listener-panel" id="listenerPanel">
+      <div class="console-header">
+        <h2>🎧 Listener Console</h2>
+        <div class="badge" id="listenerStatus"></div>
+      </div>
+
+      <div class="auth-section">
+        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">LISTENER JWT TOKEN</label>
+        <div class="input-row">
+          <input type="text" id="listenerToken" placeholder="Paste listener token here...">
+          <button id="btnConnectListener">Connect</button>
+        </div>
+      </div>
+
+      <div class="workspace-area" id="listenerWorkspace" style="display: none;">
+
+        <!-- Helper Status Info -->
+        <div class="test-helper-card" id="listenerAvailabilityStatus">
+          Availability state: <strong>ONLINE</strong> (automatically updated on connection)
+        </div>
+
+        <!-- Incoming Request Alert -->
+        <div id="incomingRequestBanner" class="request-banner" style="display: none;">
+          <div class="banner-text">
+            ⚠️ <strong>Incoming Chat Request!</strong><br>
+            Caller Name: <strong id="incomingCallerName">Caller</strong><br>
+            Caller ID: <strong id="incomingCallerId">--</strong><br>
+            Rate: <strong id="incomingRateVal">0</strong> coins/min
+          </div>
+          <div class="banner-actions">
+            <button class="btn-success" style="flex: 1;" id="btnAcceptChat">Accept</button>
+            <button class="btn-danger" style="flex: 1;" id="btnRejectChat">Reject</button>
+          </div>
+        </div>
+
+        <!-- Chat Room -->
+        <div class="chat-section" id="listenerChatBox" style="display: none;">
+          <div class="chat-header">
+            <span>Session ID: <span id="listenerSessionIdVal" style="color: var(--text-main);"></span></span>
+            <button class="btn-danger" style="padding: 4px 8px; font-size: 11px;" id="btnListenerEndChat">End Chat</button>
+          </div>
+          <div class="chat-messages" id="listenerMessages"></div>
+          <div class="typing-indicator" id="listenerTypingInd"></div>
+          <div class="chat-input-row">
+            <input type="text" id="listenerMsgInput" placeholder="Type a message...">
+            <button id="btnListenerSend">Send</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="workspace-area" id="listenerPrompt"
+        style="justify-content: center; align-items: center; text-align: center; color: var(--text-muted);">
+        <p>Please paste a valid Listener JWT Token and click **Connect** to initialize the listener console.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Real-Time Activity Logs -->
+  <div class="logs-panel" id="logsPanel">
+    <div class="log-line">
+      <span class="log-time">[System]</span>
+      <span class="log-content" style="color: var(--text-muted);">Console initialized. Awaiting connections...</span>
+    </div>
+  </div>
+
+  <script>
+    // Global Sockets & States
+    let customerSocket = null;
+    let listenerSocket = null;
+    let activeCustomerSessionId = null;
+    let activeListenerSessionId = null;
+    let currentSelectedListener = null;
+    let currentIncomingCallerId = null;
+
+    // Helper to resolve current backend URL
+    function getBackendUrl() {
+      let url = document.getElementById('backendUrl').value.trim();
+      if (url.endsWith('/')) {
+        url = url.slice(0, -1);
+      }
+      return url || window.location.origin;
+    }
+
+    // Auto-initialize Backend URL field
+    const defaultBackendUrl = (window.location.port === '5500' || !window.location.port)
+      ? 'http://localhost:5000'
+      : window.location.origin;
+    document.getElementById('backendUrl').value = defaultBackendUrl;
+
+    // Logging helper
+    function appendLog(source, message) {
+      const logsPanel = document.getElementById('logsPanel');
+      const line = document.createElement('div');
+      line.className = 'log-line';
+
+      const timeSpan = document.createElement('span');
+      timeSpan.className = 'log-time';
+      timeSpan.textContent = `[${new Date().toLocaleTimeString()}] [${source}]`;
+
+      const contentSpan = document.createElement('span');
+      contentSpan.className = 'log-content';
+      contentSpan.textContent = message;
+
+      line.appendChild(timeSpan);
+      line.appendChild(contentSpan);
+      logsPanel.appendChild(line);
+      logsPanel.scrollTop = logsPanel.scrollHeight;
+    }
+
+    // Connect Customer Socket
+    document.getElementById('btnConnectCustomer').addEventListener('click', () => {
+      const token = document.getElementById('customerToken').value.trim();
+      if (!token) return alert('Please input customer token');
+
+      if (customerSocket) customerSocket.disconnect();
+
+      appendLog('Customer', 'Connecting socket...');
+
+      if (typeof io === 'undefined') {
+        return alert('Socket.io library not loaded yet. Please ensure the backend is running at ' + getBackendUrl() + ' or check your network connection.');
+      }
+
+      customerSocket = io(getBackendUrl(), {
+        auth: { token }
+      });
+
+      customerSocket.on('connect', () => {
+        document.getElementById('customerStatus').className = 'badge connected';
+        document.getElementById('customerPrompt').style.display = 'none';
+        document.getElementById('customerWorkspace').style.display = 'flex';
+        appendLog('Customer', `Connected successfully. Socket ID: ${customerSocket.id}`);
+        // Automate loading of listeners list
+        document.getElementById('btnLoadListeners').click();
+      });
+
+      customerSocket.on('disconnect', () => {
+        document.getElementById('customerStatus').className = 'badge';
+        appendLog('Customer', 'Disconnected.');
+      });
+
+      customerSocket.on('chat_request_accepted', (data) => {
+        appendLog('Customer', `Chat request accepted! Session ID: ${data.sessionId}`);
+        activeCustomerSessionId = data.sessionId;
+
+        // Hide request statuses
+        document.getElementById('customerSessionStatusBanner').style.display = 'none';
+        document.getElementById('requestArea').style.display = 'none';
+
+        // Show Chat room
+        document.getElementById('customerSessionIdVal').textContent = data.sessionId;
+        document.getElementById('customerChatBox').style.display = 'flex';
+        document.getElementById('customerMessages').innerHTML = '';
+
+        // Enable inputs & reset button text
+        const endBtn = document.getElementById('btnCustomerEndChat');
+        endBtn.textContent = 'End Chat';
+        endBtn.className = 'btn-danger';
+        document.getElementById('customerMsgInput').disabled = false;
+        document.getElementById('btnCustomerSend').disabled = false;
+
+        // Join room
+        customerSocket.emit('join_session', { sessionId: data.sessionId });
+      });
+
+      customerSocket.on('chat_request_rejected', (data) => {
+        appendLog('Customer', `Chat request rejected: ${data.reason}`);
+        alert(`Request rejected: ${data.reason}`);
+        document.getElementById('customerSessionStatusBanner').style.display = 'none';
+        document.getElementById('requestArea').style.display = 'flex';
+      });
+
+      customerSocket.on('chat_ended', (data) => {
+        appendLog('Customer', `Chat ended. Reason: ${data.reason}`);
+
+        // Append system message
+        appendMsg('customerMessages', 'System', '--- Chat session has ended ---', false);
+        
+        // Disable inputs
+        document.getElementById('customerMsgInput').disabled = true;
+        document.getElementById('btnCustomerSend').disabled = true;
+        
+        // Change button to Close Chat
+        const endBtn = document.getElementById('btnCustomerEndChat');
+        endBtn.textContent = 'Close Chat';
+        endBtn.className = 'btn-secondary';
+      });
+
+      customerSocket.on('listener_status_changed', (data) => {
+        appendLog('Customer', `Real-time Presence: Listener ${data.listenerId} is now ${data.status}`);
+        
+        // Find and update status badge in the list dynamically
+        const statusEl = document.getElementById(`listener-status-${data.listenerId}`);
+        if (statusEl) {
+          statusEl.textContent = data.status;
+          statusEl.className = `listener-status status-${data.status.toLowerCase()}`;
+        } else {
+          // If the listener is not in the list, refresh it
+          document.getElementById('btnLoadListeners').click();
+        }
+        
+        // Disable or enable request button dynamically if the listener is currently selected
+        if (currentSelectedListener === data.listenerId) {
+          const requestBtn = document.getElementById('btnRequestChat');
+          if (requestBtn) {
+            if (data.status !== 'ONLINE') {
+              requestBtn.disabled = true;
+              requestBtn.textContent = `Listener is ${data.status}`;
+              requestBtn.className = 'btn-secondary';
+            } else {
+              requestBtn.disabled = false;
+              requestBtn.textContent = '🚀 Request 1-to-1 Chat';
+              requestBtn.className = 'btn-success';
+            }
+          }
+        }
+      });
+
+      customerSocket.on('receive_message', (data) => {
+        appendMsg('customerMessages', data.senderId, data.message, false);
+      });
+
+      customerSocket.on('display_typing', (data) => {
+        const typingInd = document.getElementById('customerTypingInd');
+        typingInd.textContent = data.isTyping ? 'Listener is typing...' : '';
+      });
+
+      customerSocket.on('balance_warning', (data) => {
+        appendLog('Customer', `⚠️ Warning: ${data.message} (Remaining: ${data.coinBalance} coins)`);
+        alert(`⚠️ Balance Warning: ${data.message}`);
+      });
+
+      customerSocket.on('socket_error', (data) => {
+        appendLog('Customer', `❌ Error: ${data.message}`);
+        alert(`Error: ${data.message}`);
+      });
+
+      customerSocket.on('connect_error', (err) => {
+        appendLog('Customer', `❌ Handshake rejection: ${err.message}`);
+        alert(`Handshake rejected: ${err.message}`);
+      });
+    });
+
+    // Connect Listener Socket
+    document.getElementById('btnConnectListener').addEventListener('click', () => {
+      const token = document.getElementById('listenerToken').value.trim();
+      if (!token) return alert('Please input listener token');
+
+      if (listenerSocket) listenerSocket.disconnect();
+
+      appendLog('Listener', 'Connecting socket...');
+
+      if (typeof io === 'undefined') {
+        return alert('Socket.io library not loaded yet. Please ensure the backend is running at ' + getBackendUrl() + ' or check your network connection.');
+      }
+
+      listenerSocket = io(getBackendUrl(), {
+        auth: { token }
+      });
+
+      listenerSocket.on('connect', () => {
+        document.getElementById('listenerStatus').className = 'badge connected';
+        document.getElementById('listenerPrompt').style.display = 'none';
+        document.getElementById('listenerWorkspace').style.display = 'flex';
+        document.getElementById('listenerAvailabilityStatus').innerHTML = `Availability state: <strong style="color: var(--success);">ONLINE</strong>`;
+        appendLog('Listener', `Connected successfully. Socket ID: ${listenerSocket.id}`);
+      });
+
+      listenerSocket.on('disconnect', () => {
+        document.getElementById('listenerStatus').className = 'badge';
+        document.getElementById('listenerAvailabilityStatus').innerHTML = `Availability state: <strong style="color: var(--danger);">OFFLINE</strong>`;
+        appendLog('Listener', 'Disconnected.');
+      });
+
+      listenerSocket.on('incoming_chat_request', (data) => {
+        appendLog('Listener', `⚠️ Incoming Chat Request from Caller ID: ${data.callerId}`);
+        currentIncomingCallerId = data.callerId;
+
+        // Show request banner
+        document.getElementById('incomingCallerName').textContent = `${data.callerInfo.firstName} ${data.callerInfo.lastName}`;
+        document.getElementById('incomingCallerId').textContent = data.callerId;
+        document.getElementById('incomingRateVal').textContent = data.chatRate;
+        document.getElementById('incomingRequestBanner').style.display = 'flex';
+      });
+
+      listenerSocket.on('chat_started', (data) => {
+        appendLog('Listener', `Chat session initialized! Session ID: ${data.sessionId}`);
+        activeListenerSessionId = data.sessionId;
+
+        // Update profile visual state to busy
+        document.getElementById('listenerAvailabilityStatus').innerHTML = `Availability state: <strong style="color: var(--warning);">BUSY</strong>`;
+
+        // Hide request alert
+        document.getElementById('incomingRequestBanner').style.display = 'none';
+
+        // Show chat box
+        document.getElementById('listenerSessionIdVal').textContent = data.sessionId;
+        document.getElementById('listenerChatBox').style.display = 'flex';
+        document.getElementById('listenerMessages').innerHTML = '';
+
+        // Enable inputs & reset button text
+        const endBtn = document.getElementById('btnListenerEndChat');
+        endBtn.textContent = 'End Chat';
+        endBtn.className = 'btn-danger';
+        document.getElementById('listenerMsgInput').disabled = false;
+        document.getElementById('btnListenerSend').disabled = false;
+
+        // Join room
+        listenerSocket.emit('join_session', { sessionId: data.sessionId });
+      });
+
+      listenerSocket.on('chat_ended', (data) => {
+        appendLog('Listener', `Chat ended. Reason: ${data.reason}`);
+
+        // Update profile visual state to online
+        document.getElementById('listenerAvailabilityStatus').innerHTML = `Availability state: <strong style="color: var(--success);">ONLINE</strong>`;
+
+        // Append system message
+        appendMsg('listenerMessages', 'System', '--- Chat session has ended ---', false);
+        
+        // Disable inputs
+        document.getElementById('listenerMsgInput').disabled = true;
+        document.getElementById('btnListenerSend').disabled = true;
+        
+        // Change button to Close Chat
+        const endBtn = document.getElementById('btnListenerEndChat');
+        endBtn.textContent = 'Close Chat';
+        endBtn.className = 'btn-secondary';
+      });
+
+      listenerSocket.on('receive_message', (data) => {
+        appendMsg('listenerMessages', data.senderId, data.message, false);
+      });
+
+      listenerSocket.on('display_typing', (data) => {
+        const typingInd = document.getElementById('listenerTypingInd');
+        typingInd.textContent = data.isTyping ? 'Customer is typing...' : '';
+      });
+
+      listenerSocket.on('socket_error', (data) => {
+        appendLog('Listener', `❌ Error: ${data.message}`);
+        alert(`Error: ${data.message}`);
+      });
+
+      listenerSocket.on('connect_error', (err) => {
+        appendLog('Listener', `❌ Handshake rejection: ${err.message}`);
+        alert(`Handshake rejected: ${err.message}`);
+      });
+    });
+
+    // CUSTOMER: Fetch Listeners list
+    document.getElementById('btnLoadListeners').addEventListener('click', async () => {
+      const token = document.getElementById('customerToken').value.trim();
+      if (!token) return alert('Requires customer token to make API requests');
+
+      appendLog('Customer', 'Fetching listeners directory...');
+
+      try {
+        const res = await fetch(`${getBackendUrl()}/api/v1/listeners`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'API request failed');
+
+        const listDiv = document.getElementById('listenersList');
+        listDiv.innerHTML = '';
+
+        const listeners = data.data.docs || [];
+        if (listeners.length === 0) {
+          listDiv.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 20px;">No listeners registered in system.</div>`;
+          return;
+        }
+
+        listeners.forEach(profile => {
+          const user = profile.user || {};
+          const isSelected = currentSelectedListener === profile.userId;
+
+          const item = document.createElement('div');
+          item.className = `listener-item ${isSelected ? 'selected' : ''}`;
+          item.id = `listener-item-${profile.userId}`;
+          item.innerHTML = `
+            <div class="listener-info">
+              <div class="listener-name">${user.firstName || 'Listener'} ${user.lastName || ''}</div>
+              <div class="listener-meta">ID: ${profile.userId} | Rate: ${profile.chatRate || 0} coins/min</div>
+            </div>
+            <div class="listener-status status-${profile.availability.toLowerCase()}" id="listener-status-${profile.userId}">${profile.availability}</div>
+          `;
+
+          item.addEventListener('click', () => {
+            // Remove previous select styling
+            document.querySelectorAll('.listener-item').forEach(el => el.classList.remove('selected'));
+            item.classList.add('selected');
+
+            currentSelectedListener = profile.userId;
+            document.getElementById('selectedListenerName').textContent = `${user.firstName || 'Listener'} ${user.lastName || ''}`;
+            document.getElementById('selectedListenerId').textContent = profile.userId;
+            document.getElementById('selectedListenerRate').textContent = profile.chatRate || 0;
+            document.getElementById('requestArea').style.display = 'block';
+          });
+
+          listDiv.appendChild(item);
+        });
+
+        appendLog('Customer', `Loaded ${listeners.length} listeners from directory.`);
+      } catch (err) {
+        appendLog('Customer', `❌ Directory fetch failed: ${err.message}`);
+        alert(`Failed to load listeners: ${err.message}`);
+      }
+    });
+
+    // CUSTOMER: Request chat
+    document.getElementById('btnRequestChat').addEventListener('click', () => {
+      if (!customerSocket || !currentSelectedListener) return;
+
+      appendLog('Customer', `Sending chat request to listener ${currentSelectedListener}`);
+      customerSocket.emit('request_chat', { listenerId: currentSelectedListener });
+
+      // Update UI Banner
+      document.getElementById('customerBannerText').textContent = `Request sent to listener ${currentSelectedListener}... (30s timeout)`;
+      document.getElementById('customerSessionStatusBanner').style.display = 'flex';
+      document.getElementById('requestArea').style.display = 'none';
+    });
+
+    // CUSTOMER: Cancel Request
+    document.getElementById('btnCancelRequest').addEventListener('click', () => {
+      if (!customerSocket || !currentSelectedListener) return;
+      appendLog('Customer', `Cancelling chat request for listener ${currentSelectedListener}`);
+
+      // Emitting rejection effectively cancels the pending request in Redis
+      customerSocket.emit('reject_chat', { callerId: customerSocket.user?.id, reason: 'CANCELLED_BY_CALLER' });
+      document.getElementById('customerSessionStatusBanner').style.display = 'none';
+      document.getElementById('requestArea').style.display = 'flex';
+    });
+
+    // LISTENER: Accept Chat
+    document.getElementById('btnAcceptChat').addEventListener('click', () => {
+      if (!listenerSocket || !currentIncomingCallerId) return;
+      appendLog('Listener', `Accepting chat request from caller ${currentIncomingCallerId}`);
+      listenerSocket.emit('accept_chat', { callerId: currentIncomingCallerId });
+    });
+
+    // LISTENER: Reject Chat
+    document.getElementById('btnRejectChat').addEventListener('click', () => {
+      if (!listenerSocket || !currentIncomingCallerId) return;
+      appendLog('Listener', `Rejecting chat request from caller ${currentIncomingCallerId}`);
+      listenerSocket.emit('reject_chat', { callerId: currentIncomingCallerId, reason: 'Listener declined request.' });
+      document.getElementById('incomingRequestBanner').style.display = 'none';
+      currentIncomingCallerId = null;
+    });
+
+    // CUSTOMER: End Chat / Close Chat
+    document.getElementById('btnCustomerEndChat').addEventListener('click', () => {
+      const btn = document.getElementById('btnCustomerEndChat');
+      if (btn.textContent === 'Close Chat') {
+        // Reset UI
+        activeCustomerSessionId = null;
+        document.getElementById('customerChatBox').style.display = 'none';
+        document.getElementById('requestArea').style.display = 'flex';
+        
+        // Restore elements
+        btn.textContent = 'End Chat';
+        btn.className = 'btn-danger';
+        document.getElementById('customerMsgInput').disabled = false;
+        document.getElementById('btnCustomerSend').disabled = false;
+        
+        // Refresh directory
+        document.getElementById('btnLoadListeners').click();
+      } else {
+        if (!customerSocket || !activeCustomerSessionId) return;
+        appendLog('Customer', `Manually terminating session ${activeCustomerSessionId}`);
+        customerSocket.emit('end_chat', { sessionId: activeCustomerSessionId });
+      }
+    });
+
+    // LISTENER: End Chat / Close Chat
+    document.getElementById('btnListenerEndChat').addEventListener('click', () => {
+      const btn = document.getElementById('btnListenerEndChat');
+      if (btn.textContent === 'Close Chat') {
+        // Reset UI
+        activeListenerSessionId = null;
+        document.getElementById('listenerChatBox').style.display = 'none';
+        
+        // Restore elements
+        btn.textContent = 'End Chat';
+        btn.className = 'btn-danger';
+        document.getElementById('listenerMsgInput').disabled = false;
+        document.getElementById('btnListenerSend').disabled = false;
+      } else {
+        if (!listenerSocket || !activeListenerSessionId) return;
+        appendLog('Listener', `Manually terminating session ${activeListenerSessionId}`);
+        listenerSocket.emit('end_chat', { sessionId: activeListenerSessionId });
+      }
+    });
+
+    // Send messages & typing states
+    function setupChatConsole(inputEl, sendBtn, socket, getSessionIdFn) {
+      // Send message
+      sendBtn.addEventListener('click', () => {
+        const text = inputEl.value.trim();
+        const sessionId = getSessionIdFn();
+        if (!text || !sessionId) return;
+
+        socket.emit('send_message', { sessionId, text });
+        appendMsg(socket === customerSocket ? 'customerMessages' : 'listenerMessages', 'Me', text, true);
+        inputEl.value = '';
+        socket.emit('typing', { sessionId, isTyping: false });
+      });
+
+      // Typing indicators
+      let typingTimeout = null;
+      inputEl.addEventListener('input', () => {
+        const sessionId = getSessionIdFn();
+        if (!sessionId) return;
+
+        socket.emit('typing', { sessionId, isTyping: true });
+
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => {
+          socket.emit('typing', { sessionId, isTyping: false });
+        }, 1500);
+      });
+    }
+
+    setupChatConsole(
+      document.getElementById('customerMsgInput'),
+      document.getElementById('btnCustomerSend'),
+      customerSocket,
+      () => activeCustomerSessionId
+    );
+
+    setupChatConsole(
+      document.getElementById('listenerMsgInput'),
+      document.getElementById('btnListenerSend'),
+      listenerSocket,
+      () => activeListenerSessionId
+    );
+
+    // Dynamic event registration updater for chat send handlers (needed since sockets are created dynamically)
+    document.getElementById('btnConnectCustomer').addEventListener('click', () => {
+      // Re-setup handlers with updated socket instances
+      document.getElementById('btnCustomerSend').replaceWith(document.getElementById('btnCustomerSend').cloneNode(true));
+      setupChatConsole(
+        document.getElementById('customerMsgInput'),
+        document.getElementById('btnCustomerSend'),
+        customerSocket,
+        () => activeCustomerSessionId
+      );
+    });
+
+    document.getElementById('btnConnectListener').addEventListener('click', () => {
+      document.getElementById('btnListenerSend').replaceWith(document.getElementById('btnListenerSend').cloneNode(true));
+      setupChatConsole(
+        document.getElementById('listenerMsgInput'),
+        document.getElementById('btnListenerSend'),
+        listenerSocket,
+        () => activeListenerSessionId
+      );
+    });
+
+    // Render message bubble
+    function appendMsg(containerId, sender, text, isSelf) {
+      const container = document.getElementById(containerId);
+      const bubble = document.createElement('div');
+      bubble.className = `msg-bubble ${isSelf ? 'sent' : 'received'}`;
+
+      const content = document.createElement('span');
+      content.textContent = text;
+
+      const time = document.createElement('span');
+      time.className = 'msg-time';
+      time.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      bubble.appendChild(content);
+      bubble.appendChild(time);
+      container.appendChild(bubble);
+      container.scrollTop = container.scrollHeight;
+    }
+  </script>
+</body>
+
+</html>

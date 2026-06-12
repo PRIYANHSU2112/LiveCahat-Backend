@@ -24,7 +24,7 @@ router.put('/availability', restrictTo('LISTENER'), validate(updateAvailabilityS
 
 // --- ADMIN ONLY ROUTES ---
 
-router.get('/', restrictTo('ADMIN'), listenerController.getAllListeners);
+router.get('/', restrictTo('ADMIN', 'CUSTOMER'), listenerController.getAllListeners);
 
 router.post('/:id/kyc', restrictTo('ADMIN'), validate(updateKycStatusSchema), listenerController.approveOrRejectListener);
 

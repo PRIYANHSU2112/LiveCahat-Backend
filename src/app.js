@@ -9,6 +9,7 @@ import { rateLimit } from 'express-rate-limit';
 import fs from 'fs';
 import swaggerUi from 'swagger-ui-express';
 import logger from './utils/logger.util.js';
+import path from 'path';
 
 // Import Routes
 import routes from './routes/index.routes.js';
@@ -51,6 +52,11 @@ app.use(responseTimeTracker);
 const swaggerDocument = JSON.parse(fs.readFileSync('./src/docs/swagger.json', 'utf8'));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.get('/api-docs.json', (req, res) => res.json(swaggerDocument));
+
+// Test Dashboard Interface
+app.get('/test', (req, res) => {
+  res.sendFile(path.resolve('public/test.html'));
+});
 
 // 3. ROUTES
 app.use('/api/v1', routes);

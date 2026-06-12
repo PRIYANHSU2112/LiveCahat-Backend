@@ -34,7 +34,7 @@ class ListenerService extends BaseService {
       await userRepository.updateById(userId, { type: 'LISTENER' });
       userCacheDelete = deleteCache(`user:${userId}`); // invalidate user cache too
     }
-    
+
     const tasks = [
       deleteCache(`listener:${userId}`),
       bumpCacheVersion('listeners')
@@ -76,7 +76,7 @@ class ListenerService extends BaseService {
   async deleteProfile(userId) {
     const profile = await this.repository.findOne({ userId });
     if (!profile) throw new ApiError(404, 'Listener profile not found');
-    
+
     const tasks = [
       this.repository.deleteById(profile._id),
       deleteCache(`listener:${userId}`),
@@ -95,12 +95,12 @@ class ListenerService extends BaseService {
   async getAllListeners(queryParams) {
     const version = await getCacheVersion('listeners');
     const cacheKey = `listeners:list:v${version}:${JSON.stringify(queryParams)}`;
-    
+
     const cachedData = await getCache(cacheKey);
     if (cachedData) return cachedData;
 
     const { page, limit, skip, sort } = getPaginationOptions(queryParams);
-    
+
     const matchQuery = {};
     if (queryParams.kycStatus) matchQuery.kycStatus = queryParams.kycStatus;
     if (queryParams.availability) matchQuery.availability = queryParams.availability;
@@ -114,15 +114,15 @@ class ListenerService extends BaseService {
 
   async approveOrRejectListener(listenerId, data) {
     const { kycStatus, rejectionReason } = data;
-    
+
     const profile = await this.repository.findById(listenerId, '', '', false);
     if (!profile) throw new ApiError(404, 'Listener profile not found');
 
     profile.kycStatus = kycStatus;
     profile.rejectionReason = kycStatus === 'REJECTED' ? rejectionReason : undefined;
-    
+
     await profile.save();
-    
+
     await Promise.all([
       deleteCache(`listener:${profile.userId}`),
       bumpCacheVersion('listeners')

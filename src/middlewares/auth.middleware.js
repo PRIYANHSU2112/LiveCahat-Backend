@@ -7,6 +7,7 @@ import { getCache, setCache } from '../utils/redis.util.js';
 /**
  * Middleware to protect routes via JWT
  */
+
 export const authenticate = catchAsync(async (req, res, next) => {
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
@@ -19,7 +20,7 @@ export const authenticate = catchAsync(async (req, res, next) => {
 
   try {
     const decoded = verifyToken(token);
-    
+
     const cacheKey = `auth:user:${decoded.id}`;
     let currentUser = await getCache(cacheKey);
 

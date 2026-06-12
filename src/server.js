@@ -18,6 +18,9 @@ process.on('uncaughtException', err => {
 const PORT = process.env.PORT || 5000;
 const DB_URI = process.env.DATABASE_URI || 'mongodb://localhost:27017/realtime_comm';
 
+import { initializeSockets } from './sockets/index.js';
+import { initializeBillingJob } from './jobs/billing.job.js';
+
 // Server & Socket Init
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
@@ -30,13 +33,8 @@ const io = new Server(httpServer, {
 // Redis Adapter for Socket.io Scaling
 io.adapter(createAdapter(pubClient, subClient));
 
-io.on('connection', (socket) => {
-  logger.info(`New client connected: ${socket.id}`);
-  
-  socket.on('disconnect', () => {
-    logger.info(`Client disconnected: ${socket.id}`);
-  });
-});
+// Initialize Socket.io Server (Bootstrap)
+initializeSockets(io);
 
 // Database Connection
 mongoose.connect(DB_URI)
@@ -45,6 +43,9 @@ mongoose.connect(DB_URI)
     
     // Attempt Redis connection after DB
     await connectRedis();
+
+    // Start background billing cron job
+    initializeBillingJob(io);
 
     httpServer.listen(PORT, () => {
       logger.info(`Server running on port ${PORT}...`);
