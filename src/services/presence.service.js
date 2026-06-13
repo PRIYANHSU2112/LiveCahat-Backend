@@ -151,6 +151,24 @@ class PresenceService {
   }
 
   /**
+   * Set listener to OFFLINE manually.
+   */
+  async setOffline(userId) {
+    try {
+      const statusKey = KEYS.presenceStatus(userId);
+      if (redisClient.isRedisAvailable) {
+        await redisClient.set(statusKey, 'OFFLINE');
+      }
+      await ListenerProfile.findOneAndUpdate({ userId }, { availability: 'OFFLINE' });
+      await deleteCache(`listener:${userId}`);
+      await bumpCacheVersion('listeners');
+      this.broadcastStatusChange(userId, 'OFFLINE');
+    } catch (err) {
+      logger.error(`[Presence setOffline Error] Failed for listener ${userId}: ${err.message}`);
+    }
+  }
+
+  /**
    * Fetch current presence status.
    */
   async getStatus(userId) {

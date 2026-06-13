@@ -56,7 +56,7 @@ class SessionHandler {
       logger.info(`[Socket Join Session] User ${userId} joined session room session:${sessionId}`);
 
       // Notify room members
-      emitToSession(io, sessionId, 'user_joined', { userId });
+      emitToSession(io, sessionId, SERVER_EVENTS.USER_JOINED, { userId });
     } catch (err) {
       logger.error(`[Socket Join Session Error] ${err.message}`);
       socket.emit(SERVER_EVENTS.ERROR, { message: 'Failed to join session.' });

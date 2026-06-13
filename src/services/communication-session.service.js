@@ -82,7 +82,7 @@ class CommunicationSessionService extends BaseService {
       const { default: billingService } = await import('./billing.service.js');
 
       // 1. Process final billing cycle for this session specifically
-      await billingService.billSession(sessionIdStr, endTime);
+      await billingService.billSession(sessionIdStr, endTime, true);
 
       // 2. Fetch the session segments to aggregate totals
       const segments = await sessionSegmentRepository.findManyBySessionId(sessionIdStr);

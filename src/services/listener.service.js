@@ -42,6 +42,16 @@ class ListenerService extends BaseService {
     if (userCacheDelete) tasks.push(userCacheDelete);
 
     await Promise.all(tasks);
+
+    if (data.availability) {
+      const { default: presenceService } = await import('./presence.service.js');
+      if (data.availability === 'ONLINE') {
+        await presenceService.setAvailable(userId.toString());
+      } else if (data.availability === 'OFFLINE') {
+        await presenceService.setOffline(userId.toString());
+      }
+    }
+
     return profile;
   }
 

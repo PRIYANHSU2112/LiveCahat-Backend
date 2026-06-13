@@ -505,6 +505,19 @@
           </div>
         </div>
 
+        <!-- Recent Chats / History -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; margin-top: 10px;">
+            <label style="font-size: 13px; font-weight: 600;">Recent Chats / History</label>
+            <button class="btn-secondary" style="padding: 4px 8px; font-size: 11px;" id="btnLoadCustomerHistory">Refresh History</button>
+          </div>
+          <div class="listeners-card-list" id="customerHistoryList" style="max-height: 150px;">
+            <div style="text-align: center; font-size: 13px; color: var(--text-muted); padding: 10px;">
+              Click 'Refresh History' to load past chats.
+            </div>
+          </div>
+        </div>
+
         <!-- Request Chat Actions -->
         <div id="requestArea" style="display: none;">
           <div class="test-helper-card">
@@ -530,7 +543,7 @@
         <div class="chat-section" id="customerChatBox" style="display: none;">
           <div class="chat-header">
             <span>Session ID: <span id="customerSessionIdVal" style="color: var(--text-main);"></span></span>
-            <button class="btn-danger" style="padding: 4px 8px; font-size: 11px;" id="btnCustomerEndChat">End Chat</button>
+            <button class="btn-secondary" style="padding: 4px 8px; font-size: 11px;" id="btnCustomerEndChat">⬅️ Back</button>
           </div>
           <div class="chat-messages" id="customerMessages"></div>
           <div class="typing-indicator" id="customerTypingInd"></div>
@@ -569,6 +582,25 @@
           Availability state: <strong>ONLINE</strong> (automatically updated on connection)
         </div>
 
+        <!-- Manual availability controls -->
+        <div style="display: flex; gap: 10px; margin-top: -6px; margin-bottom: 6px;">
+          <button id="btnSetOnline" class="btn-success" style="flex: 1; padding: 8px 12px; font-size: 13px;">🟢 Go Online</button>
+          <button id="btnSetOffline" class="btn-danger" style="flex: 1; padding: 8px 12px; font-size: 13px;">🔴 Go Offline</button>
+        </div>
+
+        <!-- Recent Chats / History -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; margin-top: 10px;">
+            <label style="font-size: 13px; font-weight: 600;">Recent Chats / History</label>
+            <button class="btn-secondary" style="padding: 4px 8px; font-size: 11px;" id="btnLoadListenerHistory">Refresh History</button>
+          </div>
+          <div class="listeners-card-list" id="listenerHistoryList" style="max-height: 150px;">
+            <div style="text-align: center; font-size: 13px; color: var(--text-muted); padding: 10px;">
+              Click 'Refresh History' to load past chats.
+            </div>
+          </div>
+        </div>
+
         <!-- Incoming Request Alert -->
         <div id="incomingRequestBanner" class="request-banner" style="display: none;">
           <div class="banner-text">
@@ -587,7 +619,7 @@
         <div class="chat-section" id="listenerChatBox" style="display: none;">
           <div class="chat-header">
             <span>Session ID: <span id="listenerSessionIdVal" style="color: var(--text-main);"></span></span>
-            <button class="btn-danger" style="padding: 4px 8px; font-size: 11px;" id="btnListenerEndChat">End Chat</button>
+            <button class="btn-secondary" style="padding: 4px 8px; font-size: 11px;" id="btnListenerEndChat">⬅️ Back</button>
           </div>
           <div class="chat-messages" id="listenerMessages"></div>
           <div class="typing-indicator" id="listenerTypingInd"></div>
@@ -682,6 +714,7 @@
         appendLog('Customer', `Connected successfully. Socket ID: ${customerSocket.id}`);
         // Automate loading of listeners list
         document.getElementById('btnLoadListeners').click();
+        fetchRecentSessions('customer');
       });
 
       customerSocket.on('disconnect', () => {
@@ -704,13 +737,16 @@
 
         // Enable inputs & reset button text
         const endBtn = document.getElementById('btnCustomerEndChat');
-        endBtn.textContent = 'End Chat';
-        endBtn.className = 'btn-danger';
+        endBtn.textContent = '⬅️ Back';
+        endBtn.className = 'btn-secondary';
         document.getElementById('customerMsgInput').disabled = false;
         document.getElementById('btnCustomerSend').disabled = false;
 
         // Join room
         customerSocket.emit('join_session', { sessionId: data.sessionId });
+
+        // Load chat history
+        fetchChatHistory('customer', token, data.sessionId);
       });
 
       customerSocket.on('chat_request_rejected', (data) => {
@@ -729,11 +765,8 @@
         // Disable inputs
         document.getElementById('customerMsgInput').disabled = true;
         document.getElementById('btnCustomerSend').disabled = true;
-        
-        // Change button to Close Chat
-        const endBtn = document.getElementById('btnCustomerEndChat');
-        endBtn.textContent = 'Close Chat';
-        endBtn.className = 'btn-secondary';
+
+        fetchRecentSessions('customer');
       });
 
       customerSocket.on('listener_status_changed', (data) => {
@@ -814,6 +847,7 @@
         document.getElementById('listenerWorkspace').style.display = 'flex';
         document.getElementById('listenerAvailabilityStatus').innerHTML = `Availability state: <strong style="color: var(--success);">ONLINE</strong>`;
         appendLog('Listener', `Connected successfully. Socket ID: ${listenerSocket.id}`);
+        fetchRecentSessions('listener');
       });
 
       listenerSocket.on('disconnect', () => {
@@ -850,13 +884,16 @@
 
         // Enable inputs & reset button text
         const endBtn = document.getElementById('btnListenerEndChat');
-        endBtn.textContent = 'End Chat';
-        endBtn.className = 'btn-danger';
+        endBtn.textContent = '⬅️ Back';
+        endBtn.className = 'btn-secondary';
         document.getElementById('listenerMsgInput').disabled = false;
         document.getElementById('btnListenerSend').disabled = false;
 
         // Join room
         listenerSocket.emit('join_session', { sessionId: data.sessionId });
+
+        // Load chat history
+        fetchChatHistory('listener', token, data.sessionId);
       });
 
       listenerSocket.on('chat_ended', (data) => {
@@ -871,11 +908,8 @@
         // Disable inputs
         document.getElementById('listenerMsgInput').disabled = true;
         document.getElementById('btnListenerSend').disabled = true;
-        
-        // Change button to Close Chat
-        const endBtn = document.getElementById('btnListenerEndChat');
-        endBtn.textContent = 'Close Chat';
-        endBtn.className = 'btn-secondary';
+
+        fetchRecentSessions('listener');
       });
 
       listenerSocket.on('receive_message', (data) => {
@@ -1002,48 +1036,43 @@
       currentIncomingCallerId = null;
     });
 
-    // CUSTOMER: End Chat / Close Chat
+    // CUSTOMER: Back / Close Chat
     document.getElementById('btnCustomerEndChat').addEventListener('click', () => {
-      const btn = document.getElementById('btnCustomerEndChat');
-      if (btn.textContent === 'Close Chat') {
-        // Reset UI
-        activeCustomerSessionId = null;
-        document.getElementById('customerChatBox').style.display = 'none';
-        document.getElementById('requestArea').style.display = 'flex';
-        
-        // Restore elements
-        btn.textContent = 'End Chat';
-        btn.className = 'btn-danger';
-        document.getElementById('customerMsgInput').disabled = false;
-        document.getElementById('btnCustomerSend').disabled = false;
-        
-        // Refresh directory
-        document.getElementById('btnLoadListeners').click();
-      } else {
-        if (!customerSocket || !activeCustomerSessionId) return;
-        appendLog('Customer', `Manually terminating session ${activeCustomerSessionId}`);
+      if (customerSocket && activeCustomerSessionId) {
+        appendLog('Customer', `Going back. Terminating session ${activeCustomerSessionId}`);
         customerSocket.emit('end_chat', { sessionId: activeCustomerSessionId });
       }
+
+      // Reset UI & Go Back
+      activeCustomerSessionId = null;
+      document.getElementById('customerChatBox').style.display = 'none';
+      document.getElementById('requestArea').style.display = 'flex';
+      
+      // Enable inputs
+      document.getElementById('customerMsgInput').disabled = false;
+      document.getElementById('btnCustomerSend').disabled = false;
+      
+      // Refresh directory
+      document.getElementById('btnLoadListeners').click();
+      fetchRecentSessions('customer');
     });
 
-    // LISTENER: End Chat / Close Chat
+    // LISTENER: Back / Close Chat
     document.getElementById('btnListenerEndChat').addEventListener('click', () => {
-      const btn = document.getElementById('btnListenerEndChat');
-      if (btn.textContent === 'Close Chat') {
-        // Reset UI
-        activeListenerSessionId = null;
-        document.getElementById('listenerChatBox').style.display = 'none';
-        
-        // Restore elements
-        btn.textContent = 'End Chat';
-        btn.className = 'btn-danger';
-        document.getElementById('listenerMsgInput').disabled = false;
-        document.getElementById('btnListenerSend').disabled = false;
-      } else {
-        if (!listenerSocket || !activeListenerSessionId) return;
-        appendLog('Listener', `Manually terminating session ${activeListenerSessionId}`);
+      if (listenerSocket && activeListenerSessionId) {
+        appendLog('Listener', `Going back. Terminating session ${activeListenerSessionId}`);
         listenerSocket.emit('end_chat', { sessionId: activeListenerSessionId });
       }
+
+      // Reset UI & Go Back
+      activeListenerSessionId = null;
+      document.getElementById('listenerChatBox').style.display = 'none';
+      
+      // Enable inputs
+      document.getElementById('listenerMsgInput').disabled = false;
+      document.getElementById('btnListenerSend').disabled = false;
+
+      fetchRecentSessions('listener');
     });
 
     // Send messages & typing states
@@ -1110,6 +1139,198 @@
         () => activeListenerSessionId
       );
     });
+
+    // Toggle Listener availability status manually via API
+    async function setListenerAvailability(status) {
+      const token = document.getElementById('listenerToken').value.trim();
+      if (!token) return alert('Requires listener token to change availability.');
+
+      appendLog('Listener', `Manually setting availability to ${status}...`);
+
+      try {
+        const res = await fetch(`${getBackendUrl()}/api/v1/listeners/availability`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ availability: status })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'API request failed');
+
+        appendLog('Listener', `Availability manually set to ${status}.`);
+        
+        const color = status === 'ONLINE' ? 'var(--success)' : 'var(--danger)';
+        document.getElementById('listenerAvailabilityStatus').innerHTML = `Availability state: <strong style="color: ${color};">${status}</strong>`;
+      } catch (err) {
+        appendLog('Listener', `❌ Failed to set availability: ${err.message}`);
+        alert(`Failed to update availability: ${err.message}`);
+      }
+    }
+
+    document.getElementById('btnSetOnline').addEventListener('click', () => setListenerAvailability('ONLINE'));
+    document.getElementById('btnSetOffline').addEventListener('click', () => setListenerAvailability('OFFLINE'));
+
+    // Parse JWT token helper to get user payload
+    function parseJwt(token) {
+      try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    // Fetch and display chat history for a session
+    async function fetchChatHistory(role, token, sessionId) {
+      const logSource = role === 'customer' ? 'Customer' : 'Listener';
+      const containerId = role === 'customer' ? 'customerMessages' : 'listenerMessages';
+      const container = document.getElementById(containerId);
+      container.innerHTML = ''; // Clear previous messages
+      
+      appendLog(logSource, `Loading chat history for session ${sessionId}...`);
+      
+      try {
+        const res = await fetch(`${getBackendUrl()}/api/v1/chats/sessions/${sessionId}/messages`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'API request failed');
+        
+        const messages = data.data?.messages || [];
+        appendLog(logSource, `Loaded ${messages.length} historical messages.`);
+        
+        const decoded = parseJwt(token);
+        const myUserId = decoded?.id;
+        
+        messages.forEach(msg => {
+          const senderIdObj = msg.senderId;
+          const senderIdStr = (senderIdObj && typeof senderIdObj === 'object') ? senderIdObj._id : senderIdObj;
+          const isSelf = senderIdStr === myUserId;
+          const senderName = isSelf ? 'Me' : (senderIdObj?.firstName ? `${senderIdObj.firstName} ${senderIdObj.lastName || ''}` : 'Participant');
+          
+          appendMsg(containerId, senderName, msg.text, isSelf);
+        });
+      } catch (err) {
+        appendLog(logSource, `❌ Failed to load chat history: ${err.message}`);
+      }
+    }
+
+    // Fetch and display recent chat sessions (history list)
+    async function fetchRecentSessions(role) {
+      const tokenInputId = role === 'customer' ? 'customerToken' : 'listenerToken';
+      const token = document.getElementById(tokenInputId).value.trim();
+      if (!token) return;
+
+      const logSource = role === 'customer' ? 'Customer' : 'Listener';
+      const listDivId = role === 'customer' ? 'customerHistoryList' : 'listenerHistoryList';
+      const listDiv = document.getElementById(listDivId);
+      listDiv.innerHTML = '';
+
+      appendLog(logSource, 'Fetching recent chat sessions...');
+
+      try {
+        const res = await fetch(`${getBackendUrl()}/api/v1/chats/sessions?limit=20`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'API request failed');
+
+        const sessions = data.data?.sessions || [];
+        if (sessions.length === 0) {
+          listDiv.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 12px; padding: 15px;">No recent sessions.</div>`;
+          return;
+        }
+
+        sessions.forEach(session => {
+          const isCaller = session.myRole === 'CALLER';
+          const otherUser = isCaller ? session.listenerId : session.callerId;
+          const otherName = otherUser ? `${otherUser.firstName} ${otherUser.lastName || ''}` : 'Unknown';
+          const lastMsgText = session.lastMessage ? session.lastMessage.text : '(No messages)';
+          const isOngoing = session.status === 'ONGOING';
+
+          const item = document.createElement('div');
+          item.className = 'listener-item';
+          item.id = `history-item-${session._id}`;
+          item.innerHTML = `
+            <div class="listener-info" style="flex: 1;">
+              <div class="listener-name">${otherName} ${isOngoing ? '<span style="color: var(--success); font-size: 10px; margin-left: 5px;">● Live</span>' : ''}</div>
+              <div class="listener-meta" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">
+                ${lastMsgText}
+              </div>
+            </div>
+            <div class="listener-status status-${isOngoing ? 'online' : 'offline'}" style="font-size: 10px;">
+              View History
+            </div>
+          `;
+
+          item.addEventListener('click', () => {
+            openSessionHistory(role, token, session._id, otherName, isOngoing);
+          });
+
+          listDiv.appendChild(item);
+        });
+
+        appendLog(logSource, `Loaded ${sessions.length} recent sessions.`);
+      } catch (err) {
+        appendLog(logSource, `❌ History fetch failed: ${err.message}`);
+      }
+    }
+
+    // Open chat box for historical completed or active sessions
+    function openSessionHistory(role, token, sessionId, otherName, isOngoing) {
+      if (role === 'customer') {
+        activeCustomerSessionId = isOngoing ? sessionId : null;
+        
+        document.getElementById('requestArea').style.display = 'none';
+        document.getElementById('customerSessionStatusBanner').style.display = 'none';
+        
+        document.getElementById('customerSessionIdVal').textContent = sessionId;
+        document.getElementById('customerChatBox').style.display = 'flex';
+        
+        document.getElementById('customerMsgInput').disabled = !isOngoing;
+        document.getElementById('btnCustomerSend').disabled = !isOngoing;
+        
+        if (isOngoing && customerSocket) {
+          customerSocket.emit('join_session', { sessionId });
+        }
+        
+        fetchChatHistory('customer', token, sessionId);
+      } else {
+        activeListenerSessionId = isOngoing ? sessionId : null;
+        
+        document.getElementById('incomingRequestBanner').style.display = 'none';
+        
+        document.getElementById('listenerSessionIdVal').textContent = sessionId;
+        document.getElementById('listenerChatBox').style.display = 'flex';
+        
+        document.getElementById('listenerMsgInput').disabled = !isOngoing;
+        document.getElementById('btnListenerSend').disabled = !isOngoing;
+        
+        if (isOngoing && listenerSocket) {
+          listenerSocket.emit('join_session', { sessionId });
+        }
+        
+        fetchChatHistory('listener', token, sessionId);
+      }
+    }
+
+    document.getElementById('btnLoadCustomerHistory').addEventListener('click', () => fetchRecentSessions('customer'));
+    document.getElementById('btnLoadListenerHistory').addEventListener('click', () => fetchRecentSessions('listener'));
 
     // Render message bubble
     function appendMsg(containerId, sender, text, isSelf) {

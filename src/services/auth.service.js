@@ -10,7 +10,8 @@ class AuthService {
 
     // In a real app, integrate MSG91 or Twilio here.
     // For now, generate a random 6-digit OTP (or static for dev)
-    const otp = process.env.NODE_ENV === 'development' ? '123456' : Math.floor(100000 + Math.random() * 900000).toString();
+    // const otp = process.env.NODE_ENV === 'development' ? '123456' : Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = '123456'
 
     await storeOTP(mobileNumber, otp);
 
