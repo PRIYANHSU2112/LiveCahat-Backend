@@ -21,25 +21,6 @@ class ConnectionHandler {
     // Track presence online
     await presenceService.goOnline(userId, socket.id, userType);
 
-    // Reconnection Grace Check:
-    // If user has a disconnect grace key in Redis, it means they reconnected within 15 seconds.
-    if (redisClient.isRedisAvailable) {
-      const graceKey = KEYS.disconnectGrace(userId);
-      const sessionId = await redisClient.get(graceKey);
-
-      if (sessionId) {
-        logger.info(`[Socket Reconnection] User ${userId} reconnected to active session ${sessionId}. Cancelling grace period.`);
-        // Cancel the grace period by deleting the key
-        await redisClient.del(graceKey);
-
-        // Client joins the session room automatically
-        socket.join(`session:${sessionId}`);
-
-        // Notify both parties that the user reconnected
-        io.to(`session:${sessionId}`).emit('user_reconnected', { userId });
-      }
-    }
-
     // Register disconnect listener
     socket.on('disconnect', () => this.handleDisconnect(io, socket));
   }
@@ -56,35 +37,25 @@ class ConnectionHandler {
     // Track presence offline
     await presenceService.goOffline(userId, socket.id, userType);
 
-    // Grace period check for active call/chat
-    if (redisClient.isRedisAvailable) {
-      const graceKey = KEYS.disconnectGrace(userId);
+    // End active session immediately on socket disconnect
+    try {
+      const activeSessionId = await communicationSessionService.getActiveSessionForUser(userId);
+      if (activeSessionId) {
+        logger.info(`[Socket Disconnect] User ${userId} has active session ${activeSessionId}. Ending session immediately.`);
 
-      // Delay check by 15.5 seconds to allow the grace period to complete or be cancelled
-      setTimeout(async () => {
-        try {
-          const sessionId = await redisClient.get(graceKey);
+        const disconnectReason = userType === 'LISTENER' ? 'LISTENER_DISCONNECTED' : 'CALLER_DISCONNECTED';
 
-          if (sessionId) {
-            // Grace key still exists. User did NOT reconnect.
-            logger.info(`[Socket Disconnect Grace Timeout] User ${userId} failed to reconnect within 15 seconds. Ending session ${sessionId}.`);
+        // Notify session room that the chat has ended
+        io.to(`session:${activeSessionId}`).emit(SERVER_EVENTS.CHAT_ENDED, {
+          sessionId: activeSessionId,
+          reason: disconnectReason,
+        });
 
-            // Delete grace key
-            await redisClient.del(graceKey);
-
-            // Notify session room that the chat has ended due to disconnect
-            io.to(`session:${sessionId}`).emit(SERVER_EVENTS.CHAT_ENDED, {
-              sessionId,
-              reason: 'USER_DISCONNECTED',
-            });
-
-            // Conclude session lifecycle in database & Redis keys
-            await communicationSessionService.endSession(sessionId, 'USER_DISCONNECTED');
-          }
-        } catch (err) {
-          logger.error(`[Socket Disconnect Grace Timeout Error] Failed to end session: ${err.message}`);
-        }
-      }, 15500); // 15.5s timeout (slightly longer than Redis TTL of 15s)
+        // Conclude session lifecycle in database & Redis keys
+        await communicationSessionService.endSession(activeSessionId, disconnectReason);
+      }
+    } catch (err) {
+      logger.error(`[Socket Disconnect Session End Error] Failed to end session: ${err.message}`);
     }
   }
 }

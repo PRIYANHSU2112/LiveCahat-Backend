@@ -52,6 +52,14 @@
     {
       "name": "Gifts",
       "description": "Virtual Gifting, transfers, history, and Admin analytics"
+    },
+    {
+      "name": "Banners",
+      "description": "Banner Section Management (Admin CRUD and User Side)"
+    },
+    {
+      "name": "Wishlist",
+      "description": "Wishlist management for saving and listing favorite listeners"
     }
   ],
   "paths": {
@@ -328,6 +336,13 @@
                       "type": "string",
                       "description": "Array of Language ObjectIds"
                     }
+                  },
+                  "interests": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Array of strings representing listener interests"
                   },
                   "chatRate": {
                     "type": "number"
@@ -1994,6 +2009,195 @@
         ],
         "responses": {
           "200": { "description": "Gift deleted successfully" }
+        }
+      }
+    },
+    "/banners": {
+      "get": {
+        "summary": "Get all active banners (User)",
+        "tags": ["Banners"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Active banners fetched successfully" }
+        }
+      },
+      "post": {
+        "summary": "Create a new banner (Admin)",
+        "tags": ["Banners"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["image"],
+                "properties": {
+                  "image": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Banner image file to upload"
+                  },
+                  "title": { "type": "string" },
+                  "linkUrl": { "type": "string" },
+                  "position": { "type": "integer", "default": 0 },
+                  "isActive": { "type": "boolean", "default": true }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Banner created successfully" }
+        }
+      }
+    },
+    "/banners/all": {
+      "get": {
+        "summary": "List all banners with pagination (Admin)",
+        "tags": ["Banners"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "query", "name": "page", "schema": { "type": "integer" } },
+          { "in": "query", "name": "limit", "schema": { "type": "integer" } },
+          { "in": "query", "name": "sort", "schema": { "type": "string", "enum": ["position", "createdAt"] } }
+        ],
+        "responses": {
+          "200": { "description": "Banners list fetched successfully" }
+        }
+      }
+    },
+    "/banners/{id}": {
+      "get": {
+        "summary": "Get banner by ID (Admin)",
+        "tags": ["Banners"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Banner details fetched successfully" }
+        }
+      },
+      "put": {
+        "summary": "Update banner by ID (Admin)",
+        "tags": ["Banners"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "image": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Optional updated banner image file"
+                  },
+                  "title": { "type": "string" },
+                  "linkUrl": { "type": "string" },
+                  "position": { "type": "integer" },
+                  "isActive": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Banner updated successfully" }
+        }
+      },
+      "delete": {
+        "summary": "Delete banner by ID (Admin)",
+        "tags": ["Banners"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Banner deleted successfully" }
+        }
+      }
+    },
+    "/banners/{id}/toggle-active": {
+      "patch": {
+        "summary": "Toggle Banner active status (Admin)",
+        "tags": ["Banners"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["isActive"],
+                "properties": {
+                  "isActive": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Banner status updated successfully" }
+        }
+      }
+    },
+    "/wishlist": {
+      "get": {
+        "summary": "Get my wishlisted listeners list",
+        "tags": ["Wishlist"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "query", "name": "page", "schema": { "type": "integer", "default": 1 } },
+          { "in": "query", "name": "limit", "schema": { "type": "integer", "default": 10 } }
+        ],
+        "responses": {
+          "200": { "description": "Wishlist fetched successfully" }
+        }
+      }
+    },
+    "/wishlist/{listenerId}": {
+      "post": {
+        "summary": "Add a listener to wishlist",
+        "tags": ["Wishlist"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "path", "name": "listenerId", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "201": { "description": "Listener added to wishlist successfully" }
+        }
+      },
+      "delete": {
+        "summary": "Remove a listener from wishlist",
+        "tags": ["Wishlist"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "path", "name": "listenerId", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Listener removed from wishlist successfully" }
+        }
+      }
+    },
+    "/wishlist/status/{listenerId}": {
+      "get": {
+        "summary": "Check if a specific listener is in my wishlist",
+        "tags": ["Wishlist"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "path", "name": "listenerId", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Wishlist status checked successfully" }
         }
       }
     }

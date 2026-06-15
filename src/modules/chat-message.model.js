@@ -21,8 +21,12 @@ const chatMessageSchema = new mongoose.Schema(
     },
     messageType: {
       type: String,
-      enum: ['TEXT', 'SYSTEM'],
+      enum: ['TEXT', 'SYSTEM', 'IMAGE', 'VIDEO', 'AUDIO'],
       default: 'TEXT',
+    },
+    fileUrl: {
+      type: String,
+      default: null,
     },
     readAt: {
       type: Date,

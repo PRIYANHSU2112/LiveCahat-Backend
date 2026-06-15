@@ -1,6 +1,7 @@
 import express from 'express';
 import chatController from '../controllers/chat.controller.js';
 import { authenticate } from '../middlewares/auth.middleware.js';
+import { uploadChatAttachment } from '../middlewares/upload.middleware.js';
 
 const router = express.Router();
 
@@ -12,5 +13,8 @@ router.get('/sessions', chatController.getMySessions);
 
 // Get messages for a specific session
 router.get('/sessions/:sessionId/messages', chatController.getSessionMessages);
+
+// Send media message (image, video, voice recording)
+router.post('/sessions/:sessionId/media', uploadChatAttachment, chatController.sendMediaMessage);
 
 export default router;

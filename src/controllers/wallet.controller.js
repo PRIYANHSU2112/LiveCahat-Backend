@@ -66,7 +66,7 @@ class WalletController extends BaseController {
     }
 
     const secret = process.env.RAZORPAY_WEBHOOK_SECRET || 'mock_webhook_secret';
-    
+
     const mockPayloadObject = {
       event: 'payment.captured',
       payload: {
@@ -79,7 +79,7 @@ class WalletController extends BaseController {
         }
       }
     };
-    
+
     const payloadString = JSON.stringify(mockPayloadObject);
 
     const signature = crypto

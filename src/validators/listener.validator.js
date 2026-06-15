@@ -6,6 +6,7 @@ export const updateListenerProfileSchema = Joi.object({
     bio: Joi.string().trim().max(500),
     categories: Joi.array().items(Joi.string().valid(...LISTENER_CATEGORIES)),
     languages: Joi.array().items(Joi.string().hex().length(24)), // Array of ObjectIds
+    interests: Joi.array().items(Joi.string().trim().max(100)).optional(),
     // profilePhotos: Joi.array().items(Joi.string()),
     // introVideo: Joi.string().trim().allow('', null),
   })

@@ -103,12 +103,6 @@ class ListenerService extends BaseService {
   }
 
   async getAllListeners(queryParams) {
-    const version = await getCacheVersion('listeners');
-    const cacheKey = `listeners:list:v${version}:${JSON.stringify(queryParams)}`;
-
-    const cachedData = await getCache(cacheKey);
-    if (cachedData) return cachedData;
-
     const { page, limit, skip, sort } = getPaginationOptions(queryParams);
 
     const matchQuery = {};
@@ -116,9 +110,32 @@ class ListenerService extends BaseService {
     if (queryParams.availability) matchQuery.availability = queryParams.availability;
 
     const { total, data } = await this.repository.getPaginatedListeners(matchQuery, sort, skip, limit);
-    const response = formatPaginatedResponse(data, total, page, limit);
 
-    await setCache(cacheKey, response, 300); // 5 mins cache
+    const { default: presenceService } = await import('./presence.service.js');
+    const ListenerProfile = (await import('../modules/listener-profile.model.js')).default;
+
+    const updatedData = await Promise.all(
+      data.map(async (doc) => {
+        const userIdStr = doc.userId.toString();
+        const redisStatus = await presenceService.getStatus(userIdStr);
+
+        let status = doc.availability;
+        if (redisStatus === 'OFFLINE' && status !== 'OFFLINE') {
+          status = 'OFFLINE';
+          await ListenerProfile.updateOne({ userId: doc.userId }, { availability: 'OFFLINE' });
+        } else if (redisStatus !== 'OFFLINE' && status !== redisStatus) {
+          status = redisStatus;
+          await ListenerProfile.updateOne({ userId: doc.userId }, { availability: redisStatus });
+        }
+
+        return {
+          ...doc,
+          availability: status
+        };
+      })
+    );
+
+    const response = formatPaginatedResponse(updatedData, total, page, limit);
     return response;
   }
 

@@ -33,6 +33,12 @@ const listenerProfileSchema = new mongoose.Schema(
         enum: LISTENER_CATEGORIES,
       },
     ],
+    interests: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
     chatRate: {
       type: Number,
       default: 0,

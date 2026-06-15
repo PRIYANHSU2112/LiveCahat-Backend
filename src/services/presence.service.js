@@ -81,32 +81,19 @@ class PresenceService {
       }
 
       if (activeConnections === 0) {
-        // No active socket devices left. Check for active session for grace period.
-        const userSessionKey = KEYS.userSession(userId);
-        const activeSessionId = redisClient.isRedisAvailable ? await redisClient.get(userSessionKey) : null;
+        // Fully mark offline immediately
+        await User.findByIdAndUpdate(userId, { isOnline: false });
 
-        if (activeSessionId) {
-          // Reconnection Grace Period of 15 seconds
-          const graceKey = KEYS.disconnectGrace(userId);
-          if (redisClient.isRedisAvailable) {
-            await redisClient.set(graceKey, activeSessionId, 'EX', 15);
-          }
-          logger.info(`[Presence] User ${userId} disconnected. 15-second grace period started.`);
-        } else {
-          // Fully mark offline
-          await User.findByIdAndUpdate(userId, { isOnline: false });
+        if (redisClient.isRedisAvailable) {
+          await redisClient.del(statusKey);
+          await redisClient.del(connKey);
+        }
 
-          if (redisClient.isRedisAvailable) {
-            await redisClient.del(statusKey);
-            await redisClient.del(connKey);
-          }
-
-          if (userType === 'LISTENER') {
-            await ListenerProfile.findOneAndUpdate({ userId }, { availability: 'OFFLINE' });
-            await deleteCache(`listener:${userId}`);
-            await bumpCacheVersion('listeners');
-            this.broadcastStatusChange(userId, 'OFFLINE');
-          }
+        if (userType === 'LISTENER') {
+          await ListenerProfile.findOneAndUpdate({ userId }, { availability: 'OFFLINE' });
+          await deleteCache(`listener:${userId}`);
+          await bumpCacheVersion('listeners');
+          this.broadcastStatusChange(userId, 'OFFLINE');
         }
       }
     } catch (err) {

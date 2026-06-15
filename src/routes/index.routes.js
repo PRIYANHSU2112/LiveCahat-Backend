@@ -9,6 +9,8 @@ import followRoutes from './follow.routes.js';
 import companyRoutes from './company.routes.js';
 import giftRoutes from './gift.routes.js';
 import chatRoutes from './chat.routes.js';
+import bannerRoutes from './banner.routes.js';
+import wishlistRoutes from './wishlist.routes.js';
 
 const router = express.Router();
 
@@ -22,6 +24,8 @@ router.use('/follows', followRoutes);
 router.use('/company', companyRoutes);
 router.use('/gifts', giftRoutes);
 router.use('/chats', chatRoutes);
+router.use('/banners', bannerRoutes);
+router.use('/wishlist', wishlistRoutes);
 
 export default router;
 

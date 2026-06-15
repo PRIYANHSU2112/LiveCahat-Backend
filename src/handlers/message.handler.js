@@ -42,6 +42,8 @@ class MessageHandler {
       socket.to(`session:${sessionId}`).emit(SERVER_EVENTS.RECEIVE_MESSAGE, {
         senderId,
         message: text,
+        messageType: 'TEXT',
+        fileUrl: null,
         timestamp,
       });
 

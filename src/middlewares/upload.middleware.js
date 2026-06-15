@@ -30,6 +30,7 @@ const upload = multer({
 
 export const uploadUserPhoto = upload.single('profileImage');
 export const uploadIntroVideo = upload.single('introVideo');
+export const uploadBannerImage = upload.single('image');
 
 export const uploadKYCDocuments = upload.fields([
   { name: 'documentFront', maxCount: 1 },
@@ -65,6 +66,8 @@ export const processAndUploadImage = catchAsync(async (req, res, next) => {
   if (req.file) {
     if (req.file.fieldname === 'introVideo') {
       req.body.introVideo = handleMedia(req.file);
+    } else if (req.file.fieldname === 'image') {
+      req.body.imageUrl = handleMedia(req.file);
     } else {
       req.body.profileImage = handleMedia(req.file);
     }
@@ -82,3 +85,25 @@ export const processAndUploadImage = catchAsync(async (req, res, next) => {
 
   next();
 });
+
+const chatMulterFilter = (req, file, cb) => {
+  const allowedMimeTypes = [
+    'image/jpeg', 'image/jpg', 'image/png', 'image/webp',
+    'video/mp4', 'video/quicktime', 'video/webm', 'video/x-matroska',
+    'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/webm', 'audio/aac', 'audio/m4a', 'audio/x-m4a', 'audio/mp4'
+  ];
+
+  if (allowedMimeTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new ApiError(400, 'Unsupported file format! Please upload only JPG, JPEG, PNG, WEBP images, MP4, MOV, WebM videos, or audio recordings.'), false);
+  }
+};
+
+export const uploadChatAttachment = multer({
+  storage: multerStorage,
+  fileFilter: chatMulterFilter,
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB limit
+  },
+}).single('file');
