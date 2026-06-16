@@ -40,7 +40,6 @@ const walletSchema = new mongoose.Schema(
   }
 );
 
-walletSchema.index({ userId: 1 });
 walletSchema.index({ status: 1 });
 
 const Wallet = mongoose.model('Wallet', walletSchema);

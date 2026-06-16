@@ -2200,6 +2200,249 @@
           "200": { "description": "Wishlist status checked successfully" }
         }
       }
+    },
+    "/daily-rewards/state": {
+      "get": {
+        "summary": "Get current user daily reward state and previews",
+        "tags": ["Daily Rewards"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Daily reward state retrieved successfully" }
+        }
+      }
+    },
+    "/daily-rewards/claim": {
+      "post": {
+        "summary": "Claim today's daily reward",
+        "tags": ["Daily Rewards"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Daily reward claimed successfully" }
+        }
+      }
+    },
+    "/daily-rewards/inventory": {
+      "get": {
+        "summary": "Get current user's chests/gifts inventory",
+        "tags": ["Daily Rewards"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "User inventory fetched successfully" }
+        }
+      }
+    },
+    "/daily-rewards/admin/config/days": {
+      "put": {
+        "summary": "Update configurations for 7 days rewards cycle (Admin)",
+        "tags": ["Daily Rewards"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["configs"],
+                "properties": {
+                  "configs": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["day", "rewardType"],
+                      "properties": {
+                        "day": { "type": "integer", "minimum": 1, "maximum": 7 },
+                        "rewardType": { "type": "string", "enum": ["COINS", "GIFT", "WEEKLY_SPECIAL_GIFT"] },
+                        "rewardValue": { "type": "integer", "minimum": 0 },
+                        "giftId": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "7 days reward configuration updated successfully" }
+        }
+      }
+    },
+    "/daily-rewards/admin/config/weeks": {
+      "put": {
+        "summary": "Update configurations for 4 weeks special gifts cycle (Admin)",
+        "tags": ["Daily Rewards"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["configs"],
+                "properties": {
+                  "configs": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["week", "giftId"],
+                      "properties": {
+                        "week": { "type": "integer", "minimum": 1, "maximum": 4 },
+                        "giftId": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "4 weeks special gift configurations updated successfully" }
+        }
+      }
+    },
+    "/daily-rewards/inventory/{inventoryId}/open": {
+      "post": {
+        "summary": "Open an unopened chest or gift from the user's inventory",
+        "tags": ["Daily Rewards"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "inventoryId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The UserGiftInventory ObjectId"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Chest opened and coins granted successfully" }
+        }
+      }
+    },
+    "/daily-rewards/admin/clear-cache": {
+      "post": {
+        "summary": "Clear daily reward configurations cache (Admin)",
+        "tags": ["Daily Rewards"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Daily rewards cache cleared successfully" }
+        }
+      }
+    },
+    "/avatars": {
+      "get": {
+        "summary": "Get all active avatars (annotated with isUnlocked)",
+        "tags": ["Avatars"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Avatars fetched successfully" }
+        }
+      }
+    },
+    "/avatars/{avatarId}/unlock": {
+      "post": {
+        "summary": "Unlock a paid avatar by spending wallet coins",
+        "tags": ["Avatars"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "avatarId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The Avatar ObjectId to unlock"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Avatar unlocked successfully" }
+        }
+      }
+    },
+    "/avatars/admin": {
+      "post": {
+        "summary": "Create a new avatar asset (Admin)",
+        "tags": ["Avatars"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "image"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "image": { "type": "string" },
+                  "priceType": { "type": "string", "enum": ["FREE", "PAID"] },
+                  "price": { "type": "number", "minimum": 0 },
+                  "category": { "type": "string", "enum": ["REGULAR", "PREMIUM", "SPECIAL"] },
+                  "isActive": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Avatar created successfully" }
+        }
+      }
+    },
+    "/avatars/admin/{id}": {
+      "put": {
+        "summary": "Update an avatar asset (Admin)",
+        "tags": ["Avatars"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "image": { "type": "string" },
+                  "priceType": { "type": "string", "enum": ["FREE", "PAID"] },
+                  "price": { "type": "number", "minimum": 0 },
+                  "category": { "type": "string", "enum": ["REGULAR", "PREMIUM", "SPECIAL"] },
+                  "isActive": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Avatar updated successfully" }
+        }
+      },
+      "delete": {
+        "summary": "Delete an avatar asset (Admin)",
+        "tags": ["Avatars"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Avatar deleted successfully" }
+        }
+      }
     }
   }
 }

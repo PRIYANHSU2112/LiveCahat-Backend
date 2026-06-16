@@ -18,39 +18,40 @@ export const authenticate = catchAsync(async (req, res, next) => {
     throw new ApiError(401, 'You are not logged in! Please log in to get access.');
   }
 
+  let decoded;
   try {
-    const decoded = verifyToken(token);
-
-    const cacheKey = `auth:user:${decoded.id}`;
-    let currentUser = await getCache(cacheKey);
-
-    if (!currentUser) {
-      currentUser = await User.findById(decoded.id).lean();
-      if (currentUser) {
-        await setCache(cacheKey, currentUser, 60); // Cache authenticated profile for 60 seconds
-      }
-    }
-
-    if (!currentUser) {
-      throw new ApiError(401, 'The user belonging to this token does no longer exist.');
-    }
-
-    if (currentUser.isDeleted) {
-      throw new ApiError(401, 'Your account has been deleted.');
-    }
-
-    if (currentUser.isBlocked) {
-      throw new ApiError(403, 'Your account has been blocked by the admin.');
-    }
-
-    req.user = currentUser;
-    next();
+    decoded = verifyToken(token);
   } catch (err) {
     if (err.name === 'TokenExpiredError') {
       throw new ApiError(401, 'Your token has expired! Please log in again.');
     }
     throw new ApiError(401, 'Invalid token! Please log in again.');
   }
+
+  const cacheKey = `auth:user:${decoded.id}`;
+  let currentUser = await getCache(cacheKey);
+
+  if (!currentUser) {
+    currentUser = await User.findById(decoded.id).lean();
+    if (currentUser) {
+      await setCache(cacheKey, currentUser, 60); // Cache authenticated profile for 60 seconds
+    }
+  }
+
+  if (!currentUser) {
+    throw new ApiError(401, 'The user belonging to this token does no longer exist.');
+  }
+
+  if (currentUser.isDeleted) {
+    throw new ApiError(401, 'Your account has been deleted.');
+  }
+
+  if (currentUser.isBlocked) {
+    throw new ApiError(403, 'Your account has been blocked by the admin.');
+  }
+
+  req.user = currentUser;
+  next();
 });
 
 /**

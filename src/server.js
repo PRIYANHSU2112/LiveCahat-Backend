@@ -20,6 +20,7 @@ const DB_URI = process.env.DATABASE_URI || 'mongodb://localhost:27017/realtime_c
 
 import { initializeSockets } from './sockets/index.js';
 import { initializeBillingJob } from './jobs/billing.job.js';
+import dailyRewardService from './services/daily-reward.service.js';
 
 // Server & Socket Init
 const httpServer = createServer(app);
@@ -40,6 +41,9 @@ initializeSockets(io);
 mongoose.connect(DB_URI)
   .then(async () => {
     logger.info('DB connection successful!');
+    
+    // Seed default daily login reward configs and chests
+    await dailyRewardService.seedDefaultConfig();
     
     // Attempt Redis connection after DB
     await connectRedis();

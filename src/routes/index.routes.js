@@ -11,6 +11,8 @@ import giftRoutes from './gift.routes.js';
 import chatRoutes from './chat.routes.js';
 import bannerRoutes from './banner.routes.js';
 import wishlistRoutes from './wishlist.routes.js';
+import dailyRewardRoutes from './daily-reward.routes.js';
+import avatarRoutes from './avatar.routes.js';
 
 const router = express.Router();
 
@@ -26,6 +28,8 @@ router.use('/gifts', giftRoutes);
 router.use('/chats', chatRoutes);
 router.use('/banners', bannerRoutes);
 router.use('/wishlist', wishlistRoutes);
+router.use('/daily-rewards', dailyRewardRoutes);
+router.use('/avatars', avatarRoutes);
 
 export default router;
 
