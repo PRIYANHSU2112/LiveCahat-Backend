@@ -60,6 +60,10 @@
     {
       "name": "Wishlist",
       "description": "Wishlist management for saving and listing favorite listeners"
+    },
+    {
+      "name": "Calls",
+      "description": "Agora audio/video call session management and RTC token generation"
     }
   ],
   "paths": {
@@ -2441,6 +2445,142 @@
         ],
         "responses": {
           "200": { "description": "Avatar deleted successfully" }
+        }
+      }
+    },
+    "/calls/initiate": {
+      "post": {
+        "summary": "Initiate a new audio or video call session",
+        "description": "Creates a CommunicationSession, sets the listener to BUSY, and returns a signed Agora RTC token plus channel info for the caller to join.",
+        "tags": ["Calls"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["listenerId", "mode"],
+                "properties": {
+                  "listenerId": {
+                    "type": "string",
+                    "description": "MongoDB ObjectId of the target listener"
+                  },
+                  "mode": {
+                    "type": "string",
+                    "enum": ["AUDIO", "VIDEO"],
+                    "description": "Type of call to initiate"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Call session created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "sessionId": { "type": "string" },
+                        "agoraToken": { "type": "string" },
+                        "channelName": { "type": "string" },
+                        "agoraUid": { "type": "integer" },
+                        "agoraAppId": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Validation error (invalid mode, self-call, listener offline/busy, no rate set)" },
+          "402": { "description": "Insufficient coin balance" },
+          "403": { "description": "Listener not KYC-verified" },
+          "404": { "description": "Listener profile not found" },
+          "409": { "description": "Caller already in an active session" }
+        }
+      }
+    },
+    "/calls/token/{sessionId}": {
+      "get": {
+        "summary": "Get or refresh Agora RTC token for an active session",
+        "description": "Returns a fresh Agora RTC token for the requesting user. The user must be a verified participant (caller or listener) of the given session.",
+        "tags": ["Calls"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sessionId",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "MongoDB ObjectId of the active CommunicationSession"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Token generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "agoraToken": { "type": "string" },
+                        "channelName": { "type": "string" },
+                        "agoraUid": { "type": "integer" },
+                        "agoraAppId": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Session is not active" },
+          "403": { "description": "User is not a participant in this session" },
+          "404": { "description": "Session not found" }
+        }
+      }
+    },
+    "/calls/end": {
+      "post": {
+        "summary": "End an active call session",
+        "description": "Ends the call, triggers final billing, resets listener availability, and cleans up Redis state.",
+        "tags": ["Calls"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["sessionId"],
+                "properties": {
+                  "sessionId": {
+                    "type": "string",
+                    "description": "MongoDB ObjectId of the session to end"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Call ended successfully" },
+          "400": { "description": "Session already ended or does not exist" },
+          "403": { "description": "User is not authorised to end this session" }
         }
       }
     }

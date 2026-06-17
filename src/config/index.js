@@ -12,6 +12,8 @@ const envVarsSchema = Joi.object()
     REDIS_URL: Joi.string().required().description('Redis Connection URL'),
     JWT_SECRET: Joi.string().required().description('JWT Secret key'),
     JWT_ACCESS_EXPIRATION_MINUTES: Joi.number().default(30).description('minutes after which access tokens expire'),
+    AGORA_APP_ID: Joi.string().allow('').optional().description('Agora App ID for RTC token generation'),
+    AGORA_APP_CERTIFICATE: Joi.string().allow('').optional().description('Agora App Certificate for RTC token signing'),
   })
   .unknown();
 
@@ -33,6 +35,10 @@ const config = {
   jwt: {
     secret: envVars.JWT_SECRET,
     accessExpirationMinutes: envVars.JWT_ACCESS_EXPIRATION_MINUTES,
+  },
+  agora: {
+    appId: envVars.AGORA_APP_ID,
+    appCertificate: envVars.AGORA_APP_CERTIFICATE,
   },
 };
 

@@ -37,3 +37,10 @@ export const NOTIFICATION_STATUSES = ['UNREAD', 'READ'];
 
 export const SESSION_MODES = ['CHAT', 'AUDIO', 'VIDEO'];
 export const COMMUNICATION_SESSION_STATUSES = ['INITIATED', 'ONGOING', 'COMPLETED', 'MISSED', 'REJECTED', 'FAILED'];
+
+export const AVATAR_CATEGORIES = ['REGULAR', 'PREMIUM', 'SPECIAL'];
+
+export const PRICE_TYPES = ['FREE', 'PAID'];
+
+export const LIVE_ROOM_STATUSES = ['live', 'ended'];
+export const LIVE_ROOM_MODES = ['AUDIO', 'VIDEO'];

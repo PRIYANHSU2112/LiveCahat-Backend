@@ -13,6 +13,8 @@ import bannerRoutes from './banner.routes.js';
 import wishlistRoutes from './wishlist.routes.js';
 import dailyRewardRoutes from './daily-reward.routes.js';
 import avatarRoutes from './avatar.routes.js';
+import callRoutes from './call.routes.js';
+import liveRoomRoutes from './live-room.routes.js';
 
 const router = express.Router();
 
@@ -30,6 +32,8 @@ router.use('/banners', bannerRoutes);
 router.use('/wishlist', wishlistRoutes);
 router.use('/daily-rewards', dailyRewardRoutes);
 router.use('/avatars', avatarRoutes);
+router.use('/calls', callRoutes);
+router.use('/live-rooms', liveRoomRoutes);
 
 export default router;
 

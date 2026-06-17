@@ -53,7 +53,7 @@ class AvatarService {
     let avatars = await getCache(cacheKey);
     if (!avatars) {
       avatars = await Avatar.find({ isActive: true }).sort({ category: 1, name: 1 }).lean();
-      await setCache(cacheKey, avatars, 3600); // 1 hour cache
+      await setCache(cacheKey, avatars, 1800); // 1 hour cache
     }
 
     // 3. Annotate list

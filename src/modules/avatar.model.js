@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { AVATAR_CATEGORIES, PRICE_TYPES } from '../constants/enum.constant.js';
 
 const avatarSchema = new mongoose.Schema(
   {
@@ -13,8 +14,8 @@ const avatarSchema = new mongoose.Schema(
     },
     priceType: {
       type: String,
-      enum: ['FREE', 'PAID'],
-      default: 'FREE',
+      enum: PRICE_TYPES,
+      default: PRICE_TYPES[0],
       required: true,
     },
     price: {
@@ -24,8 +25,8 @@ const avatarSchema = new mongoose.Schema(
     },
     category: {
       type: String,
-      enum: ['REGULAR', 'PREMIUM', 'SPECIAL'],
-      default: 'REGULAR',
+      enum: AVATAR_CATEGORIES,
+      default: AVATAR_CATEGORIES[0],
       required: true,
     },
     isActive: {

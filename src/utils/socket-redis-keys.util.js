@@ -39,6 +39,26 @@ export const KEYS = {
    * Value: String sessionId
    */
   disconnectGrace: (userId) => `disconnect_grace:${userId}`,
+
+  // ─── Group Live Room ────────────────────────────────────────────────────────
+
+  /** roomId for a host's currently active live room. Value: String roomId */
+  liveRoomHost: (hostId) => `live_room:host:${hostId}`,
+
+  /** Set of userIds currently watching a live room. SCARD = viewer count. */
+  liveRoomViewers: (roomId) => `live_room:${roomId}:viewers`,
+
+  /** Reverse mapping: which live room a viewer is currently in. Value: String roomId */
+  liveRoomViewer: (userId) => `live_room:viewer:${userId}`,
+
+  /** Running like counter (atomic INCR). Value: Integer string. */
+  liveRoomLikeCount: (roomId) => `live_room:${roomId}:like_count`,
+
+  /** Recent comments list (LPUSH + LTRIM to 50). Value: JSON strings, newest first. */
+  liveRoomComments: (roomId) => `live_room:${roomId}:comments`,
+
+  /** Grace-period key set on host disconnect (30s TTL). Value: String roomId */
+  liveRoomDisconnectGrace: (hostId) => `live_room:disconnect_grace:${hostId}`,
 };
 
 export const PATTERNS = {

@@ -11,6 +11,20 @@ export const CLIENT_EVENTS = {
   SEND_MESSAGE: 'send_message',
   TYPING: 'typing',
   END_CHAT: 'end_chat',
+
+  // ─── Call (Audio / Video) ─────────────────────────────────────
+  REQUEST_CALL: 'request_call',
+  ACCEPT_CALL: 'accept_call',
+  REJECT_CALL: 'reject_call',
+  END_CALL: 'end_call',
+
+  // ─── Group Live Room ──────────────────────────────────────────
+  LIVE_START: 'live:start',
+  LIVE_END: 'live:end',
+  LIVE_JOIN: 'live:join',
+  LIVE_LEAVE: 'live:leave',
+  LIVE_COMMENT: 'live:comment',
+  LIVE_LIKE: 'live:like',
 };
 
 export const SERVER_EVENTS = {
@@ -30,4 +44,20 @@ export const SERVER_EVENTS = {
   LISTENER_OFFLINE: 'listener_offline',
   USER_RECONNECTED: 'user_reconnected',
   USER_JOINED: 'user_joined',
+
+  // ─── Call (Audio / Video) ─────────────────────────────────────
+  INCOMING_CALL_REQUEST: 'incoming_call_request',
+  CALL_REQUEST_ACCEPTED: 'call_request_accepted',
+  CALL_REQUEST_REJECTED: 'call_request_rejected',
+  CALL_STARTED: 'call_started',
+  CALL_ENDED: 'call_ended',
+
+  // ─── Group Live Room ──────────────────────────────────────────
+  LIVE_STARTED: 'live:started',
+  LIVE_ENDED: 'live:ended',
+  LIVE_VIEWER_JOINED: 'live:viewer_joined',
+  LIVE_VIEWER_LEFT: 'live:viewer_left',
+  LIVE_NEW_COMMENT: 'live:new_comment',
+  LIVE_LIKE_UPDATE: 'live:like_update',
+  LIVE_VIEWER_COUNT_UPDATE: 'live:viewer_count_update',
 };

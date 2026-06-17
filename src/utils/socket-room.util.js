@@ -34,3 +34,12 @@ export const getSessionRoomSize = (io, sessionId) => {
   const clients = io.sockets.adapter.rooms.get(roomName);
   return clients ? clients.size : 0;
 };
+
+// ─── Live Room Helpers ────────────────────────────────────────────────────────
+
+export const joinLiveRoom = (socket, roomId) => socket.join(`live:${roomId}`);
+
+export const leaveLiveRoom = (socket, roomId) => socket.leave(`live:${roomId}`);
+
+export const emitToLiveRoom = (io, roomId, event, data) =>
+  io.to(`live:${roomId}`).emit(event, data);
