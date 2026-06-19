@@ -18,6 +18,16 @@ class AuthController extends BaseController {
     const { token, user } = await authService.adminLogin(req.body);
     this.sendResponse(res, 200, 'Admin login successful', { token, user });
   });
+
+  guestLogin = catchAsync(async (req, res) => {
+    const { token, user, isNewUser } = await authService.guestLogin(req.body);
+    this.sendResponse(res, 200, isNewUser ? 'Guest account created' : 'Welcome back', { token, user });
+  });
+
+  linkAccount = catchAsync(async (req, res) => {
+    const { user } = await authService.linkAccount({ userId: req.user._id, ...req.body });
+    this.sendResponse(res, 200, 'Phone number linked successfully', { user });
+  });
 }
 
 export default new AuthController();

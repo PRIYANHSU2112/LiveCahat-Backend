@@ -12,6 +12,7 @@ router.use(authenticate);
 // --- User/Listener Endpoints ---
 router.get('/', avatarController.list);
 router.post('/:avatarId/unlock', avatarController.unlock);
+router.post('/:avatarId/set-profile', avatarController.setAsProfile);
 
 // --- Admin Endpoints (Restricted to ADMIN users only) ---
 router.use(restrictTo('ADMIN'));

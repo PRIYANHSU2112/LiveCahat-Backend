@@ -4,6 +4,7 @@ import communicationSessionRepository from '../repositories/communication-sessio
 import redisClient from '../config/redis.js';
 import mongoose from 'mongoose';
 import logger from '../utils/logger.util.js';
+import xpService from './xp.service.js';
 
 class ChatMessageService extends BaseService {
   constructor() {
@@ -44,6 +45,9 @@ class ChatMessageService extends BaseService {
           }
         }
       }
+
+      // Fire-and-forget XP award for sending a chat message
+      xpService.awardXp(senderId, 'CHAT_MESSAGE', { sessionId: sessionId.toString() }).catch(() => {});
 
       return message;
     } catch (err) {

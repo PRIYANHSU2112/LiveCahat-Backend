@@ -41,6 +41,10 @@ class UserRepository {
     return await this.findOne({ mobileNumber });
   }
 
+  async findByDeviceId(deviceId) {
+    return await this.findOne({ deviceId, isDeleted: false });
+  }
+
   async getPaginatedUsers(matchQuery, sort, skip, limit) {
     const pipeline = [
       { $match: matchQuery },

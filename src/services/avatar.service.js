@@ -69,6 +69,30 @@ class AvatarService {
   }
 
   /**
+   * Set an unlocked (or free) avatar as the user's profile image.
+   */
+  async setAvatarAsProfile(userId, avatarId) {
+    const avatar = await Avatar.findById(avatarId).lean();
+    if (!avatar || !avatar.isActive) throw new ApiError(404, 'Avatar not found or inactive');
+
+    const isFree = avatar.priceType === 'FREE';
+    if (!isFree) {
+      const user = await User.findById(userId).select('unlockedAvatars').lean();
+      const hasUnlocked = user?.unlockedAvatars?.some(id => id.toString() === avatarId.toString());
+      if (!hasUnlocked) throw new ApiError(403, 'You have not unlocked this avatar');
+    }
+
+    await User.findByIdAndUpdate(userId, { profileImage: avatar.image });
+
+    await Promise.all([
+      deleteCache(`user:${userId}`),
+      deleteCache(`auth:user:${userId}`),
+    ]);
+
+    return { profileImage: avatar.image, avatar };
+  }
+
+  /**
    * Executes transactional unlocking of a paid avatar, deducting wallet coins
    * and adding the reference directly to the user's unlocked list in user schema.
    */

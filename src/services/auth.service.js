@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
 import userRepository from '../repositories/user.repository.js';
 import { generateToken } from '../utils/jwt.util.js';
-import { storeOTP, verifyOTP } from '../utils/redis.util.js';
+import { storeOTP, verifyOTP, deleteCache } from '../utils/redis.util.js';
 import ApiError from '../utils/ApiError.js';
 
 class AuthService {
@@ -45,6 +45,42 @@ class AuthService {
 
     const token = generateToken({ id: user._id, type: user.type });
     return { token, user, isNewUser };
+  }
+
+  async guestLogin({ deviceId, dateOfBirth }) {
+    const dob = new Date(dateOfBirth);
+    const now = new Date();
+    let age = now.getFullYear() - dob.getFullYear();
+    const m = now.getMonth() - dob.getMonth();
+    if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) age--;
+    if (age < 18) throw new ApiError(403, 'You must be 18 or older to use this app.');
+
+    let user = await userRepository.findByDeviceId(deviceId);
+    let isNewUser = false;
+
+    if (!user) {
+      user = await userRepository.create({ type: 'CUSTOMER', isGuest: true, deviceId, ageVerified: true });
+      isNewUser = true;
+    } else {
+      if (user.isBlocked) throw new ApiError(403, 'Your account has been blocked.');
+    }
+
+    const token = generateToken({ id: user._id, type: user.type });
+    return { token, user, isNewUser };
+  }
+
+  async linkAccount({ userId, mobileNumber, otp }) {
+    const validOtp = await verifyOTP(mobileNumber, otp);
+    if (!validOtp) throw new ApiError(401, 'Invalid OTP');
+
+    const existing = await userRepository.findByMobile(mobileNumber);
+    if (existing && existing._id.toString() !== userId.toString()) {
+      throw new ApiError(409, 'This phone number is already linked to another account.');
+    }
+
+    const user = await userRepository.updateById(userId, { mobileNumber, isGuest: false });
+    await deleteCache(`auth:user:${userId}`);
+    return { user };
   }
 
   async adminLogin(data) {

@@ -16,6 +16,7 @@ import routes from './routes/index.routes.js';
 import { globalErrorHandler } from './middlewares/error.middleware.js';
 import { responseTimeTracker } from './middlewares/response-time.middleware.js';
 import { seedSuperAdmin } from './seeders/super-admin.seeder.js';
+import { seedXpSystem } from './seeders/xp.seeder.js';
 
 const app = express();
 
@@ -23,6 +24,7 @@ const app = express();
 // SEEDERS (Comment out after first run!)
 // ==========================================
 seedSuperAdmin();
+seedXpSystem();
 
 // 1. GLOBAL MIDDLEWARES
 app.use(helmet()); // Set security HTTP headers

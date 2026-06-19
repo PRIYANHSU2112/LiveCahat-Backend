@@ -12,6 +12,7 @@ import ApiError from '../utils/ApiError.js';
 import { getCache, setCache, deleteCache, bumpCacheVersion, getCacheVersion } from '../utils/redis.util.js';
 import { emitToUser } from '../utils/socket.util.js';
 import logger from '../utils/logger.util.js';
+import xpService from './xp.service.js';
 
 // ========================================================
 // Helper Utilities for UTC Date Calculations
@@ -378,6 +379,16 @@ class DailyRewardService {
       await session.abortTransaction();
       session.endSession();
       throw error;
+    } finally {
+      // Fire-and-forget XP awards (outside transaction, never fails the claim)
+      try {
+        await xpService.awardXp(userId, 'DAILY_LOGIN');
+        if (targetDay > 1) {
+          await xpService.awardXp(userId, 'DAILY_STREAK_BONUS');
+        }
+      } catch (xpErr) {
+        logger.error(`[DailyReward XP] Failed to award XP: ${xpErr.message}`);
+      }
     }
   }
 

@@ -15,6 +15,11 @@ import dailyRewardRoutes from './daily-reward.routes.js';
 import avatarRoutes from './avatar.routes.js';
 import callRoutes from './call.routes.js';
 import liveRoomRoutes from './live-room.routes.js';
+import stickerCategoryRoutes from './sticker-category.routes.js';
+import stickerRoutes from './sticker.routes.js';
+import reviewRoutes from './review.routes.js';
+import feedbackRoutes from './feedback.routes.js';
+import xpRoutes from './xp.routes.js';
 
 const router = express.Router();
 
@@ -34,6 +39,11 @@ router.use('/daily-rewards', dailyRewardRoutes);
 router.use('/avatars', avatarRoutes);
 router.use('/calls', callRoutes);
 router.use('/live-rooms', liveRoomRoutes);
+router.use('/sticker-categories', stickerCategoryRoutes);
+router.use('/stickers', stickerRoutes);
+router.use('/reviews', reviewRoutes);
+router.use('/feedback', feedbackRoutes);
+router.use('/xp', xpRoutes);
 
 export default router;
 

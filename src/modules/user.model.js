@@ -97,6 +97,50 @@ const userSchema = new mongoose.Schema(
         ref: 'Avatar',
       },
     ],
+    unlockedStickers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Sticker',
+      },
+    ],
+    isGuest: {
+      type: Boolean,
+      default: false,
+    },
+    deviceId: {
+      type: String,
+      sparse: true,
+      trim: true,
+    },
+    ageVerified: {
+      type: Boolean,
+      default: false,
+    },
+    // XP & Level System
+    totalXp: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    currentLevel: {
+      type: Number,
+      default: 1,
+      min: 1,
+    },
+    badges: [
+      {
+        type: String,
+      },
+    ],
+    // One-time XP guard flags
+    profileXpAwarded: {
+      type: Boolean,
+      default: false,
+    },
+    firstCallDone: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
@@ -125,6 +169,9 @@ userSchema.pre('save', async function (next) {
 // Indexes
 userSchema.index({ type: 1 });
 userSchema.index({ isDeleted: 1 });
+userSchema.index({ deviceId: 1 }, { sparse: true });
+userSchema.index({ currentLevel: 1 });
+userSchema.index({ totalXp: -1 });
 
 const User = mongoose.model('User', userSchema);
 export default User;

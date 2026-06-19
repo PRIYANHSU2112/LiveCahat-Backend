@@ -15,6 +15,12 @@ class AvatarController extends BaseController {
     this.sendResponse(res, 200, result.message, result);
   });
 
+  // Set avatar as profile image
+  setAsProfile = catchAsync(async (req, res) => {
+    const result = await avatarService.setAvatarAsProfile(req.user._id, req.params.avatarId);
+    this.sendResponse(res, 200, 'Profile image updated successfully', result);
+  });
+
   // Admin: Create avatar
   create = catchAsync(async (req, res) => {
     const data = await avatarService.createAvatar(req.body);

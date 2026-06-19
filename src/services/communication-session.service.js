@@ -7,6 +7,7 @@ import redisClient from '../config/redis.js';
 import { KEYS } from '../utils/socket-redis-keys.util.js';
 import presenceService from './presence.service.js';
 import logger from '../utils/logger.util.js';
+import xpService from './xp.service.js';
 
 class CommunicationSessionService extends BaseService {
   constructor() {
@@ -142,6 +143,25 @@ class CommunicationSessionService extends BaseService {
       }
 
       logger.info(`[Session Service] Session ${sessionIdStr} ended successfully. Reason: ${disconnectReason}`);
+
+      // Fire-and-forget XP awards for both caller and listener
+      try {
+        // Determine call type from segment mode
+        const lastSegment = segments[segments.length - 1];
+        const xpAction = lastSegment?.mode === 'VIDEO' ? 'VIDEO_CALL' : 'VOICE_CALL';
+
+        // Award both participants XP for completing the session
+        const sessionMeta = { sessionId: sessionIdStr };
+        xpService.awardXp(session.callerId, xpAction, sessionMeta).catch(() => {});
+        xpService.awardXp(session.listenerId, xpAction, sessionMeta).catch(() => {});
+
+        // Award FIRST_CALL XP (one-time, atomic guard handles dedup)
+        xpService.awardXp(session.callerId, 'FIRST_CALL', sessionMeta).catch(() => {});
+        xpService.awardXp(session.listenerId, 'FIRST_CALL', sessionMeta).catch(() => {});
+      } catch (xpErr) {
+        logger.error(`[Session XP] Failed to award session XP: ${xpErr.message}`);
+      }
+
       return session;
     } catch (err) {
       logger.error(`[Session Service End Error] Failed for session ${sessionId}: ${err.message}`);
