@@ -29,6 +29,11 @@ class ListenerController extends BaseController {
     this.sendResponse(res, 200, 'Availability updated', profile);
   });
 
+  toggleAvailability = catchAsync(async (req, res) => {
+    const profile = await listenerService.toggleAvailability(req.user._id);
+    this.sendResponse(res, 200, `You are now ${profile.availability}`, profile);
+  });
+
   // --- ADMIN ONLY ROUTES ---
   
   getAllListeners = catchAsync(async (req, res) => {

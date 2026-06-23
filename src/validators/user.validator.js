@@ -11,6 +11,16 @@ export const updateUserProfileSchema = Joi.object({
   })
 });
 
+export const updateSettingsSchema = Joi.object({
+  body: Joi.object({
+    notifications: Joi.boolean(),
+    acceptIncomingCalls: Joi.boolean(),
+    dndChats: Joi.boolean(),
+    dndVoiceCall: Joi.boolean(),
+    dndVideoCall: Joi.boolean(),
+  }).min(1),
+});
+
 export const queryUserSchema = Joi.object({
   query: Joi.object({
     page: Joi.number().integer().min(1).default(1),

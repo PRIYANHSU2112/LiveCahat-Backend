@@ -22,6 +22,18 @@ class UserController extends BaseController {
     this.sendResponse(res, 200, 'Account deleted successfully');
   });
 
+  // Get my settings/preference toggles
+  getMySettings = catchAsync(async (req, res) => {
+    const settings = await userService.getSettings(req.user._id);
+    this.sendResponse(res, 200, 'Settings fetched successfully', settings);
+  });
+
+  // Update my settings (partial — only sent toggles change)
+  updateMySettings = catchAsync(async (req, res) => {
+    const settings = await userService.updateSettings(req.user._id, req.body);
+    this.sendResponse(res, 200, 'Settings updated successfully', settings);
+  });
+
   // --- ADMIN ONLY ROUTES below (handled by routes) ---
 
   getAllUsers = catchAsync(async (req, res) => {

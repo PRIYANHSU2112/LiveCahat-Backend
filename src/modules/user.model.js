@@ -1,6 +1,15 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 
+// Generate a referral invite code: 3 uppercase letters + 4 digits (e.g. BOY3526)
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const generateInviteCode = () => {
+  let code = '';
+  for (let i = 0; i < 3; i++) code += LETTERS[Math.floor(Math.random() * LETTERS.length)];
+  for (let i = 0; i < 4; i++) code += Math.floor(Math.random() * 10);
+  return code;
+};
+
 const userSchema = new mongoose.Schema(
   {
     type: {
@@ -141,6 +150,41 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // Referral System
+    inviteCode: {
+      type: String,
+      unique: true,
+      sparse: true,
+      uppercase: true,
+      trim: true,
+    },
+    referredBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    referralCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    referralEarnings: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    referralRewardAwarded: {
+      type: Boolean,
+      default: false, // Ensures the sign-up referral reward is paid out only once
+    },
+    // User preference toggles (notifications, call availability, DND)
+    settings: {
+      notifications: { type: Boolean, default: true },
+      acceptIncomingCalls: { type: Boolean, default: true },
+      dndChats: { type: Boolean, default: false },
+      dndVoiceCall: { type: Boolean, default: false },
+      dndVideoCall: { type: Boolean, default: false },
+    },
   },
   {
     timestamps: true,
@@ -160,6 +204,25 @@ userSchema.pre('save', async function (next) {
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Generate a unique invite code for new users (retry on collision)
+userSchema.pre('save', async function (next) {
+  if (this.inviteCode) return next();
+  try {
+    let code;
+    let exists = true;
+    let attempts = 0;
+    while (exists && attempts < 5) {
+      code = generateInviteCode();
+      exists = await this.constructor.exists({ inviteCode: code });
+      attempts++;
+    }
+    this.inviteCode = code;
     next();
   } catch (error) {
     next(error);

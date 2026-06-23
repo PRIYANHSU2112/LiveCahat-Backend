@@ -22,6 +22,8 @@ router.put('/rates', restrictTo('LISTENER'), validate(updateRatesSchema), listen
 
 router.put('/availability', restrictTo('LISTENER'), validate(updateAvailabilitySchema), listenerController.updateAvailability);
 
+router.patch('/availability/toggle', restrictTo('LISTENER'), listenerController.toggleAvailability);
+
 // --- ADMIN ONLY ROUTES ---
 
 router.get('/', restrictTo('ADMIN', 'CUSTOMER'), listenerController.getAllListeners);

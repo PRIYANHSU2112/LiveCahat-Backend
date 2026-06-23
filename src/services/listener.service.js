@@ -5,6 +5,8 @@ import ApiError from '../utils/ApiError.js';
 import { deleteFromS3 } from '../utils/aws.util.js';
 import { getPaginationOptions, formatPaginatedResponse } from '../utils/pagination.util.js';
 import { getCache, setCache, deleteCache, bumpCacheVersion, getCacheVersion } from '../utils/redis.util.js';
+import logger from '../utils/logger.util.js';
+import anchorLevelService from './anchor-level.service.js';
 
 class ListenerService extends BaseService {
   constructor() {
@@ -52,7 +54,37 @@ class ListenerService extends BaseService {
       }
     }
 
+    // Mark the listener's profile complete once the key fields are filled,
+    // then (re-)evaluate their anchor level (fire-and-forget).
+    const isComplete = !!(
+      profile.bio &&
+      profile.categories?.length &&
+      profile.languages?.length &&
+      profile.profilePhotos?.length
+    );
+    if (isComplete) {
+      const u = await userRepository.findById(userId, 'profileCompleted');
+      if (u && !u.profileCompleted) {
+        await userRepository.updateById(userId, { profileCompleted: true });
+        await deleteCache(`user:${userId}`);
+      }
+    }
+    anchorLevelService.evaluateAnchorLevel(userId).catch((err) =>
+      logger.error(`[Listener Service] anchor eval failed for ${userId}: ${err.message}`)
+    );
+
     return profile;
+  }
+
+  async toggleAvailability(userId) {
+    const profile = await this.repository.findOne({ userId });
+    if (!profile) throw new ApiError(404, 'Listener profile not found');
+
+    // Flip ONLINE ⇄ OFFLINE (any non-ONLINE state, e.g. BUSY, goes ONLINE)
+    const newStatus = profile.availability === 'ONLINE' ? 'OFFLINE' : 'ONLINE';
+
+    // Reuse the standard update path — it syncs presence service + caches
+    return await this.createOrUpdateProfile(userId, { availability: newStatus });
   }
 
   async submitKyc(userId, kycData) {

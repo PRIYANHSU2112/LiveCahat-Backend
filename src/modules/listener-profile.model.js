@@ -112,6 +112,11 @@ const listenerProfileSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    anchorLevel: {
+      type: Number,
+      default: 0,
+      min: 0, // 0 = no anchor level reached yet
+    },
   },
   {
     timestamps: true,

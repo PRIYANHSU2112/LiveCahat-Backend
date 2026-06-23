@@ -53,6 +53,30 @@ class UserService extends BaseService {
     return deleted;
   }
 
+  async getSettings(userId) {
+    const user = await this.getItemById(userId); // cached
+    if (!user) throw new ApiError(404, 'User not found');
+    return user.settings || {};
+  }
+
+  async updateSettings(userId, data) {
+    // Dotted $set so only the provided toggles change, leaving the rest intact
+    const update = {};
+    for (const [key, value] of Object.entries(data)) {
+      update[`settings.${key}`] = value;
+    }
+
+    const user = await this.repository.updateById(userId, { $set: update });
+    if (!user) throw new ApiError(404, 'User not found');
+
+    await Promise.all([
+      deleteCache(`user:${userId}`),
+      deleteCache(`auth:user:${userId}`),
+    ]);
+
+    return user.settings;
+  }
+
   async getAllUsers(queryParams) {
     const version = await getCacheVersion('users');
     const cacheKey = `users:list:v${version}:${JSON.stringify(queryParams)}`;

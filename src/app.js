@@ -16,6 +16,7 @@ import routes from './routes/index.routes.js';
 import { globalErrorHandler } from './middlewares/error.middleware.js';
 import { responseTimeTracker } from './middlewares/response-time.middleware.js';
 import { seedSuperAdmin } from './seeders/super-admin.seeder.js';
+import { swaggerUiOptions } from './docs/swagger-ui.options.js';
 import { seedXpSystem } from './seeders/xp.seeder.js';
 
 const app = express();
@@ -52,7 +53,14 @@ app.use(responseTimeTracker);
 
 // Swagger Documentation Setup
 const swaggerDocument = JSON.parse(fs.readFileSync('./src/docs/swagger.json', 'utf8'));
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+// Never let the browser/proxy cache the docs HTML, so UI tweaks always show up
+const noCacheDocs = (req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  next();
+};
+app.use('/api-docs', noCacheDocs, swaggerUi.serve, swaggerUi.setup(swaggerDocument, swaggerUiOptions));
 app.get('/api-docs.json', (req, res) => res.json(swaggerDocument));
 
 // Test Dashboard Interface

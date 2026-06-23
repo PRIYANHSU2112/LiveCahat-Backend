@@ -9,6 +9,8 @@ import GiftTransaction from '../modules/gift-transaction.model.js';
 import ApiError from '../utils/ApiError.js';
 import { getCache, setCache, deleteCache, bumpCacheVersion, getCacheVersion } from '../utils/redis.util.js';
 import { emitToUser } from '../utils/socket.util.js';
+import logger from '../utils/logger.util.js';
+import anchorLevelService from './anchor-level.service.js';
 
 class GiftService {
   /**
@@ -255,6 +257,11 @@ class GiftService {
         bumpCacheVersion(`coin_transactions:user:${receiverIdStr}`),
         bumpCacheVersion('admin:wallets')
       ]);
+
+      // Re-evaluate the listener's anchor level after earnings (fire-and-forget)
+      anchorLevelService.evaluateAnchorLevel(receiverId).catch((err) =>
+        logger.error(`[Gift Service] anchor eval failed for ${receiverIdStr}: ${err.message}`)
+      );
 
       // Emit real-time socket notification to the receiver
       emitToUser(receiverIdStr, 'gift:received', {

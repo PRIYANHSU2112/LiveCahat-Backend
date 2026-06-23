@@ -11,6 +11,7 @@ import { SERVER_EVENTS } from '../constants/socket-event.constant.js';
 import { emitToSession } from '../utils/socket-room.util.js';
 import { getSocketIo } from '../utils/socket.util.js';
 import logger from '../utils/logger.util.js';
+import anchorLevelService from './anchor-level.service.js';
 
 class BillingService {
   /**
@@ -203,6 +204,11 @@ class BillingService {
         bumpCacheVersion('admin:wallets'),
         bumpCacheVersion('admin:coin_transactions'),
       ]);
+
+      // Re-evaluate the listener's anchor level after earnings (fire-and-forget)
+      anchorLevelService.evaluateAnchorLevel(listenerId).catch((err) =>
+        logger.error(`[Billing Service] anchor eval failed for ${listenerId}: ${err.message}`)
+      );
 
       // Update lastBilledAt in Redis to prevent double billing
       if (redisClient.isRedisAvailable && !isFinal) {

@@ -23,6 +23,11 @@ const coinPackSchema = new mongoose.Schema(
       type: Number,
       // For reference: price / coins
     },
+    referralBonusCoins: {
+      type: Number,
+      default: 0,
+      min: 0, // Free coins BOTH referrer and referred friend get on the friend's first purchase of this pack
+    },
     isActive: {
       type: Boolean,
       default: true,

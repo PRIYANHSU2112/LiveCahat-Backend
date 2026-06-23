@@ -14,6 +14,7 @@ export const verifyOtpSchema = Joi.object({
     mobileNumber: Joi.string().pattern(/^[0-9]{10}$/).required(),
     otp: Joi.string().length(6).required(),
     countryCode: Joi.string().default('+91'),
+    inviteCode: Joi.string().trim().uppercase().allow('', null),
   })
 });
 
@@ -28,6 +29,7 @@ export const guestLoginSchema = Joi.object({
   body: Joi.object({
     deviceId: Joi.string().trim().min(8).max(128).required(),
     dateOfBirth: Joi.date().iso().required(),
+    inviteCode: Joi.string().trim().uppercase().allow('', null),
   })
 });
 

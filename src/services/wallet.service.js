@@ -12,6 +12,8 @@ import mongoose from 'mongoose';
 import CoinTransaction from '../modules/coin-transaction.model.js';
 import PaymentTransaction from '../modules/payment-transaction.model.js';
 import Wallet from '../modules/wallet.model.js';
+import User from '../modules/user.model.js';
+import referralService from './referral.service.js';
 
 class WalletService extends BaseService {
   constructor() {
@@ -203,6 +205,12 @@ class WalletService extends BaseService {
         description: `Purchased ${coinsToAdd} coins via pack ${coinPack.name}`
       }], { session });
 
+      // Referral payout — triggers once, on the referred friend's first purchase
+      const buyer = await User.findById(transaction.userId)
+        .select('referredBy referralRewardAwarded type')
+        .session(session);
+      const referralResult = await referralService.processFirstPurchaseReward(session, buyer, coinPack);
+
       await session.commitTransaction();
       session.endSession();
 
@@ -217,7 +225,16 @@ class WalletService extends BaseService {
         bumpCacheVersion('admin:payment_transactions')
       ]);
 
-      return { status: 'success', coinsAdded: coinsToAdd };
+      // If a referral bonus was paid, bust the referrer's caches too
+      if (referralResult?.referrerId) {
+        const refId = referralResult.referrerId.toString();
+        await Promise.all([
+          referralService._invalidateUserCaches([refId]),
+          bumpCacheVersion(`coin_transactions:user:${refId}`),
+        ]);
+      }
+
+      return { status: 'success', coinsAdded: coinsToAdd, referralBonus: referralResult?.bonus || 0 };
     } catch (error) {
       await session.abortTransaction();
       session.endSession();

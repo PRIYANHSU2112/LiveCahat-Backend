@@ -84,6 +84,18 @@
     {
       "name": "Feedback",
       "description": "Application feedback — any user submits, admin moderates"
+    },
+    {
+      "name": "Referrals",
+      "description": "Refer & Earn — invite codes, immediate bonus payouts, and admin config"
+    },
+    {
+      "name": "Withdrawals",
+      "description": "Coin→INR withdrawals — saved payment methods, requests, and admin approval"
+    },
+    {
+      "name": "Anchor Levels",
+      "description": "Listener anchor-level progression with claimable per-level rewards"
     }
   ],
   "paths": {
@@ -162,6 +174,10 @@
                   },
                   "countryCode": {
                     "type": "string"
+                  },
+                  "inviteCode": {
+                    "type": "string",
+                    "description": "Optional referral code — credits bonus coins to both users immediately on signup"
                   }
                 }
               }
@@ -233,6 +249,10 @@
                     "format": "date",
                     "description": "User's date of birth for 18+ age verification (ISO 8601)",
                     "example": "2000-06-18"
+                  },
+                  "inviteCode": {
+                    "type": "string",
+                    "description": "Optional referral code — credits bonus coins to both users immediately on signup"
                   }
                 }
               }
@@ -387,6 +407,66 @@
           "200": {
             "description": "Account deleted successfully"
           }
+        }
+      }
+    },
+    "/users/me/settings": {
+      "get": {
+        "summary": "Get my settings / preference toggles",
+        "tags": ["Users"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Settings fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "notifications": { "type": "boolean", "example": true },
+                        "acceptIncomingCalls": { "type": "boolean", "example": true },
+                        "dndChats": { "type": "boolean", "example": false },
+                        "dndVoiceCall": { "type": "boolean", "example": false },
+                        "dndVideoCall": { "type": "boolean", "example": false }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update my settings (partial — send only the toggles to change)",
+        "tags": ["Users"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "minProperties": 1,
+                "properties": {
+                  "notifications": { "type": "boolean" },
+                  "acceptIncomingCalls": { "type": "boolean" },
+                  "dndChats": { "type": "boolean" },
+                  "dndVoiceCall": { "type": "boolean" },
+                  "dndVideoCall": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Settings updated successfully" },
+          "400": { "description": "No valid toggle provided" }
         }
       }
     },
@@ -602,6 +682,28 @@
         "responses": {
           "200": {
             "description": "Availability updated"
+          }
+        }
+      }
+    },
+    "/listeners/availability/toggle": {
+      "patch": {
+        "summary": "Toggle availability ONLINE ⇄ OFFLINE",
+        "description": "Listener-only. Flips current availability: ONLINE → OFFLINE, any other state → ONLINE. No request body. Syncs the presence service.",
+        "tags": [
+          "Listeners"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Availability toggled (message reflects the new status)"
+          },
+          "404": {
+            "description": "Listener profile not found"
           }
         }
       }
@@ -1175,6 +1277,11 @@
                   "description": {
                     "type": "string"
                   },
+                  "referralBonusCoins": {
+                    "type": "number",
+                    "default": 0,
+                    "description": "Free coins both referrer and referred friend get when the friend first buys this pack"
+                  },
                   "isActive": {
                     "type": "boolean",
                     "default": true
@@ -1262,6 +1369,10 @@
                   },
                   "description": {
                     "type": "string"
+                  },
+                  "referralBonusCoins": {
+                    "type": "number",
+                    "description": "Free coins both referrer and referred friend get when the friend first buys this pack"
                   },
                   "isActive": {
                     "type": "boolean"
@@ -2742,6 +2853,472 @@
           "400": { "description": "Session already ended or does not exist" },
           "403": { "description": "User is not authorised to end this session" }
         }
+      }
+    },
+    "/anchor-levels": {
+      "get": {
+        "summary": "Get the active anchor-level ladder",
+        "tags": ["Anchor Levels"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Anchor levels fetched successfully" } }
+      }
+    },
+    "/anchor-levels/me/status": {
+      "get": {
+        "summary": "My anchor level, earnings, progress, and pending count (Listener)",
+        "tags": ["Anchor Levels"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Anchor status fetched successfully" },
+          "403": { "description": "Listener only" },
+          "404": { "description": "Listener profile not found" }
+        }
+      }
+    },
+    "/anchor-levels/me/rewards": {
+      "get": {
+        "summary": "My anchor reward inventory (Listener)",
+        "tags": ["Anchor Levels"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "query", "name": "status", "schema": { "type": "string", "enum": ["UNCLAIMED", "CLAIMED"] } }
+        ],
+        "responses": { "200": { "description": "Reward inventory fetched successfully" } }
+      }
+    },
+    "/anchor-levels/me/rewards/{id}/claim": {
+      "post": {
+        "summary": "Claim an anchor reward (Listener)",
+        "description": "Coins → wallet, gifts → gift inventory. Idempotent — already-claimed returns 400.",
+        "tags": ["Anchor Levels"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Reward claimed successfully" }, "400": { "description": "Already claimed or not found" } }
+      }
+    },
+    "/anchor-levels/me/rewards/claim-all": {
+      "post": {
+        "summary": "Claim all pending anchor rewards (Listener)",
+        "tags": ["Anchor Levels"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Rewards claimed successfully" } }
+      }
+    },
+    "/anchor-levels/admin": {
+      "post": {
+        "summary": "Create an anchor level (Admin)",
+        "tags": ["Anchor Levels"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["level", "title"],
+                "properties": {
+                  "level": { "type": "integer", "minimum": 1 },
+                  "title": { "type": "string" },
+                  "requirementType": { "type": "string", "enum": ["PROFILE_COMPLETE", "EARNINGS"], "default": "EARNINGS" },
+                  "requiredEarnings": { "type": "number", "minimum": 0, "description": "Required when requirementType is EARNINGS" },
+                  "badge": { "type": "string" },
+                  "rewards": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["type"],
+                      "properties": {
+                        "type": { "type": "string", "enum": ["COINS", "GIFT", "ITEM"] },
+                        "value": { "type": "number", "default": 1 },
+                        "referenceId": { "type": "string", "description": "Gift id — required when type is GIFT" },
+                        "label": { "type": "string" },
+                        "icon": { "type": "string" }
+                      }
+                    }
+                  },
+                  "isActive": { "type": "boolean", "default": true }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Anchor level created successfully" }, "403": { "description": "Admin only" } }
+      },
+      "get": {
+        "summary": "List all anchor levels incl. inactive (Admin)",
+        "tags": ["Anchor Levels"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Anchor levels fetched successfully" } }
+      }
+    },
+    "/anchor-levels/admin/{id}": {
+      "put": {
+        "summary": "Update an anchor level (Admin)",
+        "tags": ["Anchor Levels"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "level": { "type": "integer", "minimum": 1 },
+                  "title": { "type": "string" },
+                  "requirementType": { "type": "string", "enum": ["PROFILE_COMPLETE", "EARNINGS"] },
+                  "requiredEarnings": { "type": "number", "minimum": 0 },
+                  "badge": { "type": "string" },
+                  "rewards": { "type": "array", "items": { "type": "object" } },
+                  "isActive": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Anchor level updated successfully" }, "404": { "description": "Not found" } }
+      },
+      "delete": {
+        "summary": "Delete an anchor level (Admin)",
+        "tags": ["Anchor Levels"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Deleted successfully" }, "404": { "description": "Not found" } }
+      }
+    },
+    "/anchor-levels/admin/claims": {
+      "get": {
+        "summary": "Track claimed/unclaimed anchor rewards across listeners (Admin)",
+        "tags": ["Anchor Levels"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "query", "name": "page", "schema": { "type": "integer", "default": 1 } },
+          { "in": "query", "name": "limit", "schema": { "type": "integer", "default": 10, "maximum": 100 } },
+          { "in": "query", "name": "userId", "schema": { "type": "string" } },
+          { "in": "query", "name": "status", "schema": { "type": "string", "enum": ["UNCLAIMED", "CLAIMED"] } }
+        ],
+        "responses": { "200": { "description": "Reward claims fetched successfully" }, "403": { "description": "Admin only" } }
+      }
+    },
+    "/withdrawals/bank-accounts": {
+      "post": {
+        "summary": "Add a saved bank account (Bank or UPI)",
+        "tags": ["Withdrawals"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["methodType"],
+                "properties": {
+                  "methodType": { "type": "string", "enum": ["BANK", "UPI"] },
+                  "bankName": { "type": "string", "description": "Required for BANK" },
+                  "accountHolderName": { "type": "string", "description": "Required for BANK" },
+                  "accountNumber": { "type": "string", "description": "Required for BANK (6–18 digits)" },
+                  "ifscCode": { "type": "string", "description": "Required for BANK (e.g. HDFC0001234)" },
+                  "upiId": { "type": "string", "description": "Required for UPI (e.g. name@upi)" },
+                  "payeeName": { "type": "string", "description": "Required for UPI" },
+                  "isDefault": { "type": "boolean", "default": false }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Payment method added successfully" }, "400": { "description": "Invalid IFSC / UPI / fields" } }
+      },
+      "get": {
+        "summary": "List my saved bank accounts",
+        "tags": ["Withdrawals"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Bank accounts fetched successfully" } }
+      }
+    },
+    "/withdrawals/bank-accounts/{id}": {
+      "delete": {
+        "summary": "Delete a saved bank account",
+        "tags": ["Withdrawals"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Deleted successfully" }, "403": { "description": "Not your bank account" }, "404": { "description": "Not found" } }
+      }
+    },
+    "/withdrawals/config": {
+      "get": {
+        "summary": "Get withdrawal config (rate, fee %, minimum)",
+        "tags": ["Withdrawals"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Withdrawal config fetched successfully" } }
+      }
+    },
+    "/withdrawals/quote": {
+      "get": {
+        "summary": "Calculate INR breakdown for a coin amount",
+        "description": "Returns gross INR, fee, and net payout for the requested coins (for the live withdrawal UI).",
+        "tags": ["Withdrawals"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "query", "name": "coins", "required": true, "schema": { "type": "integer", "minimum": 1 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Quote calculated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "coins": { "type": "integer", "example": 1000 },
+                        "ratePerCoin": { "type": "number", "example": 0.1 },
+                        "grossInr": { "type": "number", "example": 100 },
+                        "feePercentage": { "type": "number", "example": 10 },
+                        "feeInr": { "type": "number", "example": 10 },
+                        "netInr": { "type": "number", "example": 90 },
+                        "minWithdrawalCoins": { "type": "integer", "example": 1000 },
+                        "meetsMinimum": { "type": "boolean", "example": true }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/withdrawals": {
+      "post": {
+        "summary": "Request a withdrawal (Listener, KYC-approved)",
+        "description": "Reserves coins from the listener's available balance and creates a PENDING request. Requires user.type LISTENER and kycStatus APPROVED.",
+        "tags": ["Withdrawals"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["coins", "bankAccountId"],
+                "properties": {
+                  "coins": { "type": "integer", "minimum": 1 },
+                  "bankAccountId": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Withdrawal request submitted successfully" },
+          "400": { "description": "Below minimum or insufficient balance" },
+          "403": { "description": "Not a listener / KYC not approved / not your payment method" }
+        }
+      }
+    },
+    "/withdrawals/me": {
+      "get": {
+        "summary": "My withdrawal history (statement)",
+        "tags": ["Withdrawals"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "query", "name": "page", "schema": { "type": "integer", "default": 1 } },
+          { "in": "query", "name": "limit", "schema": { "type": "integer", "default": 10, "maximum": 100 } },
+          { "in": "query", "name": "sortOrder", "schema": { "type": "string", "enum": ["asc", "desc"], "default": "desc" } },
+          { "in": "query", "name": "status", "schema": { "type": "string", "enum": ["PENDING", "APPROVED", "REJECTED", "CANCELLED"] } }
+        ],
+        "responses": { "200": { "description": "Withdrawals fetched successfully" } }
+      }
+    },
+    "/withdrawals/{id}": {
+      "get": {
+        "summary": "Get a withdrawal by id (owner or admin)",
+        "tags": ["Withdrawals"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Withdrawal fetched successfully" }, "403": { "description": "Not owner/admin" }, "404": { "description": "Not found" } }
+      }
+    },
+    "/withdrawals/{id}/cancel": {
+      "post": {
+        "summary": "Cancel a pending withdrawal (refunds coins)",
+        "tags": ["Withdrawals"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Withdrawal cancelled and coins refunded" }, "400": { "description": "Not pending / not found" } }
+      }
+    },
+    "/withdrawals/admin/config": {
+      "put": {
+        "summary": "Update withdrawal config (Admin)",
+        "tags": ["Withdrawals"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "conversionCoins": { "type": "integer", "minimum": 1, "example": 1000 },
+                  "conversionInr": { "type": "number", "minimum": 0, "example": 100 },
+                  "feePercentage": { "type": "number", "minimum": 0, "maximum": 100, "example": 10 },
+                  "minWithdrawalCoins": { "type": "integer", "minimum": 1, "example": 1000 }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Withdrawal config updated successfully" }, "403": { "description": "Admin only" } }
+      }
+    },
+    "/withdrawals/admin": {
+      "get": {
+        "summary": "List all withdrawal requests (Admin)",
+        "tags": ["Withdrawals"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "query", "name": "page", "schema": { "type": "integer", "default": 1 } },
+          { "in": "query", "name": "limit", "schema": { "type": "integer", "default": 10, "maximum": 100 } },
+          { "in": "query", "name": "status", "schema": { "type": "string", "enum": ["PENDING", "APPROVED", "REJECTED", "CANCELLED"] } },
+          { "in": "query", "name": "userId", "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "Withdrawal requests fetched successfully" }, "403": { "description": "Admin only" } }
+      }
+    },
+    "/withdrawals/admin/{id}/approve": {
+      "patch": {
+        "summary": "Approve a withdrawal (Admin)",
+        "tags": ["Withdrawals"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Withdrawal approved successfully" }, "400": { "description": "Already processed" } }
+      }
+    },
+    "/withdrawals/admin/{id}/reject": {
+      "patch": {
+        "summary": "Reject a withdrawal and refund coins (Admin)",
+        "tags": ["Withdrawals"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["reason"],
+                "properties": { "reason": { "type": "string" } }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Withdrawal rejected and coins refunded" }, "400": { "description": "Already processed" } }
+      }
+    },
+    "/referrals/details": {
+      "get": {
+        "summary": "Get my referral code, link, earnings, and commission table",
+        "description": "Returns the invite code, shareable invite link, referral stats, and the per-pack commission table (coins both users earn when a referred friend first buys each pack).",
+        "tags": ["Referrals"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Referral details fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "inviteCode": { "type": "string", "example": "BOY3526" },
+                        "inviteLink": { "type": "string", "example": "https://cornerchat.com/invite?code=BOY3526" },
+                        "referralCount": { "type": "integer", "example": 3 },
+                        "referralEarnings": { "type": "integer", "example": 15000 },
+                        "currentLevel": { "type": "integer", "example": 2 },
+                        "commissionTable": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "_id": { "type": "string" },
+                              "name": { "type": "string", "example": "₹99 pack" },
+                              "price": { "type": "number", "example": 99 },
+                              "referralBonusCoins": { "type": "integer", "example": 5000 }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/referrals/apply": {
+      "post": {
+        "summary": "Apply a referral code after signup",
+        "description": "Links the accounts. Customer-only. The bonus is paid to BOTH users when the referred friend makes their first coin purchase (amount depends on the pack). Can only be used once per account.",
+        "tags": ["Referrals"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["inviteCode"],
+                "properties": {
+                  "inviteCode": { "type": "string", "example": "BOY3526" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Referral linked — bonus unlocks on first coin purchase" },
+          "400": { "description": "Invalid code, own code, already referred, or non-customer account" },
+          "404": { "description": "User not found" }
+        }
+      }
+    },
+    "/referrals/admin/config": {
+      "get": {
+        "summary": "Get referral rewards configuration (Admin)",
+        "tags": ["Referrals"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Referral config fetched successfully" } }
+      },
+      "put": {
+        "summary": "Update referral rewards configuration (Admin)",
+        "tags": ["Referrals"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "referrerRewardCoins": { "type": "number", "minimum": 0, "example": 100 },
+                  "referredRewardCoins": { "type": "number", "minimum": 0, "example": 75 },
+                  "inviteLinkPrefix": { "type": "string", "example": "https://cornerchat.com/invite?code=" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Referral config updated successfully" }, "403": { "description": "Admin only" } }
       }
     },
     "/feedback": {
