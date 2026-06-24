@@ -3,7 +3,7 @@ import listenerController from '../controllers/listener.controller.js';
 import { authenticate, restrictTo } from '../middlewares/auth.middleware.js';
 import { uploadKYCDocuments, uploadIntroVideo, processAndUploadImage } from '../middlewares/upload.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
-import { updateListenerProfileSchema, updateRatesSchema, updateAvailabilitySchema, updateKycStatusSchema } from '../validators/listener.validator.js';
+import { updateListenerProfileSchema, updateRatesSchema, updateAvailabilitySchema, updateKycStatusSchema, dashboardOverviewQuerySchema, dashboardSessionsQuerySchema, homeListenersQuerySchema } from '../validators/listener.validator.js';
 
 const router = express.Router();
 
@@ -23,6 +23,14 @@ router.put('/rates', restrictTo('LISTENER'), validate(updateRatesSchema), listen
 router.put('/availability', restrictTo('LISTENER'), validate(updateAvailabilitySchema), listenerController.updateAvailability);
 
 router.patch('/availability/toggle', restrictTo('LISTENER'), listenerController.toggleAvailability);
+
+// --- DASHBOARD (LISTENER ONLY) ---
+
+router.get('/dashboard', restrictTo('LISTENER'), listenerController.getDashboard);
+
+router.get('/dashboard/overview', restrictTo('LISTENER'), validate(dashboardOverviewQuerySchema), listenerController.getDashboardOverview);
+
+router.get('/dashboard/sessions', restrictTo('LISTENER'), validate(dashboardSessionsQuerySchema), listenerController.getRecentSessions);
 
 // --- ADMIN ONLY ROUTES ---
 

@@ -1,12 +1,29 @@
+import mongoose from 'mongoose';
 import BaseService from './base.service.js';
 import listenerRepository from '../repositories/listener.repository.js';
 import userRepository from '../repositories/user.repository.js';
+import walletRepository from '../repositories/wallet.repository.js';
+import communicationSessionRepository from '../repositories/communication-session.repository.js';
+import giftTransactionRepository from '../repositories/gift-transaction.repository.js';
 import ApiError from '../utils/ApiError.js';
 import { deleteFromS3 } from '../utils/aws.util.js';
 import { getPaginationOptions, formatPaginatedResponse } from '../utils/pagination.util.js';
 import { getCache, setCache, deleteCache, bumpCacheVersion, getCacheVersion } from '../utils/redis.util.js';
+import { getPeriodRange, getChartGrouping, buildSeries, DASHBOARD_TZ } from '../utils/date.util.js';
 import logger from '../utils/logger.util.js';
 import anchorLevelService from './anchor-level.service.js';
+import Language from '../modules/language.model.js';
+
+const round = (n) => Math.round(n || 0);
+
+// Whitelisted sort modes for the user home feed → Mongo sort spec.
+// `featured` (default) surfaces promoted listeners, then the most-followed/top-rated.
+const HOME_SORTS = {
+  featured: { isFeatured: -1, followersCount: -1, avgRating: -1, _id: -1 },
+  popular: { followersCount: -1, totalSessions: -1, avgRating: -1, _id: -1 },
+  rating: { avgRating: -1, totalRatings: -1, _id: -1 },
+  newest: { createdAt: -1, _id: -1 },
+};
 
 class ListenerService extends BaseService {
   constructor() {
@@ -134,6 +151,96 @@ class ListenerService extends BaseService {
     return true;
   }
 
+  /**
+   * USER HOME FEED — active listeners a customer can browse, with search + filters.
+   *
+   * "Active" = KYC APPROVED listener whose user account is neither deleted nor
+   * blocked/disabled by an admin. Results are version-cached in Redis (60s); the
+   * `listeners` cache version is bumped whenever a profile or presence changes,
+   * so the feed self-invalidates without stale availability.
+   *
+   * @param {Object} queryParams
+   * @param {String} [queryParams.q]        Name search (first/last/full name)
+   * @param {String} [queryParams.language] Language ObjectId, name, or code
+   * @param {String} [queryParams.country]  User countryCode (e.g. "IN")
+   * @param {String} [queryParams.status]   ONLINE | OFFLINE | BUSY
+   * @param {Number} [queryParams.minRating] Minimum average rating (0–5)
+   * @param {String} [queryParams.sort]     featured | popular | rating | newest
+   */
+  async getHomeListeners(queryParams = {}) {
+    const { page, limit, skip } = getPaginationOptions(queryParams);
+    const sort = HOME_SORTS[queryParams.sort] || HOME_SORTS.featured;
+
+    // ── Version-scoped cache key (auto-invalidates when `listeners` version bumps) ──
+    const version = await getCacheVersion('listeners');
+    const cacheKey = `listeners:home:v${version}:${JSON.stringify({
+      q: queryParams.q || '',
+      language: queryParams.language || '',
+      country: queryParams.country || '',
+      status: queryParams.status || '',
+      minRating: queryParams.minRating ?? '',
+      sort: queryParams.sort || 'featured',
+      page,
+      limit,
+    })}`;
+
+    const cached = await getCache(cacheKey);
+    if (cached) return cached;
+
+    // ── Resolve language filter (accept ObjectId, name, or code) ──
+    let languageId = null;
+    if (queryParams.language) {
+      if (mongoose.Types.ObjectId.isValid(queryParams.language)) {
+        languageId = new mongoose.Types.ObjectId(queryParams.language);
+      } else {
+        const lang = await Language.findOne({
+          $or: [
+            { name: { $regex: `^${queryParams.language}$`, $options: 'i' } },
+            { code: queryParams.language.toUpperCase() },
+          ],
+        }).select('_id').lean();
+        // Unknown language → guaranteed-empty match instead of ignoring the filter.
+        languageId = lang ? lang._id : new mongoose.Types.ObjectId();
+      }
+    }
+
+    // ── Listener-profile match (indexed fields first) ──
+    const profileMatch = { kycStatus: 'APPROVED' };
+    if (queryParams.status) profileMatch.availability = queryParams.status;
+    if (languageId) profileMatch.languages = languageId;
+    if (queryParams.minRating !== undefined && queryParams.minRating !== '') {
+      profileMatch.avgRating = { $gte: Number(queryParams.minRating) };
+    }
+
+    // ── Joined-user match (active = not deleted, not blocked by admin) ──
+    const userMatch = { 'user.isDeleted': false, 'user.isBlocked': false };
+    if (queryParams.country) {
+      userMatch['user.countryCode'] = queryParams.country.toUpperCase();
+    }
+    if (queryParams.q) {
+      const regex = { $regex: queryParams.q.trim(), $options: 'i' };
+      userMatch.$or = [
+        { 'user.firstName': regex },
+        { 'user.lastName': regex },
+        {
+          $expr: {
+            $regexMatch: {
+              input: { $concat: [{ $ifNull: ['$user.firstName', ''] }, ' ', { $ifNull: ['$user.lastName', ''] }] },
+              regex: queryParams.q.trim(),
+              options: 'i',
+            },
+          },
+        },
+      ];
+    }
+
+    const { total, data } = await this.repository.getHomeListeners(profileMatch, userMatch, sort, skip, limit);
+
+    const response = formatPaginatedResponse(data, total, page, limit);
+    await setCache(cacheKey, response, 60); // 60s — kept fresh by version bumps
+    return response;
+  }
+
   async getAllListeners(queryParams) {
     const { page, limit, skip, sort } = getPaginationOptions(queryParams);
 
@@ -189,6 +296,99 @@ class ListenerService extends BaseService {
 
     // In a real app, send push notification/email to listener here
     return profile;
+  }
+
+  // ─── Dashboard ───────────────────────────────────────────────────
+
+  /**
+   * API 1 — quick card: today's earnings (sessions + gifts) and active minutes.
+   */
+  async getDashboard(userId) {
+    const cacheKey = `listener:dashboard:${userId}`;
+    const cached = await getCache(cacheKey);
+    if (cached) return cached;
+
+    const { start, end } = getPeriodRange('today');
+    const [session, gift] = await Promise.all([
+      communicationSessionRepository.getListenerStats(userId, start, end),
+      giftTransactionRepository.getListenerGiftStats(userId, start, end),
+    ]);
+
+    const data = {
+      todayEarnings: round(session.earnedCoins + gift.giftCoins),
+      activeMinutes: round(session.totalSeconds / 60),
+    };
+
+    await setCache(cacheKey, data, 60);
+    return data;
+  }
+
+  /**
+   * API 2 — overview: period-filtered stat cards + earnings growth chart.
+   * `totalCoins` is the current wallet balance (not period-scoped).
+   */
+  async getDashboardOverview(userId, period = 'today') {
+    const cacheKey = `listener:overview:${userId}:${period}`;
+    const cached = await getCache(cacheKey);
+    if (cached) return cached;
+
+    const { start, end } = getPeriodRange(period);
+    const { format } = getChartGrouping(period);
+
+    const [session, gift, wallet, sessionBuckets, giftBuckets] = await Promise.all([
+      communicationSessionRepository.getListenerStats(userId, start, end),
+      giftTransactionRepository.getListenerGiftStats(userId, start, end),
+      walletRepository.findByUserId(userId),
+      communicationSessionRepository.getEarningsByBucket(userId, start, end, format, DASHBOARD_TZ),
+      giftTransactionRepository.getGiftEarningsByBucket(userId, start, end, format, DASHBOARD_TZ),
+    ]);
+
+    // Merge session + gift earnings per bucket label, then build a gap-filled series.
+    const merged = new Map();
+    for (const b of [...sessionBuckets, ...giftBuckets]) {
+      merged.set(String(b._id), (merged.get(String(b._id)) || 0) + (b.value || 0));
+    }
+    const growth = buildSeries(period, [...merged].map(([_id, value]) => ({ _id, value })));
+
+    const data = {
+      period,
+      stats: {
+        coinsEarned: round(session.earnedCoins + gift.giftCoins),
+        totalCoins: wallet?.coinBalance || 0,
+        minutes: round(session.totalSeconds / 60),
+        gifts: { count: gift.giftCount || 0, coins: round(gift.giftCoins) },
+      },
+      growth,
+    };
+
+    await setCache(cacheKey, data, 60);
+    return data;
+  }
+
+  /**
+   * Recent sessions for the listener, period-filtered + paginated.
+   */
+  async getRecentSessions(userId, query = {}) {
+    const { page, limit, skip, sort } = getPaginationOptions({
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+      ...query,
+    });
+
+    const { start, end } = getPeriodRange(query.period || 'today');
+    const matchQuery = {
+      listenerId: new mongoose.Types.ObjectId(userId),
+      createdAt: { $gte: start, $lte: end },
+    };
+
+    const { total, data } = await communicationSessionRepository.getPaginatedListenerSessions(
+      matchQuery,
+      sort,
+      skip,
+      limit,
+    );
+
+    return formatPaginatedResponse(data, total, page, limit);
   }
 }
 

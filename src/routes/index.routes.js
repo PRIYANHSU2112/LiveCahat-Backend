@@ -22,11 +22,15 @@ import feedbackRoutes from './feedback.routes.js';
 import referralRoutes from './referral.routes.js';
 import withdrawalRoutes from './withdrawal.routes.js';
 import anchorLevelRoutes from './anchor-level.routes.js';
+import notificationRoutes from './notification.routes.js';
 import xpRoutes from './xp.routes.js';
+import searchRoutes from './search.routes.js';
+import homeRoutes from './home.routes.js';
 
 const router = express.Router();
 
 router.use('/auth', authRoutes);
+router.use('/home', homeRoutes);
 router.use('/users', userRoutes);
 router.use('/listeners', listenerRoutes);
 router.use('/languages', languageRoutes);
@@ -49,7 +53,9 @@ router.use('/feedback', feedbackRoutes);
 router.use('/referrals', referralRoutes);
 router.use('/withdrawals', withdrawalRoutes);
 router.use('/anchor-levels', anchorLevelRoutes);
+router.use('/notifications', notificationRoutes);
 router.use('/xp', xpRoutes);
+router.use('/search', searchRoutes);
 
 export default router;
 

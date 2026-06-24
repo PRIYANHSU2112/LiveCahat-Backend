@@ -1,5 +1,6 @@
 import Joi from 'joi';
 import { LISTENER_CATEGORIES, AVAILABILITY_STATUSES, KYC_STATUSES } from '../constants/enum.constant.js';
+import { PERIODS } from '../utils/date.util.js';
 
 export const updateListenerProfileSchema = Joi.object({
   body: Joi.object({
@@ -34,5 +35,33 @@ export const updateKycStatusSchema = Joi.object({
       then: Joi.required(),
       otherwise: Joi.forbidden()
     })
+  })
+});
+
+export const homeListenersQuerySchema = Joi.object({
+  query: Joi.object({
+    q: Joi.string().trim().max(100).allow(''),
+    language: Joi.string().trim().max(50), // ObjectId, name, or code
+    country: Joi.string().trim().max(5), // countryCode e.g. "IN"
+    status: Joi.string().valid(...AVAILABILITY_STATUSES), // ONLINE | OFFLINE | BUSY
+    minRating: Joi.number().min(0).max(5),
+    sort: Joi.string().valid('featured', 'popular', 'rating', 'newest').default('featured'),
+    page: Joi.number().integer().min(1),
+    limit: Joi.number().integer().min(1).max(50),
+  }),
+});
+
+export const dashboardOverviewQuerySchema = Joi.object({
+  query: Joi.object({
+    period: Joi.string().valid(...PERIODS).default('today'),
+  })
+});
+
+export const dashboardSessionsQuerySchema = Joi.object({
+  query: Joi.object({
+    period: Joi.string().valid(...PERIODS).default('today'),
+    page: Joi.number().integer().min(1),
+    limit: Joi.number().integer().min(1).max(100),
+    sortOrder: Joi.string().valid('asc', 'desc'),
   })
 });

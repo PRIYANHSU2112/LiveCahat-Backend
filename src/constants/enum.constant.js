@@ -1,4 +1,4 @@
-export const USER_TYPES = ['CUSTOMER', 'LISTENER', 'ADMIN'];
+export const USER_TYPES = ['CUSTOMER', 'LISTENER', 'AGENT', 'ADMIN'];
 export const GENDERS = ['MALE', 'FEMALE', 'OTHER'];
 export const PERMISSIONS = [
   'CREATE_ADMIN', 'UPDATE_ADMIN', 'DELETE_ADMIN', 'VIEW_ADMINS',

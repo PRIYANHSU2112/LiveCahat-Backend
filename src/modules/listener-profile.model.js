@@ -126,6 +126,11 @@ const listenerProfileSchema = new mongoose.Schema(
 listenerProfileSchema.index({ kycStatus: 1 });
 listenerProfileSchema.index({ availability: 1 });
 listenerProfileSchema.index({ isFeatured: 1 });
+// Home-feed: APPROVED listeners are filtered by status and sorted by popularity/rating.
+listenerProfileSchema.index({ kycStatus: 1, availability: 1 });
+listenerProfileSchema.index({ kycStatus: 1, isFeatured: -1, followersCount: -1 });
+listenerProfileSchema.index({ kycStatus: 1, avgRating: -1 });
+listenerProfileSchema.index({ kycStatus: 1, languages: 1 });
 
 const ListenerProfile = mongoose.model('ListenerProfile', listenerProfileSchema);
 export default ListenerProfile;

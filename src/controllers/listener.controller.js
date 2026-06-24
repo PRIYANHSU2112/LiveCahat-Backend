@@ -34,8 +34,25 @@ class ListenerController extends BaseController {
     this.sendResponse(res, 200, `You are now ${profile.availability}`, profile);
   });
 
+  // --- DASHBOARD (LISTENER) ---
+
+  getDashboard = catchAsync(async (req, res) => {
+    const data = await listenerService.getDashboard(req.user._id);
+    this.sendResponse(res, 200, 'Dashboard fetched successfully', data);
+  });
+
+  getDashboardOverview = catchAsync(async (req, res) => {
+    const data = await listenerService.getDashboardOverview(req.user._id, req.query.period);
+    this.sendResponse(res, 200, 'Dashboard overview fetched successfully', data);
+  });
+
+  getRecentSessions = catchAsync(async (req, res) => {
+    const data = await listenerService.getRecentSessions(req.user._id, req.query);
+    this.sendResponse(res, 200, 'Recent sessions fetched successfully', data);
+  });
+
   // --- ADMIN ONLY ROUTES ---
-  
+
   getAllListeners = catchAsync(async (req, res) => {
     const result = await listenerService.getAllListeners(req.query);
     this.sendResponse(res, 200, 'Listeners fetched successfully', result);
