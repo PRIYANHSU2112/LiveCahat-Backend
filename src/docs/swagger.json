@@ -374,6 +374,45 @@
         }
       }
     },
+    "/auth/direct-login": {
+      "post": {
+        "summary": "Authenticate listener directly via magic link token",
+        "description": "Exchanges a unique magic login token for a signed JWT access token and user profile.",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "token"
+                ],
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "example": "3a7b9c..."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Magic link login successful"
+          },
+          "401": {
+            "description": "Invalid token"
+          },
+          "404": {
+            "description": "Token or user not found"
+          }
+        }
+      }
+    },
     "/users/me": {
       "get": {
         "summary": "Get current user profile",
@@ -558,6 +597,157 @@
           },
           "400": {
             "description": "No valid toggle provided"
+          }
+        }
+      }
+    },
+    "/listeners/agent": {
+      "get": {
+        "summary": "Get listeners created by agent",
+        "description": "Returns a paginated list of listeners under the authenticated agent's account.",
+        "tags": [
+          "Listeners"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "kycStatus",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "APPROVED",
+                "UNDER_REVIEW",
+                "REJECTED"
+              ]
+            }
+          },
+          {
+            "name": "availability",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ONLINE",
+                "OFFLINE",
+                "BUSY"
+              ]
+            }
+          },
+          {
+            "name": "profileStatus",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "incomplete",
+                "completed"
+              ]
+            }
+          },
+          {
+            "name": "isBlocked",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Listeners fetched successfully"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create listener by agent",
+        "description": "Agent creates a new listener profile (as a draft/incomplete or submitted/completed status).",
+        "tags": [
+          "Listeners"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "username",
+                  "email"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "example": "Rahul Verma"
+                  },
+                  "username": {
+                    "type": "string",
+                    "example": "rahulv"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "rahul@example.com"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "example": "+91 9999999999"
+                  },
+                  "country": {
+                    "type": "string",
+                    "default": "India",
+                    "example": "India"
+                  },
+                  "profileStatus": {
+                    "type": "string",
+                    "enum": [
+                      "incomplete",
+                      "completed"
+                    ],
+                    "default": "completed"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Listener created successfully"
+          },
+          "400": {
+            "description": "Email, username, or phone already in use"
           }
         }
       }

@@ -67,6 +67,16 @@ class ListenerRepository {
           as: 'languageDetails',
         },
       },
+      // 3b. Resolve the country reference for display.
+      {
+        $lookup: {
+          from: 'countries',
+          localField: 'country',
+          foreignField: '_id',
+          as: 'countryDetails',
+        },
+      },
+      { $unwind: { path: '$countryDetails', preserveNullAndEmptyArrays: true } },
       // 4. Return only what the home card needs (keeps payload small + fast).
       {
         $project: {
@@ -89,6 +99,11 @@ class ListenerRepository {
           'languageDetails.name': 1,
           'languageDetails.code': 1,
           'languageDetails.flagUrl': 1,
+          'countryDetails._id': 1,
+          'countryDetails.name': 1,
+          'countryDetails.code': 1,
+          'countryDetails.dialCode': 1,
+          'countryDetails.flagUrl': 1,
           'user._id': 1,
           'user.firstName': 1,
           'user.lastName': 1,
@@ -115,7 +130,7 @@ class ListenerRepository {
     return { total, data };
   }
 
-  async getPaginatedListeners(matchQuery, sort, skip, limit) {
+  async getPaginatedListeners(matchQuery, sort, skip, limit, userMatch = {}) {
     const pipeline = [
       { $match: matchQuery },
       {
@@ -127,7 +142,7 @@ class ListenerRepository {
         }
       },
       { $unwind: '$user' },
-      { $match: { 'user.isDeleted': false, 'user.isBlocked': false } },
+      { $match: { 'user.isDeleted': false, ...userMatch } },
       { $sort: sort },
       {
         $facet: {
@@ -142,6 +157,135 @@ class ListenerRepository {
     const data = result[0].data;
 
     return { total, data };
+  }
+
+  /**
+   * AGENT PANEL — rich, paginated listeners owned by an agent.
+   *
+   * Single `$facet` round-trip. The expensive country/wallet lookups run INSIDE the
+   * `data` branch, AFTER `$skip`/`$limit`, so they only touch the page-sized set.
+   * The joined user replaces `userId` (populate-style) to match the frontend shape.
+   *
+   * @param {Object} matchQuery  Profile-side filters (createdByAgentId, kycStatus, availability, country, createdAt, totalEarnings range)
+   * @param {Object} userMatch   User-side filters applied after $unwind (isDeleted, isBlocked, currentLevel, name/email search)
+   * @param {Object} sort
+   * @param {Number} skip
+   * @param {Number} limit
+   * @returns {{ total: Number, data: Array }}
+   */
+  async getAgentListenersPaginated(matchQuery, userMatch, sort, skip, limit) {
+    const pipeline = [
+      { $match: matchQuery },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'userId',
+        },
+      },
+      { $unwind: '$userId' },
+      { $match: userMatch },
+      {
+        $facet: {
+          metadata: [{ $count: 'total' }],
+          data: [
+            { $sort: sort },
+            { $skip: skip },
+            { $limit: limit },
+            {
+              $lookup: {
+                from: 'countries',
+                localField: 'country',
+                foreignField: '_id',
+                as: 'country',
+              },
+            },
+            { $unwind: { path: '$country', preserveNullAndEmptyArrays: true } },
+            {
+              $lookup: {
+                from: 'wallets',
+                localField: 'userId._id',
+                foreignField: 'userId',
+                as: 'wallet',
+              },
+            },
+            { $unwind: { path: '$wallet', preserveNullAndEmptyArrays: true } },
+            {
+              $project: {
+                _id: 1,
+                createdAt: 1,
+                anchorLevel: 1,
+                availability: 1,
+                profileStatus: 1,
+                kycStatus: 1,
+                magicLoginToken: 1,
+                totalEarnings: 1,
+                availableBalance: 1,
+                totalSessions: 1,
+                giftsReceivedCount: 1,
+                'userId._id': 1,
+                'userId.firstName': 1,
+                'userId.lastName': 1,
+                'userId.username': 1,
+                'userId.email': 1,
+                'userId.mobileNumber': 1,
+                'userId.profileImage': 1,
+                'userId.currentLevel': 1,
+                'userId.isBlocked': 1,
+                'country._id': 1,
+                'country.name': 1,
+                'country.code': 1,
+                'country.flagUrl': 1,
+                // Money columns (denormalized — see service for final mapping)
+                wallet: { $ifNull: ['$wallet.coinBalance', 0] },
+                recharge: { $ifNull: ['$wallet.totalRecharge', 0] },
+                earnings: { $ifNull: ['$totalEarnings', 0] },
+                revenue: { $ifNull: ['$totalEarnings', 0] },
+                gifts: { $ifNull: ['$giftsReceivedCount', 0] },
+                level: { $ifNull: ['$userId.currentLevel', 1] },
+              },
+            },
+          ],
+        },
+      },
+    ];
+
+    const result = await this.aggregate(pipeline);
+    const total = result[0]?.metadata[0]?.total || 0;
+    const data = result[0]?.data || [];
+
+    return { total, data };
+  }
+
+  /**
+   * AGENT PANEL — KPI stat cards in one round-trip.
+   * Counts are derived from the listener profile (availability is kept in sync by
+   * the presence service, so no per-row Redis lookups are needed for the cards).
+   *
+   * @param {mongoose.Types.ObjectId} agentId
+   * @returns {{ total: Number, active: Number, onlineNow: Number, pendingVerification: Number }}
+   */
+  async getAgentStats(agentId) {
+    const [result] = await this.aggregate([
+      { $match: { createdByAgentId: agentId } },
+      {
+        $facet: {
+          total: [{ $count: 'n' }],
+          active: [{ $match: { kycStatus: 'APPROVED' } }, { $count: 'n' }],
+          onlineNow: [{ $match: { availability: 'ONLINE' } }, { $count: 'n' }],
+          pendingVerification: [{ $match: { kycStatus: 'PENDING' } }, { $count: 'n' }],
+        },
+      },
+    ]);
+
+    const pick = (arr) => (arr && arr[0] ? arr[0].n : 0);
+    return {
+      total: pick(result?.total),
+      active: pick(result?.active),
+      onlineNow: pick(result?.onlineNow),
+      pendingVerification: pick(result?.pendingVerification),
+    };
   }
 }
 

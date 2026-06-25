@@ -159,6 +159,7 @@ class GiftService {
         }
         listenerProfile.availableBalance += earningCoins;
         listenerProfile.totalEarnings += earningCoins;
+        listenerProfile.giftsReceivedCount = (listenerProfile.giftsReceivedCount || 0) + 1;
         await listenerProfile.save({ session });
 
         // Create coin ledger transaction for sender
@@ -219,6 +220,7 @@ class GiftService {
           }
           listenerProfile.availableBalance += earningCoins;
           listenerProfile.totalEarnings += earningCoins;
+          listenerProfile.giftsReceivedCount = (listenerProfile.giftsReceivedCount || 0) + 1;
           await listenerProfile.save({ session });
 
           transactionType = 'ADMIN_TO_LISTENER';

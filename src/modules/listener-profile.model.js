@@ -27,6 +27,13 @@ const listenerProfileSchema = new mongoose.Schema(
         ref: 'Language',
       },
     ],
+    // Mirrors the owning user's country so listeners can be filtered by country
+    // without an extra join. Kept in sync when the listener profile is created/updated.
+    country: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Country',
+      default: null,
+    },
     categories: [
       {
         type: String,
@@ -117,6 +124,28 @@ const listenerProfileSchema = new mongoose.Schema(
       default: 0,
       min: 0, // 0 = no anchor level reached yet
     },
+    createdByAgentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    profileStatus: {
+      type: String,
+      enum: ['incomplete', 'completed'],
+      default: 'completed',
+    },
+    magicLoginToken: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+    // Denormalized count of gifts received — powers the agent panel "Gifts" column
+    // without scanning gift transactions per row. Maintained in gift.service.js.
+    giftsReceivedCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
   {
     timestamps: true,
@@ -131,6 +160,11 @@ listenerProfileSchema.index({ kycStatus: 1, availability: 1 });
 listenerProfileSchema.index({ kycStatus: 1, isFeatured: -1, followersCount: -1 });
 listenerProfileSchema.index({ kycStatus: 1, avgRating: -1 });
 listenerProfileSchema.index({ kycStatus: 1, languages: 1 });
+listenerProfileSchema.index({ kycStatus: 1, country: 1 });
+// Agent panel: list + stat cards are always scoped to the owning agent.
+listenerProfileSchema.index({ createdByAgentId: 1 });
+listenerProfileSchema.index({ createdByAgentId: 1, kycStatus: 1 });
+listenerProfileSchema.index({ createdByAgentId: 1, availability: 1 });
 
 const ListenerProfile = mongoose.model('ListenerProfile', listenerProfileSchema);
 export default ListenerProfile;

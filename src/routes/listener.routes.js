@@ -3,11 +3,16 @@ import listenerController from '../controllers/listener.controller.js';
 import { authenticate, restrictTo } from '../middlewares/auth.middleware.js';
 import { uploadKYCDocuments, uploadIntroVideo, processAndUploadImage } from '../middlewares/upload.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
-import { updateListenerProfileSchema, updateRatesSchema, updateAvailabilitySchema, updateKycStatusSchema, dashboardOverviewQuerySchema, dashboardSessionsQuerySchema, homeListenersQuerySchema } from '../validators/listener.validator.js';
+import { updateListenerProfileSchema, updateRatesSchema, updateAvailabilitySchema, updateKycStatusSchema, dashboardOverviewQuerySchema, dashboardSessionsQuerySchema, homeListenersQuerySchema, agentCreateListenerSchema, agentListenersQuerySchema } from '../validators/listener.validator.js';
 
 const router = express.Router();
 
 router.use(authenticate);
+
+// --- AGENT ONLY ROUTES (must precede the LISTENER/CUSTOMER restriction below) ---
+router.get('/agent', restrictTo('AGENT'), validate(agentListenersQuerySchema), listenerController.getAgentListeners);
+router.get('/agent/stats', restrictTo('AGENT'), listenerController.getAgentStats);
+router.post('/agent', restrictTo('AGENT'), validate(agentCreateListenerSchema), listenerController.createListener);
 
 // Listeners can access these
 router.use(restrictTo('LISTENER', 'CUSTOMER')); // Customer can become a listener by creating a profile
@@ -31,6 +36,8 @@ router.get('/dashboard', restrictTo('LISTENER'), listenerController.getDashboard
 router.get('/dashboard/overview', restrictTo('LISTENER'), validate(dashboardOverviewQuerySchema), listenerController.getDashboardOverview);
 
 router.get('/dashboard/sessions', restrictTo('LISTENER'), validate(dashboardSessionsQuerySchema), listenerController.getRecentSessions);
+// -- agent and listener can access --
+
 
 // --- ADMIN ONLY ROUTES ---
 

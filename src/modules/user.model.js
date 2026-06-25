@@ -26,6 +26,12 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    username: {
+      type: String,
+      sparse: true,
+      lowercase: true,
+      trim: true,
+    },
     email: {
       type: String,
       sparse: true,
@@ -40,6 +46,12 @@ const userSchema = new mongoose.Schema(
     countryCode: {
       type: String,
       trim: true,
+    },
+    // Resolved Country reference (set from `countryCode` at register/login time)
+    country: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Country',
+      default: null,
     },
     password: {
       type: String,
@@ -177,6 +189,12 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false, // Ensures the sign-up referral reward is paid out only once
     },
+    commissionPercentage: {
+      type: Number,
+      default: 0.0,
+      min: 0,
+      max: 100,
+    },
     // User preference toggles (notifications, call availability, DND)
     settings: {
       notifications: { type: Boolean, default: true },
@@ -235,6 +253,7 @@ userSchema.index({ isDeleted: 1 });
 userSchema.index({ deviceId: 1 }, { sparse: true });
 userSchema.index({ currentLevel: 1 });
 userSchema.index({ totalXp: -1 });
+userSchema.index({ country: 1 });
 
 const User = mongoose.model('User', userSchema);
 export default User;

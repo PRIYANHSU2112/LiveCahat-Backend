@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt';
 import userRepository from '../repositories/user.repository.js';
+import countryRepository from '../repositories/country.repository.js';
 import User from '../modules/user.model.js';
 import { generateToken } from '../utils/jwt.util.js';
 import { storeOTP, verifyOTP, deleteCache } from '../utils/redis.util.js';
@@ -44,7 +45,7 @@ class AuthService {
   }
 
   async verifyOtp(data) {
-    const { mobileNumber, otp, type, inviteCode } = data;
+    const { mobileNumber, otp, type, countryCode, inviteCode } = data;
 
     const validOtp = await verifyOTP(mobileNumber, otp);
     if (!validOtp) {
@@ -55,7 +56,12 @@ class AuthService {
     let isNewUser = false;
 
     if (!user) {
-      user = await this._createUser({ mobileNumber, type }, inviteCode);
+      // Resolve the country from the dialing code supplied at register time.
+      const country = await countryRepository.findByDialCode(countryCode);
+      user = await this._createUser(
+        { mobileNumber, type, countryCode, country: country?._id || null },
+        inviteCode
+      );
       isNewUser = true;
     } else {
       if (user.isBlocked) throw new ApiError(403, 'Your account is blocked.');
@@ -91,7 +97,7 @@ class AuthService {
     return { token, user, isNewUser };
   }
 
-  async linkAccount({ userId, mobileNumber, otp }) {
+  async linkAccount({ userId, mobileNumber, otp, countryCode }) {
     const validOtp = await verifyOTP(mobileNumber, otp);
     if (!validOtp) throw new ApiError(401, 'Invalid OTP');
 
@@ -100,7 +106,14 @@ class AuthService {
       throw new ApiError(409, 'This phone number is already linked to another account.');
     }
 
-    const user = await userRepository.updateById(userId, { mobileNumber, isGuest: false });
+    const updatePayload = { mobileNumber, isGuest: false };
+    if (countryCode) {
+      const country = await countryRepository.findByDialCode(countryCode);
+      updatePayload.countryCode = countryCode;
+      updatePayload.country = country?._id || null;
+    }
+
+    const user = await userRepository.updateById(userId, updatePayload);
     await deleteCache(`auth:user:${userId}`);
     return { user };
   }
@@ -124,6 +137,23 @@ class AuthService {
     user.password = undefined;
 
     return { token, user };
+  }
+
+  async directLogin({ token }) {
+    if (!token) throw new ApiError(400, 'Token is required');
+
+    const ListenerProfile = (await import('../modules/listener-profile.model.js')).default;
+    const profile = await ListenerProfile.findOne({ magicLoginToken: token });
+    if (!profile) throw new ApiError(404, 'Invalid magic login token');
+
+    const user = await userRepository.findById(profile.userId);
+    if (!user) throw new ApiError(404, 'User associated with this token not found');
+
+    if (user.isBlocked) throw new ApiError(403, 'Your account has been blocked.');
+    if (user.isDeleted) throw new ApiError(403, 'Your account has been deleted.');
+
+    const jwtToken = generateToken({ id: user._id, type: user.type });
+    return { token: jwtToken, user };
   }
 }
 

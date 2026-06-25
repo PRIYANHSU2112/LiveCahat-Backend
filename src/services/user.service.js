@@ -16,7 +16,7 @@ class UserService extends BaseService {
     const cachedUser = await getCache(cacheKey);
     if (cachedUser) return cachedUser;
 
-    const user = await this.repository.findById(userId);
+    const user = await this.repository.findById(userId, '', 'country');
     if (user) await setCache(cacheKey, user, 300); // 5 minutes cache
     return user;
   }
@@ -167,6 +167,32 @@ class UserService extends BaseService {
     ]);
     
     return listenerUser;
+  }
+
+  async createAgentUser(data) {
+    const existingUser = await this.repository.findOne({ email: data.email });
+    if (existingUser) {
+      throw new ApiError(400, 'Email already in use');
+    }
+
+    const agent = await this.repository.create({
+      ...data,
+      type: 'AGENT'
+    });
+
+    await bumpCacheVersion('users');
+    
+    agent.password = undefined;
+    return agent;
+  }
+
+  async updateAgentCommission(agentId, commissionPercentage) {
+    const agent = await this.repository.updateById(agentId, { commissionPercentage });
+    if (!agent || agent.type !== 'AGENT') {
+      throw new ApiError(404, 'Agent not found');
+    }
+    await bumpCacheVersion('users');
+    return agent;
   }
 }
 

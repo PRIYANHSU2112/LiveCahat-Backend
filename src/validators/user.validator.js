@@ -28,7 +28,7 @@ export const queryUserSchema = Joi.object({
     search: Joi.string().allow('', null),
     sortBy: Joi.string().default('createdAt'),
     sortOrder: Joi.string().valid('asc', 'desc').default('desc'),
-    type: Joi.string().valid('CUSTOMER', 'LISTENER', 'ADMIN'),
+    type: Joi.string().valid('CUSTOMER', 'LISTENER', 'ADMIN', 'AGENT'),
     isBlocked: Joi.boolean(),
   })
 });
@@ -57,5 +57,16 @@ export const createListenerSchema = Joi.object({
     mobileNumber: Joi.string().required().trim(),
     dateOfBirth: Joi.date().iso().max(new Date(Date.now() - 18 * 365.25 * 24 * 60 * 60 * 1000)).message('Listener must be at least 18 years old').required(),
     gender: Joi.string().valid(...GENDERS).required(),
+  })
+});
+
+export const createAgentSchema = Joi.object({
+  body: Joi.object({
+    firstName: Joi.string().required().trim(),
+    lastName: Joi.string().required().trim(),
+    email: Joi.string().email().required().trim().lowercase(),
+    password: Joi.string().min(6).required(),
+    mobileNumber: Joi.string().required().trim(),
+    commissionPercentage: Joi.number().min(0).max(100).default(0),
   })
 });

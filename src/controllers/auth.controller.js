@@ -28,6 +28,11 @@ class AuthController extends BaseController {
     const { user } = await authService.linkAccount({ userId: req.user._id, ...req.body });
     this.sendResponse(res, 200, 'Phone number linked successfully', { user });
   });
+
+  directLogin = catchAsync(async (req, res) => {
+    const { token, user } = await authService.directLogin(req.body);
+    this.sendResponse(res, 200, 'Magic link login successful', { token, user });
+  });
 }
 
 export default new AuthController();

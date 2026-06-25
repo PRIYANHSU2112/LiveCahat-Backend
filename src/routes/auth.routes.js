@@ -11,5 +11,6 @@ router.post('/verify-otp', validate(verifyOtpSchema), authController.verifyOtp);
 router.post('/admin-login', validate(adminLoginSchema), authController.adminLogin);
 router.post('/guest-login', validate(guestLoginSchema), authController.guestLogin);
 router.post('/link-account', authenticate, validate(linkAccountSchema), authController.linkAccount);
+router.post('/direct-login', authController.directLogin);
 
 export default router;

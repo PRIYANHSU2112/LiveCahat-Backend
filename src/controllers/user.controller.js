@@ -62,6 +62,16 @@ class UserController extends BaseController {
     const listener = await userService.createListenerUser(req.body);
     this.sendResponse(res, 201, 'Listener created successfully', listener);
   });
+
+  createAgent = catchAsync(async (req, res) => {
+    const agent = await userService.createAgentUser(req.body);
+    this.sendResponse(res, 201, 'Agent created successfully', agent);
+  });
+
+  updateAgentCommission = catchAsync(async (req, res) => {
+    const agent = await userService.updateAgentCommission(req.params.id, req.body.commissionPercentage);
+    this.sendResponse(res, 200, 'Agent commission updated successfully', agent);
+  });
 }
 
 export default new UserController();

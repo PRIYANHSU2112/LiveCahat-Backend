@@ -13,6 +13,7 @@ import { getPeriodRange, getChartGrouping, buildSeries, DASHBOARD_TZ } from '../
 import logger from '../utils/logger.util.js';
 import anchorLevelService from './anchor-level.service.js';
 import Language from '../modules/language.model.js';
+import countryRepository from '../repositories/country.repository.js';
 
 const round = (n) => Math.round(n || 0);
 
@@ -48,7 +49,10 @@ class ListenerService extends BaseService {
     if (profile) {
       profile = await this.repository.updateById(profile._id, data);
     } else {
-      profile = await this.repository.create({ ...data, userId });
+      // Mirror the user's country onto the listener profile so listeners can be
+      // filtered by country without an extra join on the home/search feeds.
+      const user = await userRepository.findById(userId, 'country');
+      profile = await this.repository.create({ ...data, userId, country: user?.country || null });
       // Update user type to LISTENER if it was CUSTOMER
       await userRepository.updateById(userId, { type: 'LISTENER' });
       userCacheDelete = deleteCache(`user:${userId}`); // invalidate user cache too
@@ -204,19 +208,33 @@ class ListenerService extends BaseService {
       }
     }
 
+    // ── Resolve country filter (accept ObjectId, ISO code, dial code, or name) ──
+    let countryId = null;
+    if (queryParams.country) {
+      const c = queryParams.country.trim();
+      if (mongoose.Types.ObjectId.isValid(c)) {
+        countryId = new mongoose.Types.ObjectId(c);
+      } else {
+        const country =
+          (await countryRepository.findByCode(c)) ||
+          (await countryRepository.findByDialCode(c)) ||
+          (await countryRepository.findOne({ name: { $regex: `^${c}$`, $options: 'i' } }));
+        // Unknown country → guaranteed-empty match instead of ignoring the filter.
+        countryId = country ? country._id : new mongoose.Types.ObjectId();
+      }
+    }
+
     // ── Listener-profile match (indexed fields first) ──
     const profileMatch = { kycStatus: 'APPROVED' };
     if (queryParams.status) profileMatch.availability = queryParams.status;
     if (languageId) profileMatch.languages = languageId;
+    if (countryId) profileMatch.country = countryId;
     if (queryParams.minRating !== undefined && queryParams.minRating !== '') {
       profileMatch.avgRating = { $gte: Number(queryParams.minRating) };
     }
 
     // ── Joined-user match (active = not deleted, not blocked by admin) ──
     const userMatch = { 'user.isDeleted': false, 'user.isBlocked': false };
-    if (queryParams.country) {
-      userMatch['user.countryCode'] = queryParams.country.toUpperCase();
-    }
     if (queryParams.q) {
       const regex = { $regex: queryParams.q.trim(), $options: 'i' };
       userMatch.$or = [
@@ -247,8 +265,15 @@ class ListenerService extends BaseService {
     const matchQuery = {};
     if (queryParams.kycStatus) matchQuery.kycStatus = queryParams.kycStatus;
     if (queryParams.availability) matchQuery.availability = queryParams.availability;
+    if (queryParams.createdByAgentId) matchQuery.createdByAgentId = queryParams.createdByAgentId;
+    if (queryParams.profileStatus) matchQuery.profileStatus = queryParams.profileStatus;
 
-    const { total, data } = await this.repository.getPaginatedListeners(matchQuery, sort, skip, limit);
+    const userMatch = {};
+    if (queryParams.isBlocked !== undefined) {
+      userMatch['user.isBlocked'] = queryParams.isBlocked === 'true';
+    }
+
+    const { total, data } = await this.repository.getPaginatedListeners(matchQuery, sort, skip, limit, userMatch);
 
     const { default: presenceService } = await import('./presence.service.js');
     const ListenerProfile = (await import('../modules/listener-profile.model.js')).default;
@@ -276,6 +301,133 @@ class ListenerService extends BaseService {
 
     const response = formatPaginatedResponse(updatedData, total, page, limit);
     return response;
+  }
+
+  // ─── Agent panel ─────────────────────────────────────────────────
+
+  /**
+   * Overlay live Redis presence onto agent rows (read-only — no DB write-back).
+   * Sets `online` (bool) and refreshes `availability` for display.
+   */
+  async _overlayPresence(docs) {
+    if (!docs.length) return docs;
+    const { default: presenceService } = await import('./presence.service.js');
+    return Promise.all(
+      docs.map(async (doc) => {
+        const status = await presenceService.getStatus(doc.userId?._id?.toString() || doc.userId);
+        return { ...doc, availability: status, online: status !== 'OFFLINE' };
+      })
+    );
+  }
+
+  /**
+   * AGENT PANEL — paginated listeners owned by the agent, with search + filters.
+   * Heavy aggregation is version-cached (30s); live presence is overlaid on every
+   * return so the Online column stays fresh without re-querying Mongo.
+   *
+   * @param {String} agentId  req.user._id of the AGENT
+   * @param {Object} queryParams  search, dateFrom/dateTo, country, kycStatus,
+   *   accountStatus, level, liveStatus, profileStatus, minRevenue/maxRevenue, page, limit, sort
+   */
+  async getAgentListeners(agentId, queryParams = {}) {
+    const { page, limit, skip, sort } = getPaginationOptions(queryParams);
+    const agentObjectId = new mongoose.Types.ObjectId(agentId);
+
+    // ── Version-scoped cache key (auto-invalidates on `listeners` version bumps) ──
+    const version = await getCacheVersion('listeners');
+    const cacheKey = `agent_listeners:v${version}:${agentId}:${JSON.stringify({
+      ...queryParams,
+      page,
+      limit,
+    })}`;
+
+    const cached = await getCache(cacheKey);
+    if (cached) {
+      return { ...cached, docs: await this._overlayPresence(cached.docs) };
+    }
+
+    // ── Resolve country filter (ObjectId / ISO code / name) ──
+    let countryId;
+    if (queryParams.country && queryParams.country !== 'All') {
+      const c = queryParams.country.trim();
+      if (mongoose.Types.ObjectId.isValid(c)) {
+        countryId = new mongoose.Types.ObjectId(c);
+      } else {
+        const country =
+          (await countryRepository.findByCode(c)) ||
+          (await countryRepository.findOne({ name: { $regex: `^${c}$`, $options: 'i' } }));
+        countryId = country ? country._id : new mongoose.Types.ObjectId(); // unknown → empty
+      }
+    }
+
+    // ── Profile-side match (indexed; createdByAgentId scopes to this agent) ──
+    const matchQuery = { createdByAgentId: agentObjectId };
+    if (queryParams.kycStatus) matchQuery.kycStatus = queryParams.kycStatus;
+    if (queryParams.liveStatus) matchQuery.availability = queryParams.liveStatus;
+    if (queryParams.profileStatus) matchQuery.profileStatus = queryParams.profileStatus;
+    if (countryId) matchQuery.country = countryId;
+
+    if (queryParams.dateFrom || queryParams.dateTo) {
+      matchQuery.createdAt = {};
+      if (queryParams.dateFrom) matchQuery.createdAt.$gte = new Date(queryParams.dateFrom);
+      if (queryParams.dateTo) matchQuery.createdAt.$lte = new Date(queryParams.dateTo);
+    }
+
+    // Revenue range filters the denormalized earnings field.
+    if (queryParams.minRevenue !== undefined || queryParams.maxRevenue !== undefined) {
+      matchQuery.totalEarnings = {};
+      if (queryParams.minRevenue !== undefined) matchQuery.totalEarnings.$gte = Number(queryParams.minRevenue);
+      if (queryParams.maxRevenue !== undefined) matchQuery.totalEarnings.$lte = Number(queryParams.maxRevenue);
+    }
+
+    // accountStatus: active = APPROVED & !blocked, blocked = user blocked, pending = KYC PENDING
+    if (queryParams.accountStatus === 'pending') matchQuery.kycStatus = 'PENDING';
+    else if (queryParams.accountStatus === 'active') matchQuery.kycStatus = 'APPROVED';
+
+    // ── User-side match (after $unwind 'userId') ──
+    const userMatch = { 'userId.isDeleted': false };
+    if (queryParams.accountStatus === 'active') userMatch['userId.isBlocked'] = false;
+    else if (queryParams.accountStatus === 'blocked') userMatch['userId.isBlocked'] = true;
+    if (queryParams.level && queryParams.level !== 'All') {
+      userMatch['userId.currentLevel'] = Number(queryParams.level);
+    }
+    if (queryParams.search) {
+      const regex = { $regex: queryParams.search.trim(), $options: 'i' };
+      userMatch.$or = [
+        { 'userId.firstName': regex },
+        { 'userId.lastName': regex },
+        { 'userId.username': regex },
+        { 'userId.email': regex },
+        { 'userId.mobileNumber': regex },
+      ];
+    }
+
+    const { total, data } = await this.repository.getAgentListenersPaginated(
+      matchQuery,
+      userMatch,
+      sort,
+      skip,
+      limit
+    );
+
+    const response = formatPaginatedResponse(data, total, page, limit);
+    await setCache(cacheKey, response, 30); // 30s; presence overlaid fresh on read
+    return { ...response, docs: await this._overlayPresence(response.docs) };
+  }
+
+  /**
+   * AGENT PANEL — KPI stat cards (Total / Active / Online Now / Pending Verification).
+   */
+  async getAgentStats(agentId) {
+    const version = await getCacheVersion('listeners');
+    const cacheKey = `agent_stats:v${version}:${agentId}`;
+
+    const cached = await getCache(cacheKey);
+    if (cached) return cached;
+
+    const stats = await this.repository.getAgentStats(new mongoose.Types.ObjectId(agentId));
+    await setCache(cacheKey, stats, 30);
+    return stats;
   }
 
   async approveOrRejectListener(listenerId, data) {
@@ -389,6 +541,72 @@ class ListenerService extends BaseService {
     );
 
     return formatPaginatedResponse(data, total, page, limit);
+  }
+
+  async createListenerByAgent(agentId, data) {
+    const { name, username, email, phone, country, profileStatus } = data;
+
+    // Validate unique email
+    const existingEmail = await userRepository.findOne({ email });
+    if (existingEmail) throw new ApiError(400, 'Email already in use');
+
+    // Validate unique username
+    const existingUsername = await userRepository.findOne({ username });
+    if (existingUsername) throw new ApiError(400, 'Username already in use');
+
+    // Validate unique phone
+    if (phone) {
+      const existingPhone = await userRepository.findOne({ mobileNumber: phone });
+      if (existingPhone) throw new ApiError(400, 'Phone number already in use');
+    }
+
+    // Split name
+    const nameParts = name.trim().split(' ');
+    const firstName = nameParts[0] || 'Listener';
+    const lastName = nameParts.slice(1).join(' ') || '';
+
+    // Create user with a secure temporary password
+    const crypto = await import('crypto');
+    const tempPassword = crypto.randomBytes(16).toString('hex');
+
+    // Resolve country
+    const CountryModel = (await import('../modules/country.model.js')).default;
+    const resolvedCountry = await CountryModel.findOne({ name: { $regex: `^${country}$`, $options: 'i' } });
+
+    const user = await userRepository.create({
+      firstName,
+      lastName,
+      username,
+      email,
+      mobileNumber: phone || undefined,
+      password: tempPassword,
+      type: 'LISTENER',
+      country: resolvedCountry?._id || null,
+      countryCode: resolvedCountry?.code || undefined,
+      profileCompleted: profileStatus === 'completed'
+    });
+
+    const magicLoginToken = crypto.randomBytes(32).toString('hex');
+
+    const profile = await this.repository.create({
+      userId: user._id,
+      createdByAgentId: agentId,
+      profileStatus,
+      kycStatus: 'PENDING',
+      magicLoginToken,
+      country: resolvedCountry?._id || null
+    });
+
+    await Promise.all([
+      bumpCacheVersion('users'),
+      bumpCacheVersion('listeners')
+    ]);
+
+    return {
+      user,
+      profile,
+      magicLoginToken
+    };
   }
 }
 

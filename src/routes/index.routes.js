@@ -26,10 +26,12 @@ import notificationRoutes from './notification.routes.js';
 import xpRoutes from './xp.routes.js';
 import searchRoutes from './search.routes.js';
 import homeRoutes from './home.routes.js';
+import countryRoutes from './country.routes.js';
 
 const router = express.Router();
 
 router.use('/auth', authRoutes);
+router.use('/countries', countryRoutes);
 router.use('/home', homeRoutes);
 router.use('/users', userRoutes);
 router.use('/listeners', listenerRoutes);

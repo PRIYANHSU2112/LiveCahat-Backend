@@ -18,6 +18,7 @@ import { responseTimeTracker } from './middlewares/response-time.middleware.js';
 import { seedSuperAdmin } from './seeders/super-admin.seeder.js';
 import { swaggerUiOptions } from './docs/swagger-ui.options.js';
 import { seedXpSystem } from './seeders/xp.seeder.js';
+import { seedCountries } from './seeders/country.seeder.js';
 
 const app = express();
 
@@ -26,6 +27,7 @@ const app = express();
 // ==========================================
 seedSuperAdmin();
 seedXpSystem();
+seedCountries();
 
 // 1. GLOBAL MIDDLEWARES
 app.use(helmet()); // Set security HTTP headers
@@ -70,6 +72,7 @@ app.get('/test', (req, res) => {
 
 // 3. ROUTES
 app.use('/api/v1', routes);
+app.use('/api', routes);
 
 // 4. UNHANDLED ROUTES
 app.all('*', (req, res, next) => {

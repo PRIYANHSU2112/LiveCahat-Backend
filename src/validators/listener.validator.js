@@ -65,3 +65,35 @@ export const dashboardSessionsQuerySchema = Joi.object({
     sortOrder: Joi.string().valid('asc', 'desc'),
   })
 });
+
+export const agentListenersQuerySchema = Joi.object({
+  query: Joi.object({
+    search: Joi.string().trim().max(100).allow(''),
+    dateFrom: Joi.date().iso(),
+    dateTo: Joi.date().iso(),
+    country: Joi.string().trim().max(50), // ObjectId, ISO code, or name
+    kycStatus: Joi.string().valid(...KYC_STATUSES),
+    accountStatus: Joi.string().valid('active', 'blocked', 'pending'),
+    level: Joi.number().integer().min(1),
+    liveStatus: Joi.string().valid(...AVAILABILITY_STATUSES), // ONLINE | OFFLINE | BUSY
+    profileStatus: Joi.string().valid('incomplete', 'completed'),
+    minRevenue: Joi.number().min(0),
+    maxRevenue: Joi.number().min(0),
+    page: Joi.number().integer().min(1),
+    limit: Joi.number().integer().min(1).max(100),
+    sortBy: Joi.string().valid('createdAt', 'totalEarnings', 'availability', 'kycStatus'),
+    sortOrder: Joi.string().valid('asc', 'desc'),
+  }),
+});
+
+export const agentCreateListenerSchema = Joi.object({
+  body: Joi.object({
+    name: Joi.string().required().trim(),
+    username: Joi.string().required().trim(),
+    email: Joi.string().email().required().trim().lowercase(),
+    phone: Joi.string().trim().allow('', null),
+    country: Joi.string().trim().default('India'),
+    profileStatus: Joi.string().valid('incomplete', 'completed').default('completed'),
+  })
+});
+

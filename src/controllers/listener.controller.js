@@ -62,6 +62,21 @@ class ListenerController extends BaseController {
     const profile = await listenerService.approveOrRejectListener(req.params.id, req.body);
     this.sendResponse(res, 200, `Listener KYC ${req.body.kycStatus.toLowerCase()} successfully`, profile);
   });
+
+  createListener = catchAsync(async (req, res) => {
+    const result = await listenerService.createListenerByAgent(req.user._id, req.body);
+    this.sendResponse(res, 201, 'Listener created successfully', result);
+  });
+
+  getAgentListeners = catchAsync(async (req, res) => {
+    const result = await listenerService.getAgentListeners(req.user._id, req.query);
+    this.sendResponse(res, 200, 'Agent listeners fetched successfully', result);
+  });
+
+  getAgentStats = catchAsync(async (req, res) => {
+    const result = await listenerService.getAgentStats(req.user._id);
+    this.sendResponse(res, 200, 'Agent stats fetched successfully', result);
+  });
 }
 
 export default new ListenerController();
