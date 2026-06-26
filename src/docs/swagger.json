@@ -203,9 +203,9 @@
         }
       }
     },
-    "/auth/admin-login": {
+    "/auth/login": {
       "post": {
-        "summary": "Admin login via email and password",
+        "summary": "Unified login for Admin and Agent",
         "tags": [
           "Auth"
         ],
@@ -221,10 +221,12 @@
                 ],
                 "properties": {
                   "email": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "admin@chatcorner.app"
                   },
                   "password": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "admin123"
                   }
                 }
               }
@@ -233,7 +235,13 @@
         },
         "responses": {
           "200": {
-            "description": "Admin login successful"
+            "description": "Login successful"
+          },
+          "401": {
+            "description": "Invalid email or password"
+          },
+          "403": {
+            "description": "Account is blocked or deleted"
           }
         }
       }
@@ -615,37 +623,79 @@
         ],
         "parameters": [
           {
-            "name": "page",
+            "name": "search",
             "in": "query",
+            "description": "Free-text search across listener first/last name, username, email, and mobile number.",
             "schema": {
-              "type": "integer",
-              "default": 1
+              "type": "string"
             }
           },
           {
-            "name": "limit",
+            "name": "dateFrom",
             "in": "query",
+            "description": "Filter listeners created on or after this date (ISO 8601). Matches the profile createdAt.",
             "schema": {
-              "type": "integer",
-              "default": 10
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "dateTo",
+            "in": "query",
+            "description": "Filter listeners created on or before this date (ISO 8601). Matches the profile createdAt.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "description": "Country filter: accepts a Country ObjectId, ISO code (e.g. \"IN\"), or country name.",
+            "schema": {
+              "type": "string"
             }
           },
           {
             "name": "kycStatus",
             "in": "query",
+            "description": "Filter by KYC verification status.",
             "schema": {
               "type": "string",
               "enum": [
                 "PENDING",
-                "APPROVED",
                 "UNDER_REVIEW",
+                "APPROVED",
                 "REJECTED"
               ]
             }
           },
           {
-            "name": "availability",
+            "name": "accountStatus",
             "in": "query",
+            "description": "Account status filter: active (KYC approved & not blocked), blocked (user blocked), or pending (KYC pending).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "blocked",
+                "pending"
+              ]
+            }
+          },
+          {
+            "name": "level",
+            "in": "query",
+            "description": "Filter by the listener's anchor level (0 = no anchor level reached).",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "liveStatus",
+            "in": "query",
+            "description": "Filter by live presence/availability.",
             "schema": {
               "type": "string",
               "enum": [
@@ -658,6 +708,7 @@
           {
             "name": "profileStatus",
             "in": "query",
+            "description": "Filter by profile completion status.",
             "schema": {
               "type": "string",
               "enum": [
@@ -667,14 +718,64 @@
             }
           },
           {
-            "name": "isBlocked",
+            "name": "minRevenue",
             "in": "query",
+            "description": "Minimum total earnings (revenue) of the listener.",
+            "schema": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "maxRevenue",
+            "in": "query",
+            "description": "Maximum total earnings (revenue) of the listener.",
+            "schema": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "Field to sort by.",
             "schema": {
               "type": "string",
               "enum": [
-                "true",
-                "false"
+                "createdAt",
+                "totalEarnings",
+                "availability",
+                "kycStatus"
               ]
+            }
+          },
+          {
+            "name": "sortOrder",
+            "in": "query",
+            "description": "Sort direction.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "maximum": 100
             }
           }
         ],
@@ -748,6 +849,63 @@
           },
           "400": {
             "description": "Email, username, or phone already in use"
+          }
+        }
+      }
+    },
+    "/listeners/agent/stats": {
+      "get": {
+        "summary": "Get listener stats for agent dashboard",
+        "description": "Returns aggregated statistics (total, active, online, pending) for listeners managed by the authenticated agent.",
+        "tags": [
+          "Listeners"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agent stats fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Agent stats fetched successfully"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "active": {
+                          "type": "integer",
+                          "example": 0
+                        },
+                        "onlineNow": {
+                          "type": "integer",
+                          "example": 0
+                        },
+                        "pendingVerification": {
+                          "type": "integer",
+                          "example": 1
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -5447,8 +5605,8 @@
     },
     "/withdrawals": {
       "post": {
-        "summary": "Request a withdrawal (Listener, KYC-approved)",
-        "description": "Reserves coins from the listener's available balance and creates a PENDING request. Requires user.type LISTENER and kycStatus APPROVED.",
+        "summary": "Request a withdrawal (Listener or Agent)",
+        "description": "Reserves coins and creates a PENDING request. Listeners draw from their earned available balance and must have kycStatus APPROVED; agents draw from their wallet coin balance (no KYC gate). Other user types receive 403.",
         "tags": [
           "Withdrawals"
         ],
@@ -5488,7 +5646,7 @@
             "description": "Below minimum or insufficient balance"
           },
           "403": {
-            "description": "Not a listener / KYC not approved / not your payment method"
+            "description": "Not a listener or agent / KYC not approved / not your payment method"
           }
         }
       }

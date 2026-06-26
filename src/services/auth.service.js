@@ -118,10 +118,10 @@ class AuthService {
     return { user };
   }
 
-  async adminLogin(data) {
+  async login(data) {
     const { email, password } = data;
 
-    const user = await userRepository.findOne({ email, type: 'ADMIN' }, '+password');
+    const user = await userRepository.findOne({ email, type: { $in: ['ADMIN', 'AGENT'] } }, '+password');
     if (!user) {
       throw new ApiError(401, 'Invalid email or password');
     }
@@ -131,6 +131,9 @@ class AuthService {
       throw new ApiError(401, 'Invalid email or password');
     }
 
+    if (user.isBlocked) throw new ApiError(403, 'Your account has been blocked.');
+    if (user.isDeleted) throw new ApiError(403, 'Your account has been deleted.');
+
     const token = generateToken({ id: user._id, type: user.type });
 
     // Remove password from response
@@ -138,6 +141,7 @@ class AuthService {
 
     return { token, user };
   }
+
 
   async directLogin({ token }) {
     if (!token) throw new ApiError(400, 'Token is required');

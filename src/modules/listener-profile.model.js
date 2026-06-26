@@ -75,6 +75,12 @@ const listenerProfileSchema = new mongoose.Schema(
       enum: KYC_STATUSES,
       default: 'PENDING',
     },
+    // Timestamp of when KYC was most recently approved (null until first approval).
+    // Powers the agent panel "today approved" / month-over-month approved trend cards.
+    kycApprovedAt: {
+      type: Date,
+      default: null,
+    },
     documentType: {
       type: String,
     },
@@ -165,6 +171,8 @@ listenerProfileSchema.index({ kycStatus: 1, country: 1 });
 listenerProfileSchema.index({ createdByAgentId: 1 });
 listenerProfileSchema.index({ createdByAgentId: 1, kycStatus: 1 });
 listenerProfileSchema.index({ createdByAgentId: 1, availability: 1 });
+// Agent panel stat cards: approved totals + "today approved" are filtered by approval date.
+listenerProfileSchema.index({ createdByAgentId: 1, kycApprovedAt: 1 });
 
 const ListenerProfile = mongoose.model('ListenerProfile', listenerProfileSchema);
 export default ListenerProfile;

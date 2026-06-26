@@ -18,12 +18,13 @@ export const verifyOtpSchema = Joi.object({
   })
 });
 
-export const adminLoginSchema = Joi.object({
+export const loginSchema = Joi.object({
   body: Joi.object({
     email: Joi.string().email().required(),
     password: Joi.string().required(),
   })
 });
+
 
 export const guestLoginSchema = Joi.object({
   body: Joi.object({

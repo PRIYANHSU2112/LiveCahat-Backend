@@ -74,7 +74,7 @@ export const agentListenersQuerySchema = Joi.object({
     country: Joi.string().trim().max(50), // ObjectId, ISO code, or name
     kycStatus: Joi.string().valid(...KYC_STATUSES),
     accountStatus: Joi.string().valid('active', 'blocked', 'pending'),
-    level: Joi.number().integer().min(1),
+    level: Joi.number().integer().min(0), // anchor level (0 = no anchor level reached)
     liveStatus: Joi.string().valid(...AVAILABILITY_STATUSES), // ONLINE | OFFLINE | BUSY
     profileStatus: Joi.string().valid('incomplete', 'completed'),
     minRevenue: Joi.number().min(0),

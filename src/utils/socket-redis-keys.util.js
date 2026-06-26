@@ -59,6 +59,14 @@ export const KEYS = {
 
   /** Grace-period key set on host disconnect (30s TTL). Value: String roomId */
   liveRoomDisconnectGrace: (hostId) => `live_room:disconnect_grace:${hostId}`,
+
+  /**
+   * Daily peak of concurrently-online listeners for an agent (running max).
+   * `dateStr` is YYYY-MM-DD (server local time). Set with a ~48h TTL so the
+   * previous day's peak survives for the agent stats "Peak Today" comparison.
+   * Value: Integer string.
+   */
+  agentPeak: (agentId, dateStr) => `agent_peak:${agentId}:${dateStr}`,
 };
 
 export const PATTERNS = {

@@ -99,6 +99,12 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false
     },
+    // Timestamp of when the user was most recently blocked (null when not blocked).
+    // Powers the agent panel "blocked this month" / month-over-month trend cards.
+    blockedAt: {
+      type: Date,
+      default: null,
+    },
     isDeleted: {
       type: Boolean,
       default: false,

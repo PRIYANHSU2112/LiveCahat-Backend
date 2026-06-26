@@ -14,10 +14,11 @@ class AuthController extends BaseController {
     this.sendResponse(res, 200, isNewUser ? 'User registered successfully' : 'Login successful', { token, user });
   });
 
-  adminLogin = catchAsync(async (req, res) => {
-    const { token, user } = await authService.adminLogin(req.body);
-    this.sendResponse(res, 200, 'Admin login successful', { token, user });
+  login = catchAsync(async (req, res) => {
+    const { token, user } = await authService.login(req.body);
+    this.sendResponse(res, 200, 'Login successful', { token, user });
   });
+
 
   guestLogin = catchAsync(async (req, res) => {
     const { token, user, isNewUser } = await authService.guestLogin(req.body);

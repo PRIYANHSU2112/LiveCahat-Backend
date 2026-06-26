@@ -5,6 +5,8 @@ import { buildBankSnapshot } from './bank-account.service.js';
 import Withdrawal from '../modules/withdrawal.model.js';
 import WithdrawalConfig from '../modules/withdrawal-config.model.js';
 import ListenerProfile from '../modules/listener-profile.model.js';
+import Wallet from '../modules/wallet.model.js';
+import User from '../modules/user.model.js';
 import Notification from '../modules/notification.model.js';
 import ApiError from '../utils/ApiError.js';
 import { getPaginationOptions, formatPaginatedResponse } from '../utils/pagination.util.js';
@@ -73,14 +75,19 @@ class WithdrawalService {
 
   // ─── User: request a withdrawal ─────────────────────────────────
   async requestWithdrawal(user, { coins, bankAccountId }) {
-    if (user.type !== 'LISTENER') {
-      throw new ApiError(403, 'Only listeners can withdraw earnings.');
+    const isListener = user.type === 'LISTENER';
+    const isAgent = user.type === 'AGENT';
+    if (!isListener && !isAgent) {
+      throw new ApiError(403, 'Only listeners and agents can withdraw earnings.');
     }
 
-    const profile = await ListenerProfile.findOne({ userId: user._id }).select('kycStatus availableBalance').lean();
-    if (!profile) throw new ApiError(404, 'Listener profile not found.');
-    if (profile.kycStatus !== 'APPROVED') {
-      throw new ApiError(403, 'Your KYC must be approved before you can withdraw.');
+    // Listeners must have an approved KYC; agents withdraw from their wallet directly.
+    if (isListener) {
+      const profile = await ListenerProfile.findOne({ userId: user._id }).select('kycStatus').lean();
+      if (!profile) throw new ApiError(404, 'Listener profile not found.');
+      if (profile.kycStatus !== 'APPROVED') {
+        throw new ApiError(403, 'Your KYC must be approved before you can withdraw.');
+      }
     }
 
     const config = await this.getConfig();
@@ -99,12 +106,19 @@ class WithdrawalService {
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
-      // Atomic, race-safe debit of the listener's available (earned) balance
-      const debited = await ListenerProfile.findOneAndUpdate(
-        { userId: user._id, availableBalance: { $gte: coins } },
-        { $inc: { availableBalance: -coins } },
-        { new: true, session }
-      );
+      // Atomic, race-safe debit of the withdrawable balance: listeners draw from
+      // their earned (available) balance, agents from their wallet coin balance.
+      const debited = isListener
+        ? await ListenerProfile.findOneAndUpdate(
+            { userId: user._id, availableBalance: { $gte: coins } },
+            { $inc: { availableBalance: -coins } },
+            { new: true, session }
+          )
+        : await Wallet.findOneAndUpdate(
+            { userId: user._id, coinBalance: { $gte: coins } },
+            { $inc: { coinBalance: -coins } },
+            { new: true, session }
+          );
       if (!debited) {
         throw new ApiError(400, 'Insufficient available balance for this withdrawal.');
       }
@@ -175,12 +189,8 @@ class WithdrawalService {
         throw new ApiError(400, 'Withdrawal not found or can no longer be cancelled.');
       }
 
-      // Refund the reserved coins
-      await ListenerProfile.updateOne(
-        { userId },
-        { $inc: { availableBalance: withdrawal.coinsRequested } },
-        { session }
-      );
+      // Refund the reserved coins to the user's correct balance source
+      await this._refundCoins(session, userId, withdrawal.coinsRequested);
 
       await session.commitTransaction();
       session.endSession();
@@ -221,12 +231,22 @@ class WithdrawalService {
         throw new ApiError(400, 'Withdrawal not found or already processed.');
       }
 
-      // Earned coins were already debited at request time; record the payout
-      await ListenerProfile.updateOne(
-        { userId: withdrawal.userId },
-        { $inc: { withdrawnAmount: withdrawal.coinsRequested } },
-        { session }
-      );
+      // Coins were already debited at request time; record the payout against
+      // the correct ledger (listener profile vs agent wallet).
+      const owner = await User.findById(withdrawal.userId).select('type').lean();
+      if (owner?.type === 'LISTENER') {
+        await ListenerProfile.updateOne(
+          { userId: withdrawal.userId },
+          { $inc: { withdrawnAmount: withdrawal.coinsRequested } },
+          { session }
+        );
+      } else {
+        await Wallet.updateOne(
+          { userId: withdrawal.userId },
+          { $inc: { totalWithdrawn: withdrawal.coinsRequested } },
+          { session }
+        );
+      }
 
       await this._notify(
         session,
@@ -260,12 +280,8 @@ class WithdrawalService {
         throw new ApiError(400, 'Withdrawal not found or already processed.');
       }
 
-      // Refund the reserved coins back to the listener's available balance
-      await ListenerProfile.updateOne(
-        { userId: withdrawal.userId },
-        { $inc: { availableBalance: withdrawal.coinsRequested } },
-        { session }
-      );
+      // Refund the reserved coins back to the user's correct balance source
+      await this._refundCoins(session, withdrawal.userId, withdrawal.coinsRequested);
 
       await this._notify(
         session,
@@ -287,6 +303,17 @@ class WithdrawalService {
   }
 
   // ─── Helpers ────────────────────────────────────────────────────
+  // Refund reserved coins to the correct balance source for the withdrawing
+  // user: listeners earn into their ListenerProfile, agents into their Wallet.
+  async _refundCoins(session, userId, coins) {
+    const owner = await User.findById(userId).select('type').lean();
+    if (owner?.type === 'LISTENER') {
+      await ListenerProfile.updateOne({ userId }, { $inc: { availableBalance: coins } }, { session });
+    } else {
+      await Wallet.updateOne({ userId }, { $inc: { coinBalance: coins } }, { session });
+    }
+  }
+
   async _notify(session, userId, title, body) {
     try {
       await Notification.create([{ recipientId: userId, title, body, type: 'PAYOUT_PROCESSED' }], { session });

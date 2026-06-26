@@ -259,22 +259,87 @@ class ListenerRepository {
   }
 
   /**
-   * AGENT PANEL — KPI stat cards in one round-trip.
-   * Counts are derived from the listener profile (availability is kept in sync by
-   * the presence service, so no per-row Redis lookups are needed for the cards).
+   * AGENT PANEL — raw counts for the KPI stat cards in one round-trip.
+   *
+   * Availability counts come straight from the listener profile (kept in sync by
+   * the presence service). Blocked counts require the owning user (`isBlocked` /
+   * `blockedAt`), so the profile is joined to its user. Time-bounded buckets use
+   * the boundaries computed by the caller; the service layer turns these raw
+   * numbers into count/percentage/trend cards.
    *
    * @param {mongoose.Types.ObjectId} agentId
-   * @returns {{ total: Number, active: Number, onlineNow: Number, pendingVerification: Number }}
+   * @param {{ startOfToday: Date, startOfYesterday: Date, startOfThisMonth: Date, startOfLastMonth: Date }} boundaries
+   * @returns {Object} raw counts keyed by bucket name
    */
-  async getAgentStats(agentId) {
+  async getAgentStats(agentId, boundaries) {
+    const { startOfToday, startOfYesterday, startOfThisMonth, startOfLastMonth } = boundaries;
+
     const [result] = await this.aggregate([
       { $match: { createdByAgentId: agentId } },
       {
+        $lookup: {
+          from: 'users',
+          let: { uid: '$userId' },
+          pipeline: [
+            { $match: { $expr: { $eq: ['$_id', '$$uid'] } } },
+            { $project: { isBlocked: 1, blockedAt: 1 } },
+          ],
+          as: 'user',
+        },
+      },
+      { $unwind: '$user' },
+      {
         $facet: {
+          // Roster totals (no comparison)
           total: [{ $count: 'n' }],
-          active: [{ $match: { kycStatus: 'APPROVED' } }, { $count: 'n' }],
-          onlineNow: [{ $match: { availability: 'ONLINE' } }, { $count: 'n' }],
-          pendingVerification: [{ $match: { kycStatus: 'PENDING' } }, { $count: 'n' }],
+          onlineNow: [
+            { $match: { availability: { $in: ['ONLINE', 'BUSY'] } } },
+            { $count: 'n' },
+          ],
+
+          // Availability (no comparison)
+          inSession: [{ $match: { availability: 'BUSY' } }, { $count: 'n' }],
+          idle: [{ $match: { availability: 'ONLINE' } }, { $count: 'n' }],
+
+          // KYC review (no comparison)
+          inReview: [{ $match: { kycStatus: 'UNDER_REVIEW' } }, { $count: 'n' }],
+
+          // Pending — total now vs end of last month (createdAt snapshot)
+          pendingTotal: [{ $match: { kycStatus: 'PENDING' } }, { $count: 'n' }],
+          pendingPrevMonth: [
+            { $match: { kycStatus: 'PENDING', createdAt: { $lt: startOfThisMonth } } },
+            { $count: 'n' },
+          ],
+
+          // Approved — total now vs end of last month + today vs yesterday
+          approvedTotal: [{ $match: { kycStatus: 'APPROVED' } }, { $count: 'n' }],
+          approvedPrevMonth: [
+            { $match: { kycStatus: 'APPROVED', kycApprovedAt: { $lt: startOfThisMonth } } },
+            { $count: 'n' },
+          ],
+          approvedToday: [
+            { $match: { kycStatus: 'APPROVED', kycApprovedAt: { $gte: startOfToday } } },
+            { $count: 'n' },
+          ],
+          approvedYesterday: [
+            { $match: { kycStatus: 'APPROVED', kycApprovedAt: { $gte: startOfYesterday, $lt: startOfToday } } },
+            { $count: 'n' },
+          ],
+
+          // Blocked — total now vs end of last month + this month vs last month
+          blockedTotal: [{ $match: { 'user.isBlocked': true } }, { $count: 'n' }],
+          blockedPrevMonth: [
+            { $match: { 'user.isBlocked': true, 'user.blockedAt': { $lt: startOfThisMonth } } },
+            { $count: 'n' },
+          ],
+          blockedThisMonth: [
+            { $match: { 'user.isBlocked': true, 'user.blockedAt': { $gte: startOfThisMonth } } },
+            { $count: 'n' },
+          ],
+          blockedLastMonth: [
+            { $match: { 'user.isBlocked': true, 'user.blockedAt': { $gte: startOfLastMonth, $lt: startOfThisMonth } } },
+            { $count: 'n' },
+          ],
         },
       },
     ]);
@@ -282,9 +347,20 @@ class ListenerRepository {
     const pick = (arr) => (arr && arr[0] ? arr[0].n : 0);
     return {
       total: pick(result?.total),
-      active: pick(result?.active),
       onlineNow: pick(result?.onlineNow),
-      pendingVerification: pick(result?.pendingVerification),
+      inSession: pick(result?.inSession),
+      idle: pick(result?.idle),
+      inReview: pick(result?.inReview),
+      pendingTotal: pick(result?.pendingTotal),
+      pendingPrevMonth: pick(result?.pendingPrevMonth),
+      approvedTotal: pick(result?.approvedTotal),
+      approvedPrevMonth: pick(result?.approvedPrevMonth),
+      approvedToday: pick(result?.approvedToday),
+      approvedYesterday: pick(result?.approvedYesterday),
+      blockedTotal: pick(result?.blockedTotal),
+      blockedPrevMonth: pick(result?.blockedPrevMonth),
+      blockedThisMonth: pick(result?.blockedThisMonth),
+      blockedLastMonth: pick(result?.blockedLastMonth),
     };
   }
 }

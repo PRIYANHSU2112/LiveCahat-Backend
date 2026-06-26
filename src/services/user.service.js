@@ -112,6 +112,9 @@ class UserService extends BaseService {
     if (!user) throw new ApiError(404, 'User not found');
 
     user.isBlocked = isBlocked;
+    // Track when the user entered the blocked state so agent stat cards can
+    // compute "blocked this month" and month-over-month trends.
+    user.blockedAt = isBlocked ? new Date() : null;
     await user.save();
 
     await Promise.all([

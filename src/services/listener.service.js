@@ -14,6 +14,9 @@ import logger from '../utils/logger.util.js';
 import anchorLevelService from './anchor-level.service.js';
 import Language from '../modules/language.model.js';
 import countryRepository from '../repositories/country.repository.js';
+import redisClient from '../config/redis.js';
+import { KEYS } from '../utils/socket-redis-keys.util.js';
+import { getDateBoundaries, buildComparison, formatDateKey } from '../utils/stats.util.js';
 
 const round = (n) => Math.round(n || 0);
 
@@ -384,13 +387,16 @@ class ListenerService extends BaseService {
     if (queryParams.accountStatus === 'pending') matchQuery.kycStatus = 'PENDING';
     else if (queryParams.accountStatus === 'active') matchQuery.kycStatus = 'APPROVED';
 
+    // Level filter targets the listener's anchor level (on the profile), not the
+    // owning user's XP level.
+    if (queryParams.level !== undefined && queryParams.level !== 'All') {
+      matchQuery.anchorLevel = Number(queryParams.level);
+    }
+
     // ── User-side match (after $unwind 'userId') ──
     const userMatch = { 'userId.isDeleted': false };
     if (queryParams.accountStatus === 'active') userMatch['userId.isBlocked'] = false;
     else if (queryParams.accountStatus === 'blocked') userMatch['userId.isBlocked'] = true;
-    if (queryParams.level && queryParams.level !== 'All') {
-      userMatch['userId.currentLevel'] = Number(queryParams.level);
-    }
     if (queryParams.search) {
       const regex = { $regex: queryParams.search.trim(), $options: 'i' };
       userMatch.$or = [
@@ -416,7 +422,13 @@ class ListenerService extends BaseService {
   }
 
   /**
-   * AGENT PANEL — KPI stat cards (Total / Active / Online Now / Pending Verification).
+   * AGENT PANEL — KPI stat cards.
+   *
+   * Returns nine cards; the comparison cards include a count, percentage change
+   * and trend (monthly for blocked/pending/approved totals + blocked-this-month,
+   * daily for peak-today and today-approved). "In session" / "idle" / "in review"
+   * are bare counts. Peak comes from the per-agent Redis daily-max key maintained
+   * by the presence service.
    */
   async getAgentStats(agentId) {
     const version = await getCacheVersion('listeners');
@@ -425,7 +437,35 @@ class ListenerService extends BaseService {
     const cached = await getCache(cacheKey);
     if (cached) return cached;
 
-    const stats = await this.repository.getAgentStats(new mongoose.Types.ObjectId(agentId));
+    const boundaries = getDateBoundaries();
+    const objectId = new mongoose.Types.ObjectId(agentId);
+
+    const raw = await this.repository.getAgentStats(objectId, boundaries);
+
+    // Daily peak of concurrently-online listeners (today vs yesterday).
+    const todayKey = KEYS.agentPeak(agentId, formatDateKey(boundaries.startOfToday));
+    const yesterdayKey = KEYS.agentPeak(agentId, formatDateKey(boundaries.startOfYesterday));
+    const [peakTodayRaw, peakYesterdayRaw] = await Promise.all([
+      redisClient.get(todayKey),
+      redisClient.get(yesterdayKey),
+    ]);
+    const peakToday = Number(peakTodayRaw) || 0;
+    const peakYesterday = Number(peakYesterdayRaw) || 0;
+
+    const stats = {
+      totalListeners: { count: raw.total },
+      onlineNow: { count: raw.onlineNow },
+      totalBlocked: buildComparison(raw.blockedTotal, raw.blockedPrevMonth),
+      blockedThisMonth: buildComparison(raw.blockedThisMonth, raw.blockedLastMonth),
+      inSession: { count: raw.inSession },
+      idle: { count: raw.idle },
+      peakToday: buildComparison(peakToday, peakYesterday),
+      pendingListeners: buildComparison(raw.pendingTotal, raw.pendingPrevMonth),
+      inReview: { count: raw.inReview },
+      totalApproved: buildComparison(raw.approvedTotal, raw.approvedPrevMonth),
+      todayApproved: buildComparison(raw.approvedToday, raw.approvedYesterday),
+    };
+
     await setCache(cacheKey, stats, 30);
     return stats;
   }
@@ -438,6 +478,9 @@ class ListenerService extends BaseService {
 
     profile.kycStatus = kycStatus;
     profile.rejectionReason = kycStatus === 'REJECTED' ? rejectionReason : undefined;
+    // Stamp the approval time so agent stat cards can compute "today approved"
+    // and month-over-month approved trends.
+    if (kycStatus === 'APPROVED') profile.kycApprovedAt = new Date();
 
     await profile.save();
 

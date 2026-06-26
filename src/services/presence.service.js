@@ -6,6 +6,11 @@ import { SERVER_EVENTS } from '../constants/socket-event.constant.js';
 import { getSocketIo } from '../utils/socket.util.js';
 import logger from '../utils/logger.util.js';
 import { bumpCacheVersion, deleteCache } from '../utils/redis.util.js';
+import { formatDateKey } from '../utils/stats.util.js';
+
+// TTL for the daily peak key: ~48h so the previous day's peak survives for the
+// agent stats "Peak Today" comparison before auto-expiring.
+const AGENT_PEAK_TTL_SECONDS = 172800;
 
 class PresenceService {
   /**
@@ -60,6 +65,9 @@ class PresenceService {
           }
         }
       }
+
+      // Listener just (re)entered an online state — refresh the agent's daily peak.
+      if (userType === 'LISTENER') await this.recordAgentOnlinePeak(userId);
     } catch (err) {
       logger.error(`[Presence goOnline Error] Failed for user ${userId}: ${err.message}`);
     }
@@ -114,6 +122,7 @@ class PresenceService {
       await deleteCache(`listener:${userId}`);
       await bumpCacheVersion('listeners');
       this.broadcastStatusChange(userId, 'BUSY');
+      await this.recordAgentOnlinePeak(userId);
     } catch (err) {
       logger.error(`[Presence setBusy Error] Failed for listener ${userId}: ${err.message}`);
     }
@@ -132,6 +141,7 @@ class PresenceService {
       await deleteCache(`listener:${userId}`);
       await bumpCacheVersion('listeners');
       this.broadcastStatusChange(userId, 'ONLINE');
+      await this.recordAgentOnlinePeak(userId);
     } catch (err) {
       logger.error(`[Presence setAvailable Error] Failed for listener ${userId}: ${err.message}`);
     }
@@ -152,6 +162,35 @@ class PresenceService {
       this.broadcastStatusChange(userId, 'OFFLINE');
     } catch (err) {
       logger.error(`[Presence setOffline Error] Failed for listener ${userId}: ${err.message}`);
+    }
+  }
+
+  /**
+   * Record the daily peak of concurrently-online listeners for the agent who
+   * owns this listener. Called on online transitions (count can only rise then),
+   * keeping a running daily max in Redis. No-op for self-registered listeners
+   * (no owning agent) or when Redis is unavailable.
+   */
+  async recordAgentOnlinePeak(userId) {
+    try {
+      if (!redisClient.isRedisAvailable) return;
+
+      const profile = await ListenerProfile.findOne({ userId }).select('createdByAgentId');
+      const agentId = profile?.createdByAgentId;
+      if (!agentId) return;
+
+      const count = await ListenerProfile.countDocuments({
+        createdByAgentId: agentId,
+        availability: { $in: ['ONLINE', 'BUSY'] },
+      });
+
+      const key = KEYS.agentPeak(agentId, formatDateKey(new Date()));
+      const current = await redisClient.get(key);
+      if (current === null || count > Number(current)) {
+        await redisClient.set(key, count, 'EX', AGENT_PEAK_TTL_SECONDS);
+      }
+    } catch (err) {
+      logger.error(`[Presence recordAgentOnlinePeak Error] Failed for user ${userId}: ${err.message}`);
     }
   }
 
