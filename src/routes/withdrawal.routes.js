@@ -24,8 +24,8 @@ router.get('/bank-accounts', bankAccountController.getMyBankAccounts);
 router.delete('/bank-accounts/:id', validate(idParamSchema), bankAccountController.deleteBankAccount);
 
 // ─── Withdrawal (config + quote readable by authed users) ───────
-router.get('/config', withdrawalController.getConfig);
-router.get('/quote', validate(quoteQuerySchema), withdrawalController.quote);
+router.get('/config', withdrawalController.getConfig); // show rate
+router.get('/quote', validate(quoteQuerySchema), withdrawalController.quote); // calcluation rate coin in inr
 router.post('/', validate(createWithdrawalSchema), withdrawalController.requestWithdrawal);
 router.get('/me', validate(listWithdrawalQuerySchema), withdrawalController.getMyWithdrawals);
 

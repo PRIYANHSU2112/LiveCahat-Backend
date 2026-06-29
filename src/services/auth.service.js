@@ -3,8 +3,21 @@ import userRepository from '../repositories/user.repository.js';
 import countryRepository from '../repositories/country.repository.js';
 import User from '../modules/user.model.js';
 import { generateToken } from '../utils/jwt.util.js';
-import { storeOTP, verifyOTP, deleteCache } from '../utils/redis.util.js';
+import { storeOtpSession, verifyAndConsumeOtpSession, deleteCache } from '../utils/redis.util.js';
 import ApiError from '../utils/ApiError.js';
+
+const toDateKey = (value) => {
+  if (!value) return '';
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value.trim())) {
+    return value.trim();
+  }
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 class AuthService {
   /**
@@ -28,15 +41,56 @@ class AuthService {
     // Link only — the bonus is paid on the friend's first coin purchase
     return await userRepository.create({ ...userData, referredBy: referrer._id });
   }
+
+  _assertListenerGender(type, gender) {
+    if (type === 'LISTENER' && gender !== 'FEMALE') {
+      throw new ApiError(400, 'Listeners must select female gender');
+    }
+  }
+
+  _resolveLoginProfile(session, { type, gender, dateOfBirth }) {
+    if (type && type !== session.type) {
+      throw new ApiError(400, 'Login details do not match the OTP request. Please request a new OTP.');
+    }
+
+    if (gender && gender !== session.gender) {
+      throw new ApiError(400, 'Login details do not match the OTP request. Please request a new OTP.');
+    }
+
+    if (dateOfBirth && toDateKey(dateOfBirth) !== toDateKey(session.dateOfBirth)) {
+      throw new ApiError(400, 'Login details do not match the OTP request. Please request a new OTP.');
+    }
+
+    return {
+      type: session.type,
+      gender: gender ?? session.gender,
+      dateOfBirth: dateOfBirth ?? session.dateOfBirth,
+    };
+  }
+
+  _profileFieldsFromLogin({ gender, dateOfBirth }) {
+    return {
+      gender,
+      dateOfBirth: new Date(dateOfBirth),
+      ageVerified: true,
+    };
+  }
+
   async requestOtp(data) {
-    const { mobileNumber, type } = data;
+    const { mobileNumber, type, dateOfBirth, gender, countryCode } = data;
 
-    // In a real app, integrate MSG91 or Twilio here.
-    // For now, generate a random 6-digit OTP (or static for dev)
-    // const otp = process.env.NODE_ENV === 'development' ? '123456' : Math.floor(100000 + Math.random() * 900000).toString();
-    const otp = '123456'
+    this._assertListenerGender(type, gender);
 
-    await storeOTP(mobileNumber, otp);
+    const otp = '123456';
+    const dateKey = toDateKey(dateOfBirth);
+
+    await storeOtpSession(mobileNumber, {
+      otp,
+      dateOfBirth: dateKey,
+      gender,
+      type,
+      countryCode: countryCode || '+91',
+    });
 
     // TODO: Send SMS via provider
     console.log(`[DEV OTP] Sent OTP ${otp} to ${mobileNumber}`);
@@ -45,27 +99,34 @@ class AuthService {
   }
 
   async verifyOtp(data) {
-    const { mobileNumber, otp, type, countryCode, inviteCode } = data;
+    const { mobileNumber, otp, type, countryCode, inviteCode, dateOfBirth, gender } = data;
 
-    const validOtp = await verifyOTP(mobileNumber, otp);
-    if (!validOtp) {
-      throw new ApiError(401, 'Invalid OTP');
-    }
+    const session = await verifyAndConsumeOtpSession(mobileNumber, otp);
+    const profile = this._resolveLoginProfile(session, { type, gender, dateOfBirth });
+    const profileFields = this._profileFieldsFromLogin(profile);
 
     let user = await userRepository.findByMobile(mobileNumber);
     let isNewUser = false;
 
     if (!user) {
-      // Resolve the country from the dialing code supplied at register time.
       const country = await countryRepository.findByDialCode(countryCode);
       user = await this._createUser(
-        { mobileNumber, type, countryCode, country: country?._id || null },
+        {
+          mobileNumber,
+          type: profile.type,
+          countryCode,
+          country: country?._id || null,
+          ...profileFields,
+        },
         inviteCode
       );
       isNewUser = true;
     } else {
       if (user.isBlocked) throw new ApiError(403, 'Your account is blocked.');
       if (user.isDeleted) throw new ApiError(403, 'Your account is deleted.');
+
+      user = await userRepository.updateById(user._id, profileFields);
+      await deleteCache(`auth:user:${user._id}`);
     }
 
     const token = generateToken({ id: user._id, type: user.type });
@@ -98,15 +159,21 @@ class AuthService {
   }
 
   async linkAccount({ userId, mobileNumber, otp, countryCode }) {
-    const validOtp = await verifyOTP(mobileNumber, otp);
-    if (!validOtp) throw new ApiError(401, 'Invalid OTP');
+    const session = await verifyAndConsumeOtpSession(mobileNumber, otp);
 
     const existing = await userRepository.findByMobile(mobileNumber);
     if (existing && existing._id.toString() !== userId.toString()) {
       throw new ApiError(409, 'This phone number is already linked to another account.');
     }
 
-    const updatePayload = { mobileNumber, isGuest: false };
+    const updatePayload = {
+      mobileNumber,
+      isGuest: false,
+      gender: session.gender,
+      dateOfBirth: new Date(session.dateOfBirth),
+      ageVerified: true,
+    };
+
     if (countryCode) {
       const country = await countryRepository.findByDialCode(countryCode);
       updatePayload.countryCode = countryCode;

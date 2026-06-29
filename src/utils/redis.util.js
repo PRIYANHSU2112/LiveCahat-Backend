@@ -5,30 +5,30 @@ const OTP_EXPIRY_SECONDS = 5 * 60; // 5 minutes
 const MAX_ATTEMPTS = 3;
 
 /**
- * Store OTP in Redis
- * @param {String} identifier (e.g. mobile or email)
- * @param {String} otp
+ * Store OTP session (OTP + login metadata) in Redis
+ * @param {String} identifier (e.g. mobile number)
+ * @param {Object} session { otp, dateOfBirth, gender, type, countryCode? }
  */
-export const storeOTP = async (identifier, otp) => {
+export const storeOtpSession = async (identifier, session) => {
   const key = `otp:${identifier}`;
   const attemptsKey = `otp_attempts:${identifier}`;
-  
-  await redisClient.set(key, otp, 'EX', OTP_EXPIRY_SECONDS);
+
+  await redisClient.set(key, JSON.stringify(session), 'EX', OTP_EXPIRY_SECONDS);
   await redisClient.set(attemptsKey, 0, 'EX', OTP_EXPIRY_SECONDS);
 };
 
 /**
- * Verify OTP from Redis
- * @param {String} identifier 
- * @param {String} otp 
- * @returns {Boolean} isValid
+ * Verify OTP and return stored session metadata, then delete the session.
+ * @param {String} identifier
+ * @param {String} otp
+ * @returns {Object} session metadata without otp
  */
-export const verifyOTP = async (identifier, otp) => {
+export const verifyAndConsumeOtpSession = async (identifier, otp) => {
   const key = `otp:${identifier}`;
   const attemptsKey = `otp_attempts:${identifier}`;
 
-  const storedOTP = await redisClient.get(key);
-  if (!storedOTP) {
+  const raw = await redisClient.get(key);
+  if (!raw) {
     throw new ApiError(400, 'OTP expired or not found');
   }
 
@@ -41,15 +41,33 @@ export const verifyOTP = async (identifier, otp) => {
     throw new ApiError(400, 'Maximum OTP verification attempts reached. Please request a new OTP.');
   }
 
-  if (storedOTP !== otp) {
+  let session;
+  try {
+    session = JSON.parse(raw);
+  } catch {
+    throw new ApiError(400, 'OTP expired or not found');
+  }
+
+  if (String(session.otp) !== String(otp).trim()) {
     await redisClient.incr(attemptsKey);
     throw new ApiError(400, 'Invalid OTP');
   }
 
-  // OTP matched, delete it to prevent reuse
   await redisClient.del(key);
   await redisClient.del(attemptsKey);
 
+  const { otp: _otp, ...metadata } = session;
+  return metadata;
+};
+
+/** @deprecated Use storeOtpSession */
+export const storeOTP = async (identifier, otp) => {
+  await storeOtpSession(identifier, { otp });
+};
+
+/** @deprecated Use verifyAndConsumeOtpSession */
+export const verifyOTP = async (identifier, otp) => {
+  await verifyAndConsumeOtpSession(identifier, otp);
   return true;
 };
 

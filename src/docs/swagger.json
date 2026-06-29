@@ -129,7 +129,9 @@
                 "type": "object",
                 "required": [
                   "mobileNumber",
-                  "type"
+                  "type",
+                  "dateOfBirth",
+                  "gender"
                 ],
                 "properties": {
                   "mobileNumber": {
@@ -144,6 +146,20 @@
                   },
                   "countryCode": {
                     "type": "string"
+                  },
+                  "dateOfBirth": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "ISO date — user must be at least 18 years old"
+                  },
+                  "gender": {
+                    "type": "string",
+                    "enum": [
+                      "MALE",
+                      "FEMALE",
+                      "OTHER"
+                    ],
+                    "description": "Required for all logins. LISTENER type must be FEMALE only."
                   }
                 }
               }
@@ -172,7 +188,9 @@
                 "required": [
                   "mobileNumber",
                   "otp",
-                  "type"
+                  "type",
+                  "dateOfBirth",
+                  "gender"
                 ],
                 "properties": {
                   "mobileNumber": {
@@ -190,6 +208,20 @@
                   },
                   "countryCode": {
                     "type": "string"
+                  },
+                  "dateOfBirth": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Must match the dateOfBirth sent in request-otp"
+                  },
+                  "gender": {
+                    "type": "string",
+                    "enum": [
+                      "MALE",
+                      "FEMALE",
+                      "OTHER"
+                    ],
+                    "description": "Must match request-otp. LISTENER type must be FEMALE only."
                   },
                   "inviteCode": {
                     "type": "string",

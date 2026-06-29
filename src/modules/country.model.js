@@ -4,13 +4,11 @@ const countrySchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: true,
       trim: true,
     },
     // ISO 3166-1 alpha-2 code, e.g. "IN", "US"
     code: {
       type: String,
-      required: true,
       unique: true,
       trim: true,
       uppercase: true,
@@ -19,7 +17,6 @@ const countrySchema = new mongoose.Schema(
     // login/register time, so we resolve the country from it.
     dialCode: {
       type: String,
-      required: true,
       unique: true,
       trim: true,
     },

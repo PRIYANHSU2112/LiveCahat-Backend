@@ -34,7 +34,7 @@
                 "method": "POST",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"mobileNumber\": \"<string>\",\n  \"type\": \"CUSTOMER\",\n  \"countryCode\": \"<string>\"\n}",
+                  "raw": "{\n  \"mobileNumber\": \"9876543210\",\n  \"type\": \"CUSTOMER\",\n  \"countryCode\": \"+91\",\n  \"dateOfBirth\": \"2000-06-18\",\n  \"gender\": \"MALE\"\n}",
                   "options": {
                     "raw": {
                       "headerFamily": "json",
@@ -69,7 +69,7 @@
                     "method": "POST",
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n  \"mobileNumber\": \"<string>\",\n  \"type\": \"CUSTOMER\",\n  \"countryCode\": \"<string>\"\n}",
+                      "raw": "{\n  \"mobileNumber\": \"9876543210\",\n  \"type\": \"CUSTOMER\",\n  \"countryCode\": \"+91\",\n  \"dateOfBirth\": \"2000-06-18\",\n  \"gender\": \"MALE\"\n}",
                       "options": {
                         "raw": {
                           "headerFamily": "json",
@@ -122,7 +122,7 @@
                 "method": "POST",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"mobileNumber\": \"<string>\",\n  \"otp\": \"<string>\",\n  \"type\": \"LISTENER\",\n  \"countryCode\": \"<string>\"\n}",
+                  "raw": "{\n  \"mobileNumber\": \"9876543210\",\n  \"otp\": \"123456\",\n  \"type\": \"LISTENER\",\n  \"countryCode\": \"+91\",\n  \"dateOfBirth\": \"1998-03-15\",\n  \"gender\": \"FEMALE\"\n}",
                   "options": {
                     "raw": {
                       "headerFamily": "json",
@@ -157,7 +157,7 @@
                     "method": "POST",
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n  \"mobileNumber\": \"<string>\",\n  \"otp\": \"<string>\",\n  \"type\": \"LISTENER\",\n  \"countryCode\": \"<string>\"\n}",
+                      "raw": "{\n  \"mobileNumber\": \"9876543210\",\n  \"otp\": \"123456\",\n  \"type\": \"LISTENER\",\n  \"countryCode\": \"+91\",\n  \"dateOfBirth\": \"1998-03-15\",\n  \"gender\": \"FEMALE\"\n}",
                       "options": {
                         "raw": {
                           "headerFamily": "json",
