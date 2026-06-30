@@ -1,0 +1,19 @@
+{
+  "success": true,
+  "message": "Feedback updated successfully",
+  "data": {
+    "_id": "6a4260c90ca30d2754e1fa30",
+    "userId": "6a4260c70ca30d2754e1fa10",
+    "userType": "CUSTOMER",
+    "category": "OTHER",
+    "message": "Updated feedback message",
+    "rating": 5,
+    "status": "OPEN",
+    "adminResponse": null,
+    "respondedBy": null,
+    "respondedAt": null,
+    "createdAt": "2026-06-29T12:10:49.593Z",
+    "updatedAt": "2026-06-29T12:11:16.988Z",
+    "__v": 0
+  }
+}

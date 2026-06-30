@@ -1,0 +1,13 @@
+{
+  "success": true,
+  "message": "Language fetched successfully",
+  "data": {
+    "_id": "6a4260c80ca30d2754e1fa1a",
+    "name": "SetupLang1782735048227",
+    "code": "S8227",
+    "isActive": true,
+    "createdAt": "2026-06-29T12:10:48.369Z",
+    "updatedAt": "2026-06-29T12:10:48.369Z",
+    "__v": 0
+  }
+}

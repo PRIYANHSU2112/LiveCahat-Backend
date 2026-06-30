@@ -1,0 +1,13 @@
+{
+  "success": true,
+  "message": "Sticker category updated successfully",
+  "data": {
+    "_id": "6a4260c80ca30d2754e1fa23",
+    "name": "Updated Cat",
+    "sortOrder": 0,
+    "isActive": true,
+    "createdAt": "2026-06-29T12:10:48.779Z",
+    "updatedAt": "2026-06-29T12:11:14.328Z",
+    "__v": 0
+  }
+}

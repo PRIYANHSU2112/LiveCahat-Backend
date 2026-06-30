@@ -1,0 +1,15 @@
+{
+  "success": true,
+  "message": "Admin gift analytics fetched successfully",
+  "data": {
+    "activeGiftsCount": 4,
+    "totalGiftsCount": 4,
+    "last7DaysStats": {
+      "sentCount": 0,
+      "totalCoinsSpent": 0,
+      "totalListenerEarnings": 0,
+      "totalPlatformCommission": 0
+    },
+    "topGifts": []
+  }
+}

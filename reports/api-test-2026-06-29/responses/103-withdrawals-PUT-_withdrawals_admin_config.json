@@ -1,0 +1,14 @@
+{
+  "success": true,
+  "message": "Withdrawal config updated successfully",
+  "data": {
+    "_id": "6a3e637409120c33718087a9",
+    "conversionCoins": 1000,
+    "conversionInr": 100,
+    "feePercentage": 0,
+    "minWithdrawalCoins": 100,
+    "createdAt": "2026-06-26T11:33:08.552Z",
+    "updatedAt": "2026-06-29T12:11:08.327Z",
+    "__v": 0
+  }
+}

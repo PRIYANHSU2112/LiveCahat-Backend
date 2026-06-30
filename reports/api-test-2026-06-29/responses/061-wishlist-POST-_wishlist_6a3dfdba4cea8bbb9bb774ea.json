@@ -1,0 +1,14 @@
+{
+  "success": true,
+  "message": "Listener added to wishlist successfully",
+  "data": {
+    "_id": "6a4260d5b46d99b4e52f7386",
+    "userId": "6a4260c70ca30d2754e1fa10",
+    "__v": 0,
+    "createdAt": "2026-06-29T12:11:01.446Z",
+    "listeners": [
+      "6a3dfdba4cea8bbb9bb774ea"
+    ],
+    "updatedAt": "2026-06-29T12:11:01.446Z"
+  }
+}

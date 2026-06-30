@@ -1,0 +1,13 @@
+{
+  "success": true,
+  "message": "Company updated successfully",
+  "data": {
+    "_id": "6a420456e6c31b8667c40074",
+    "name": "Updated Test Co",
+    "description": "Company description goes here.",
+    "email": "info@company.com",
+    "createdAt": "2026-06-29T05:36:22.572Z",
+    "updatedAt": "2026-06-29T12:08:10.853Z",
+    "__v": 0
+  }
+}

@@ -42,6 +42,7 @@ export const SERVER_EVENTS = {
   // ─── Presence / Connection ──────────────────────────────────────
   LISTENER_ONLINE: 'listener_online',
   LISTENER_OFFLINE: 'listener_offline',
+  USER_PRESENCE_CHANGED: 'user_presence_changed',
   USER_RECONNECTED: 'user_reconnected',
   USER_JOINED: 'user_joined',
 

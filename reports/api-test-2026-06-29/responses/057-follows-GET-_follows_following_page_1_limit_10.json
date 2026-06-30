@@ -1,0 +1,44 @@
+{
+  "success": true,
+  "message": "Following list fetched successfully",
+  "data": {
+    "docs": [
+      {
+        "_id": "6a4260d4b46d99b4e52f7385",
+        "followingId": "6a3dfdba4cea8bbb9bb774ea",
+        "createdAt": "2026-06-29T12:11:00.466Z",
+        "isFavorite": true,
+        "user": {
+          "_id": "6a3dfdba4cea8bbb9bb774ea",
+          "firstName": "Aularis",
+          "lastName": "Listener",
+          "isOnline": true
+        },
+        "listenerProfile": {
+          "_id": "6a3dfdba4cea8bbb9bb774fb",
+          "bio": "Professional relationship counselor and life coach. Let's talk!",
+          "profilePhotos": [],
+          "categories": [
+            "Friendly Talk",
+            "Casual Chat"
+          ],
+          "chatRate": 10,
+          "voiceRate": 15,
+          "videoRate": 20,
+          "avgRating": 0,
+          "totalRatings": 0,
+          "availability": "OFFLINE",
+          "followersCount": 0
+        }
+      }
+    ],
+    "meta": {
+      "totalDocuments": 1,
+      "totalPages": 1,
+      "currentPage": 1,
+      "limit": 10,
+      "hasNextPage": false,
+      "hasPrevPage": false
+    }
+  }
+}

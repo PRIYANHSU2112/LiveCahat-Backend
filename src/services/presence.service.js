@@ -45,6 +45,7 @@ class PresenceService {
           if (redisClient.isRedisAvailable) {
             await redisClient.set(statusKey, 'ONLINE');
           }
+          this.broadcastUserPresenceChange(userId, 'ONLINE');
         }
       } else {
         // Already online. If it's a listener and currently BUSY in DB, keep Redis BUSY.
@@ -102,6 +103,8 @@ class PresenceService {
           await deleteCache(`listener:${userId}`);
           await bumpCacheVersion('listeners');
           this.broadcastStatusChange(userId, 'OFFLINE');
+        } else {
+          this.broadcastUserPresenceChange(userId, 'OFFLINE');
         }
       }
     } catch (err) {
@@ -195,6 +198,35 @@ class PresenceService {
   }
 
   /**
+   * Fetch presence status for multiple users in one Redis round-trip.
+   * @returns {Map<string, 'ONLINE'|'BUSY'|'OFFLINE'>}
+   */
+  async getStatusBatch(userIds) {
+    const map = new Map();
+    const ids = [...new Set((userIds || []).map((id) => id?.toString()).filter(Boolean))];
+    ids.forEach((id) => map.set(id, 'OFFLINE'));
+
+    if (!ids.length || !redisClient.isRedisAvailable) {
+      return map;
+    }
+
+    try {
+      const pipeline = redisClient.pipeline();
+      ids.forEach((id) => pipeline.get(KEYS.presenceStatus(id)));
+      const results = await pipeline.exec();
+
+      ids.forEach((id, index) => {
+        const status = results[index]?.[1];
+        map.set(id, status || 'OFFLINE');
+      });
+    } catch (err) {
+      logger.error(`[Presence getStatusBatch Error]: ${err.message}`);
+    }
+
+    return map;
+  }
+
+  /**
    * Fetch current presence status.
    */
   async getStatus(userId) {
@@ -209,7 +241,7 @@ class PresenceService {
   }
 
   /**
-   * Broadcast presence status changes to all clients.
+   * Broadcast listener presence (legacy) and generic user presence for inbox UIs.
    */
   broadcastStatusChange(listenerId, status) {
     const io = getSocketIo();
@@ -217,6 +249,21 @@ class PresenceService {
       io.emit(SERVER_EVENTS.LISTENER_STATUS_CHANGED, {
         listenerId,
         status,
+      });
+    }
+    this.broadcastUserPresenceChange(listenerId, status);
+  }
+
+  /**
+   * Broadcast presence status changes for any user type.
+   */
+  broadcastUserPresenceChange(userId, status) {
+    const io = getSocketIo();
+    if (io) {
+      io.emit(SERVER_EVENTS.USER_PRESENCE_CHANGED, {
+        userId: userId.toString(),
+        status,
+        isOnline: status !== 'OFFLINE',
       });
     }
   }

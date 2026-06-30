@@ -1,0 +1,15 @@
+{
+  "success": true,
+  "message": "Feedback list fetched successfully",
+  "data": {
+    "docs": [],
+    "meta": {
+      "totalDocuments": 0,
+      "totalPages": 0,
+      "currentPage": 1,
+      "limit": 5,
+      "hasNextPage": false,
+      "hasPrevPage": false
+    }
+  }
+}

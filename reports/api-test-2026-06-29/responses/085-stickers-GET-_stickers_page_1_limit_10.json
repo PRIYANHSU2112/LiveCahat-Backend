@@ -1,0 +1,224 @@
+{
+  "success": true,
+  "message": "Stickers fetched successfully",
+  "data": {
+    "docs": [
+      {
+        "_id": "6a34f045a33a6b51acca3dc5",
+        "name": "Happy Smile",
+        "image": "https://api.dicebear.com/7.x/fun-emoji/svg?seed=happy",
+        "categoryId": {
+          "_id": "6a34f044a33a6b51acca3dbe",
+          "name": "Expressive Emojis",
+          "slug": "expressive-emojis",
+          "icon": "😊"
+        },
+        "tags": [
+          "happy",
+          "smile",
+          "joy"
+        ],
+        "unlockType": "FREE",
+        "price": 0,
+        "requiredLevel": 1,
+        "sortOrder": 1,
+        "isActive": true,
+        "createdAt": "2026-06-19T07:31:17.662Z",
+        "updatedAt": "2026-06-19T07:31:17.662Z",
+        "__v": 0,
+        "isUnlocked": true,
+        "levelsToUnlock": 0
+      },
+      {
+        "_id": "6a34f046a33a6b51acca3dce",
+        "name": "Doge Bot",
+        "image": "https://api.dicebear.com/7.x/bottts/svg?seed=doge",
+        "categoryId": {
+          "_id": "6a34f045a33a6b51acca3dc0",
+          "name": "Internet Memes",
+          "slug": "internet-memes",
+          "icon": "😂"
+        },
+        "tags": [
+          "doge",
+          "meme",
+          "coin"
+        ],
+        "unlockType": "PAID",
+        "price": 15,
+        "requiredLevel": 1,
+        "sortOrder": 1,
+        "isActive": true,
+        "createdAt": "2026-06-19T07:31:18.166Z",
+        "updatedAt": "2026-06-19T07:31:18.166Z",
+        "__v": 0,
+        "isUnlocked": false,
+        "levelsToUnlock": 0
+      },
+      {
+        "_id": "6a34f046a33a6b51acca3dd7",
+        "name": "Super Saiyan",
+        "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=saiyan",
+        "categoryId": {
+          "_id": "6a34f045a33a6b51acca3dc2",
+          "name": "Premium Reactions",
+          "slug": "premium-reactions",
+          "icon": "🔥"
+        },
+        "tags": [
+          "power",
+          "saiyan",
+          "fire"
+        ],
+        "unlockType": "LEVEL",
+        "price": 0,
+        "requiredLevel": 3,
+        "sortOrder": 1,
+        "isActive": true,
+        "createdAt": "2026-06-19T07:31:18.749Z",
+        "updatedAt": "2026-06-19T07:31:18.749Z",
+        "__v": 0,
+        "isUnlocked": false,
+        "levelsToUnlock": 2
+      },
+      {
+        "_id": "6a34f045a33a6b51acca3dc8",
+        "name": "Cool Sunglasses",
+        "image": "https://api.dicebear.com/7.x/fun-emoji/svg?seed=cool",
+        "categoryId": {
+          "_id": "6a34f044a33a6b51acca3dbe",
+          "name": "Expressive Emojis",
+          "slug": "expressive-emojis",
+          "icon": "😊"
+        },
+        "tags": [
+          "cool",
+          "sunglasses",
+          "swag"
+        ],
+        "unlockType": "FREE",
+        "price": 0,
+        "requiredLevel": 1,
+        "sortOrder": 2,
+        "isActive": true,
+        "createdAt": "2026-06-19T07:31:17.818Z",
+        "updatedAt": "2026-06-19T07:31:17.818Z",
+        "__v": 0,
+        "isUnlocked": true,
+        "levelsToUnlock": 0
+      },
+      {
+        "_id": "6a34f046a33a6b51acca3dd1",
+        "name": "Cyber Neko",
+        "image": "https://api.dicebear.com/7.x/bottts/svg?seed=neko",
+        "categoryId": {
+          "_id": "6a34f045a33a6b51acca3dc0",
+          "name": "Internet Memes",
+          "slug": "internet-memes",
+          "icon": "😂"
+        },
+        "tags": [
+          "neko",
+          "cat",
+          "dance"
+        ],
+        "unlockType": "PAID",
+        "price": 25,
+        "requiredLevel": 1,
+        "sortOrder": 2,
+        "isActive": true,
+        "createdAt": "2026-06-19T07:31:18.376Z",
+        "updatedAt": "2026-06-19T07:31:18.376Z",
+        "__v": 0,
+        "isUnlocked": false,
+        "levelsToUnlock": 0
+      },
+      {
+        "_id": "6a34f046a33a6b51acca3dda",
+        "name": "Neon Crown",
+        "image": "https://api.dicebear.com/7.x/avataaars/svg?seed=crown",
+        "categoryId": {
+          "_id": "6a34f045a33a6b51acca3dc2",
+          "name": "Premium Reactions",
+          "slug": "premium-reactions",
+          "icon": "🔥"
+        },
+        "tags": [
+          "crown",
+          "king",
+          "gold"
+        ],
+        "unlockType": "LEVEL",
+        "price": 0,
+        "requiredLevel": 5,
+        "sortOrder": 2,
+        "isActive": true,
+        "createdAt": "2026-06-19T07:31:18.991Z",
+        "updatedAt": "2026-06-19T07:31:18.991Z",
+        "__v": 0,
+        "isUnlocked": false,
+        "levelsToUnlock": 4
+      },
+      {
+        "_id": "6a34f045a33a6b51acca3dcb",
+        "name": "Wink Playful",
+        "image": "https://api.dicebear.com/7.x/fun-emoji/svg?seed=wink",
+        "categoryId": {
+          "_id": "6a34f044a33a6b51acca3dbe",
+          "name": "Expressive Emojis",
+          "slug": "expressive-emojis",
+          "icon": "😊"
+        },
+        "tags": [
+          "wink",
+          "playful",
+          "cute"
+        ],
+        "unlockType": "FREE",
+        "price": 0,
+        "requiredLevel": 1,
+        "sortOrder": 3,
+        "isActive": true,
+        "createdAt": "2026-06-19T07:31:17.991Z",
+        "updatedAt": "2026-06-19T07:31:17.991Z",
+        "__v": 0,
+        "isUnlocked": true,
+        "levelsToUnlock": 0
+      },
+      {
+        "_id": "6a34f046a33a6b51acca3dd4",
+        "name": "Pixel Retro",
+        "image": "https://api.dicebear.com/7.x/bottts/svg?seed=pixel",
+        "categoryId": {
+          "_id": "6a34f045a33a6b51acca3dc0",
+          "name": "Internet Memes",
+          "slug": "internet-memes",
+          "icon": "😂"
+        },
+        "tags": [
+          "pixel",
+          "retro",
+          "gamer"
+        ],
+        "unlockType": "PAID",
+        "price": 35,
+        "requiredLevel": 1,
+        "sortOrder": 3,
+        "isActive": true,
+        "createdAt": "2026-06-19T07:31:18.533Z",
+        "updatedAt": "2026-06-19T07:31:18.533Z",
+        "__v": 0,
+        "isUnlocked": false,
+        "levelsToUnlock": 0
+      }
+    ],
+    "meta": {
+      "totalDocuments": 8,
+      "totalPages": 1,
+      "currentPage": 1,
+      "limit": 10,
+      "hasNextPage": false,
+      "hasPrevPage": false
+    }
+  }
+}

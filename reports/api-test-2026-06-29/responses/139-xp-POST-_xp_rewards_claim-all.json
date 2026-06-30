@@ -1,0 +1,9 @@
+{
+  "success": true,
+  "message": "Rewards claimed successfully",
+  "data": {
+    "claimedCount": 0,
+    "claimed": [],
+    "failed": []
+  }
+}

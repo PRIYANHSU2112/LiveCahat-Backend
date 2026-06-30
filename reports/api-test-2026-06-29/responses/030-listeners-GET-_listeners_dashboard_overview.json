@@ -1,0 +1,114 @@
+{
+  "success": true,
+  "message": "Dashboard overview fetched successfully",
+  "data": {
+    "period": "today",
+    "stats": {
+      "coinsEarned": 0,
+      "totalCoins": 0,
+      "minutes": 0,
+      "gifts": {
+        "count": 0,
+        "coins": 0
+      }
+    },
+    "growth": [
+      {
+        "name": "00:00",
+        "earnings": 0
+      },
+      {
+        "name": "01:00",
+        "earnings": 0
+      },
+      {
+        "name": "02:00",
+        "earnings": 0
+      },
+      {
+        "name": "03:00",
+        "earnings": 0
+      },
+      {
+        "name": "04:00",
+        "earnings": 0
+      },
+      {
+        "name": "05:00",
+        "earnings": 0
+      },
+      {
+        "name": "06:00",
+        "earnings": 0
+      },
+      {
+        "name": "07:00",
+        "earnings": 0
+      },
+      {
+        "name": "08:00",
+        "earnings": 0
+      },
+      {
+        "name": "09:00",
+        "earnings": 0
+      },
+      {
+        "name": "10:00",
+        "earnings": 0
+      },
+      {
+        "name": "11:00",
+        "earnings": 0
+      },
+      {
+        "name": "12:00",
+        "earnings": 0
+      },
+      {
+        "name": "13:00",
+        "earnings": 0
+      },
+      {
+        "name": "14:00",
+        "earnings": 0
+      },
+      {
+        "name": "15:00",
+        "earnings": 0
+      },
+      {
+        "name": "16:00",
+        "earnings": 0
+      },
+      {
+        "name": "17:00",
+        "earnings": 0
+      },
+      {
+        "name": "18:00",
+        "earnings": 0
+      },
+      {
+        "name": "19:00",
+        "earnings": 0
+      },
+      {
+        "name": "20:00",
+        "earnings": 0
+      },
+      {
+        "name": "21:00",
+        "earnings": 0
+      },
+      {
+        "name": "22:00",
+        "earnings": 0
+      },
+      {
+        "name": "23:00",
+        "earnings": 0
+      }
+    ]
+  }
+}

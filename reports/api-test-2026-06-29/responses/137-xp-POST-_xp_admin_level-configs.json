@@ -1,0 +1,15 @@
+{
+  "success": true,
+  "message": "Level config created successfully",
+  "data": {
+    "level": 50,
+    "xpRequired": 100,
+    "title": "Test Level",
+    "rewards": [],
+    "isActive": true,
+    "_id": "6a42603b0ca30d2754e1f9fc",
+    "createdAt": "2026-06-29T12:08:27.896Z",
+    "updatedAt": "2026-06-29T12:08:27.896Z",
+    "__v": 0
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "success": true,
+  "message": "Company fetched successfully",
+  "data": {
+    "_id": "6a42602a0ca30d2754e1f8ee",
+    "name": "TestCo 1782734889986",
+    "email": "co1782734889986@test.com",
+    "phone": "9999999999",
+    "address": "Test",
+    "createdAt": "2026-06-29T12:08:10.705Z",
+    "updatedAt": "2026-06-29T12:08:10.705Z",
+    "__v": 0
+  }
+}

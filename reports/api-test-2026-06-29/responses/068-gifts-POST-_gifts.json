@@ -1,0 +1,4 @@
+{
+  "success": false,
+  "message": "\"body.coin\" is required, \"body.icon\" is required"
+}

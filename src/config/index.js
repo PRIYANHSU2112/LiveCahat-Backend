@@ -14,6 +14,7 @@ const envVarsSchema = Joi.object()
     JWT_ACCESS_EXPIRATION_MINUTES: Joi.number().default(30).description('minutes after which access tokens expire'),
     AGORA_APP_ID: Joi.string().allow('').optional().description('Agora App ID for RTC token generation'),
     AGORA_APP_CERTIFICATE: Joi.string().allow('').optional().description('Agora App Certificate for RTC token signing'),
+    AGORA_AUTH_MODE: Joi.string().valid('secured', 'testing').optional().description('secured=signed token, testing=App ID only (null token)'),
   })
   .unknown();
 
@@ -37,8 +38,11 @@ const config = {
     accessExpirationMinutes: envVars.JWT_ACCESS_EXPIRATION_MINUTES,
   },
   agora: {
-    appId: envVars.AGORA_APP_ID,
-    appCertificate: envVars.AGORA_APP_CERTIFICATE,
+    appId: (envVars.AGORA_APP_ID || '').trim(),
+    appCertificate: (envVars.AGORA_APP_CERTIFICATE || '').trim(),
+    authMode:
+      envVars.AGORA_AUTH_MODE ||
+      ((envVars.AGORA_APP_CERTIFICATE || '').trim() ? 'secured' : 'testing'),
   },
 };
 

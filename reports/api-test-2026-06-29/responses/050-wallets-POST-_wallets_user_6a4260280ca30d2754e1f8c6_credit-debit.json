@@ -1,0 +1,4 @@
+{
+  "success": false,
+  "message": "Invalid input data. Path `referenceType` is required."
+}

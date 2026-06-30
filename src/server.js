@@ -5,6 +5,7 @@ import { Server } from 'socket.io';
 import { createAdapter } from '@socket.io/redis-adapter';
 import { pubClient, subClient, connectRedis } from './config/redis.js';
 import app from './app.js';
+import config from './config/index.js';
 import logger from './utils/logger.util.js';
 
 dotenv.config();
@@ -53,6 +54,10 @@ mongoose.connect(DB_URI)
 
     httpServer.listen(PORT, () => {
       logger.info(`Server running on port ${PORT}...`);
+      if (config.agora.appId) {
+        const masked = `${config.agora.appId.slice(0, 4)}...${config.agora.appId.slice(-4)}`;
+        logger.info(`[Agora] App ID ${masked}, auth mode: ${config.agora.authMode}`);
+      }
     });
   })
   .catch((err) => {

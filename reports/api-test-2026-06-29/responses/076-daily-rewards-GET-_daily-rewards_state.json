@@ -1,0 +1,85 @@
+{
+  "success": true,
+  "message": "Daily reward state retrieved successfully",
+  "data": {
+    "streakState": {
+      "lastClaimedDay": 0,
+      "lastClaimedAt": null,
+      "specialGiftWeek": 1,
+      "isClaimedToday": false,
+      "nextDayToClaim": 1
+    },
+    "rewardsConfig": [
+      {
+        "_id": "6a311b36e3df08db1d8ffeb7",
+        "day": 1,
+        "rewardType": "COINS",
+        "rewardValue": 100,
+        "giftId": null,
+        "createdAt": "2026-06-16T09:45:26.422Z",
+        "updatedAt": "2026-06-16T09:45:26.422Z",
+        "__v": 0
+      },
+      {
+        "_id": "6a311b36e3df08db1d8ffeba",
+        "day": 2,
+        "rewardType": "COINS",
+        "rewardValue": 110,
+        "giftId": null,
+        "createdAt": "2026-06-16T09:45:26.539Z",
+        "updatedAt": "2026-06-16T09:45:26.539Z",
+        "__v": 0
+      },
+      {
+        "_id": "6a311b36e3df08db1d8ffebd",
+        "day": 3,
+        "rewardType": "COINS",
+        "rewardValue": 120,
+        "giftId": null,
+        "createdAt": "2026-06-16T09:45:26.670Z",
+        "updatedAt": "2026-06-16T09:45:26.670Z",
+        "__v": 0
+      },
+      {
+        "_id": "6a311b36e3df08db1d8ffec0",
+        "day": 4,
+        "rewardType": "COINS",
+        "rewardValue": 130,
+        "giftId": null,
+        "createdAt": "2026-06-16T09:45:26.777Z",
+        "updatedAt": "2026-06-16T09:45:26.777Z",
+        "__v": 0
+      },
+      {
+        "_id": "6a311b36e3df08db1d8ffec3",
+        "day": 5,
+        "rewardType": "COINS",
+        "rewardValue": 140,
+        "giftId": null,
+        "createdAt": "2026-06-16T09:45:26.898Z",
+        "updatedAt": "2026-06-16T09:45:26.898Z",
+        "__v": 0
+      },
+      {
+        "_id": "6a311b37e3df08db1d8ffec6",
+        "day": 6,
+        "rewardType": "COINS",
+        "rewardValue": 150,
+        "giftId": null,
+        "createdAt": "2026-06-16T09:45:27.020Z",
+        "updatedAt": "2026-06-16T09:45:27.020Z",
+        "__v": 0
+      },
+      {
+        "_id": "6a311b37e3df08db1d8ffec9",
+        "day": 7,
+        "rewardType": "GIFT",
+        "rewardValue": 0,
+        "giftId": null,
+        "createdAt": "2026-06-16T09:45:27.178Z",
+        "updatedAt": "2026-06-16T09:45:27.178Z",
+        "__v": 0
+      }
+    ]
+  }
+}

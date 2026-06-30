@@ -8,6 +8,15 @@ import communicationSessionService from '../services/communication-session.servi
 class ChatController extends BaseController {
 
   /**
+   * GET /chats/conversations
+   * WhatsApp/Instagram-style conversation list for the authenticated user.
+   */
+  getConversations = catchAsync(async (req, res) => {
+    const result = await chatMessageService.getConversations(req.user._id, req.query);
+    this.sendResponse(res, 200, 'Conversations fetched successfully', result);
+  });
+
+  /**
    * GET /chats/sessions
    * List all chat sessions for the authenticated user with last message preview.
    */

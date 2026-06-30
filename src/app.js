@@ -42,13 +42,15 @@ app.use(mongoSanitize()); // Data sanitization against NoSQL query injection
 app.use(xss()); // Data sanitization against XSS
 app.use(hpp()); // Prevent parameter pollution
 
-// Limit requests from same API
+// Limit requests from same API (skip during full API test runs)
 const limiter = rateLimit({
   max: 100,
   windowMs: 60 * 60 * 1000,
   message: 'Too many requests from this IP, please try again in an hour!'
 });
-app.use('/api', limiter);
+if (process.env.DISABLE_RATE_LIMIT !== 'true') {
+  app.use('/api', limiter);
+}
 
 // Request Logger & Response Timer
 app.use(responseTimeTracker);

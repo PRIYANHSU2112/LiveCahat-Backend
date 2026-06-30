@@ -1,0 +1,24 @@
+{
+  "success": true,
+  "message": "Feedback fetched successfully",
+  "data": {
+    "_id": "6a4260c90ca30d2754e1fa30",
+    "userId": {
+      "_id": "6a4260c70ca30d2754e1fa10",
+      "firstName": "Test",
+      "lastName": "Customer",
+      "profileImage": "https://api.dicebear.com/7.x/bottts/svg?seed=NeonHacker"
+    },
+    "userType": "CUSTOMER",
+    "category": "OTHER",
+    "message": "Setup feedback",
+    "rating": 4,
+    "status": "OPEN",
+    "adminResponse": null,
+    "respondedBy": null,
+    "respondedAt": null,
+    "createdAt": "2026-06-29T12:10:49.593Z",
+    "updatedAt": "2026-06-29T12:10:49.593Z",
+    "__v": 0
+  }
+}

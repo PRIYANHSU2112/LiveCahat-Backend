@@ -40,6 +40,9 @@ const chatMessageSchema = new mongoose.Schema(
 
 // Compound index for fetching messages by session in chronological order
 chatMessageSchema.index({ sessionId: 1, createdAt: 1 });
+// Latest message per session + unread counts
+chatMessageSchema.index({ sessionId: 1, createdAt: -1 });
+chatMessageSchema.index({ sessionId: 1, senderId: 1, readAt: 1 });
 
 const ChatMessage = mongoose.model('ChatMessage', chatMessageSchema);
 export default ChatMessage;

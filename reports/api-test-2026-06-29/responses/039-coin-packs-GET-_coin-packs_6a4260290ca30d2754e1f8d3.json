@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "message": "Coin pack fetched successfully",
+  "data": {
+    "_id": "6a4260290ca30d2754e1f8d3",
+    "name": "SetupPack1782734888956",
+    "coins": 50,
+    "price": 49,
+    "currency": "INR",
+    "referralBonusCoins": 0,
+    "isActive": true,
+    "createdAt": "2026-06-29T12:08:09.024Z",
+    "updatedAt": "2026-06-29T12:08:09.024Z",
+    "ratePerCoin": 0.98,
+    "__v": 0
+  }
+}

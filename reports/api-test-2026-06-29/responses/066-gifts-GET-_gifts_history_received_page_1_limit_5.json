@@ -1,0 +1,10 @@
+{
+  "success": true,
+  "message": "Received gifts history fetched successfully",
+  "data": {
+    "total": 0,
+    "page": 1,
+    "limit": 5,
+    "data": []
+  }
+}

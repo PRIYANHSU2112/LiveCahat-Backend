@@ -1,0 +1,53 @@
+{
+  "summary": {
+    "Total APIs Tested": 163,
+    "Passed APIs": 155,
+    "Failed APIs": 8,
+    "APIs with Response Time > 200 ms": 28,
+    "Average Response Time (ms)": 144,
+    "Fastest API": "POST /wallets/payments/webhook-mock (5ms)",
+    "Slowest API": "POST /daily-rewards/claim (824ms)"
+  },
+  "failed": [
+    {
+      "endpoint": "/users/agent",
+      "status": 403,
+      "remarks": "Expected 200|201, got 403"
+    },
+    {
+      "endpoint": "/listeners/profile",
+      "status": 404,
+      "remarks": "Expected 200|201|204, got 404"
+    },
+    {
+      "endpoint": "/reviews/listeners/6a3dfdba4cea8bbb9bb774ea",
+      "status": 400,
+      "remarks": "Expected 200|201, got 400"
+    },
+    {
+      "endpoint": "/auth/login",
+      "status": 500,
+      "remarks": "Login endpoint reachable; credentials may not exist"
+    },
+    {
+      "endpoint": "/feedback/6a4260c90ca30d2754e1fa30",
+      "status": 400,
+      "remarks": "Expected 200|201|204, got 400"
+    },
+    {
+      "endpoint": "/xp/admin/level-configs",
+      "status": 500,
+      "remarks": "Expected 200|201|400, got 500"
+    },
+    {
+      "endpoint": "/auth/verify-otp",
+      "status": 400,
+      "remarks": "Uses same mobile from bootstrap"
+    },
+    {
+      "endpoint": "/withdrawals",
+      "status": 403,
+      "remarks": "May fail if insufficient balance or invalid bank account"
+    }
+  ]
+}

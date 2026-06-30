@@ -1,0 +1,16 @@
+{
+  "success": true,
+  "message": "Quote calculated successfully",
+  "data": {
+    "coins": 100,
+    "conversionCoins": 1000,
+    "conversionInr": 100,
+    "ratePerCoin": 0.1,
+    "grossInr": 10,
+    "feePercentage": 0,
+    "feeInr": 0,
+    "netInr": 10,
+    "minWithdrawalCoins": 1000,
+    "meetsMinimum": false
+  }
+}

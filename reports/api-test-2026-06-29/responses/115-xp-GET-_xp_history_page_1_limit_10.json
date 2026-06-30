@@ -1,0 +1,28 @@
+{
+  "success": true,
+  "message": "XP history fetched successfully",
+  "data": {
+    "data": [
+      {
+        "_id": "6a4260340ca30d2754e1f987",
+        "userId": "6a4260280ca30d2754e1f8c6",
+        "action": "DAILY_LOGIN",
+        "xpAwarded": 10,
+        "xpBefore": 0,
+        "xpAfter": 10,
+        "levelBefore": 1,
+        "levelAfter": 1,
+        "metadata": {},
+        "createdAt": "2026-06-29T12:08:20.729Z",
+        "updatedAt": "2026-06-29T12:08:20.729Z",
+        "__v": 0
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "total": 1,
+      "totalPages": 1
+    }
+  }
+}

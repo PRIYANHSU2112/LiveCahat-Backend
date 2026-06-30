@@ -1,0 +1,13 @@
+{
+  "success": true,
+  "message": "Anchor status fetched successfully",
+  "data": {
+    "anchorLevel": 0,
+    "currentTitle": null,
+    "totalEarnings": 0,
+    "profileCompleted": false,
+    "nextLevel": null,
+    "unclaimedCount": 0,
+    "ladder": []
+  }
+}

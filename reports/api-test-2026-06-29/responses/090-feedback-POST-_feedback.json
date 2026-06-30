@@ -1,0 +1,4 @@
+{
+  "success": false,
+  "message": "\"body.category\" must be one of [BUG, SUGGESTION, COMPLAINT, OTHER]"
+}

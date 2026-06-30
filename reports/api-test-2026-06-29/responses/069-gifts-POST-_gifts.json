@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "message": "Gift created successfully",
+  "data": {
+    "name": "Gift1782735050427",
+    "coin": 10,
+    "earningPercent": 70,
+    "adminPercent": 30,
+    "icon": "https://example.com/g.png",
+    "category": "REGULAR",
+    "isActive": true,
+    "_id": "6a4260d60ca30d2754e1fac2",
+    "createdAt": "2026-06-29T12:11:02.790Z",
+    "updatedAt": "2026-06-29T12:11:02.790Z",
+    "__v": 0
+  }
+}

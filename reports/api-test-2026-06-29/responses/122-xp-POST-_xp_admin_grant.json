@@ -1,0 +1,12 @@
+{
+  "success": true,
+  "message": "XP granted successfully",
+  "data": {
+    "xpAwarded": 5,
+    "newXp": 15,
+    "levelBefore": 1,
+    "newLevel": 1,
+    "leveledUp": false,
+    "levelUpData": null
+  }
+}

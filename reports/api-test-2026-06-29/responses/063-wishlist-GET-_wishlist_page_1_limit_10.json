@@ -1,0 +1,46 @@
+{
+  "success": true,
+  "message": "Wishlist fetched successfully",
+  "data": {
+    "docs": [
+      {
+        "_id": "6a4260d5b46d99b4e52f7386",
+        "user": {
+          "_id": "6a3dfdba4cea8bbb9bb774ea",
+          "firstName": "Aularis",
+          "lastName": "Listener",
+          "isOnline": true
+        },
+        "listenerProfile": {
+          "_id": "6a3dfdba4cea8bbb9bb774fb",
+          "bio": "Professional relationship counselor and life coach. Let's talk!",
+          "profilePhotos": [],
+          "categories": [
+            "Friendly Talk",
+            "Casual Chat"
+          ],
+          "interests": [
+            "Counseling",
+            "Life Advice",
+            "Meditation"
+          ],
+          "chatRate": 10,
+          "voiceRate": 15,
+          "videoRate": 20,
+          "avgRating": 0,
+          "totalRatings": 0,
+          "availability": "OFFLINE"
+        },
+        "listenerId": "6a3dfdba4cea8bbb9bb774ea"
+      }
+    ],
+    "meta": {
+      "totalDocuments": 1,
+      "totalPages": 1,
+      "currentPage": 1,
+      "limit": 10,
+      "hasNextPage": false,
+      "hasPrevPage": false
+    }
+  }
+}

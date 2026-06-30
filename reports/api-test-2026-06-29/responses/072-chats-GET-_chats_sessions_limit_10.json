@@ -1,0 +1,13 @@
+{
+  "success": true,
+  "message": "Chat sessions fetched successfully",
+  "data": {
+    "sessions": [],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "total": 0,
+      "totalPages": 0
+    }
+  }
+}

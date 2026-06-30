@@ -1,0 +1,33 @@
+{
+  "success": true,
+  "message": "Languages fetched successfully",
+  "data": [
+    {
+      "_id": "6a42602e0ca30d2754e1f932",
+      "name": "Lang89986",
+      "code": "L9986",
+      "isActive": true,
+      "createdAt": "2026-06-29T12:08:14.750Z",
+      "updatedAt": "2026-06-29T12:08:14.750Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a425f695f8b04d72118d39d",
+      "name": "SetupLang1782734696151",
+      "code": "S6151",
+      "isActive": true,
+      "createdAt": "2026-06-29T12:04:57.189Z",
+      "updatedAt": "2026-06-29T12:04:57.189Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a4260c80ca30d2754e1fa1a",
+      "name": "SetupLang1782735048227",
+      "code": "S8227",
+      "isActive": true,
+      "createdAt": "2026-06-29T12:10:48.369Z",
+      "updatedAt": "2026-06-29T12:10:48.369Z",
+      "__v": 0
+    }
+  ]
+}

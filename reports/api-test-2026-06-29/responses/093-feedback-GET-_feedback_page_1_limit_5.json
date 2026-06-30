@@ -1,0 +1,54 @@
+{
+  "success": true,
+  "message": "Feedback list fetched successfully",
+  "data": {
+    "docs": [
+      {
+        "_id": "6a4260da0ca30d2754e1fafb",
+        "userId": {
+          "_id": "6a4260c70ca30d2754e1fa10",
+          "firstName": "Test",
+          "lastName": "Customer"
+        },
+        "userType": "CUSTOMER",
+        "category": "OTHER",
+        "message": "API test feedback",
+        "rating": 4,
+        "status": "OPEN",
+        "adminResponse": null,
+        "respondedBy": null,
+        "respondedAt": null,
+        "createdAt": "2026-06-29T12:11:06.700Z",
+        "updatedAt": "2026-06-29T12:11:06.700Z",
+        "__v": 0
+      },
+      {
+        "_id": "6a4260c90ca30d2754e1fa30",
+        "userId": {
+          "_id": "6a4260c70ca30d2754e1fa10",
+          "firstName": "Test",
+          "lastName": "Customer"
+        },
+        "userType": "CUSTOMER",
+        "category": "OTHER",
+        "message": "Setup feedback",
+        "rating": 4,
+        "status": "OPEN",
+        "adminResponse": null,
+        "respondedBy": null,
+        "respondedAt": null,
+        "createdAt": "2026-06-29T12:10:49.593Z",
+        "updatedAt": "2026-06-29T12:10:49.593Z",
+        "__v": 0
+      }
+    ],
+    "meta": {
+      "totalDocuments": 2,
+      "totalPages": 1,
+      "currentPage": 1,
+      "limit": 5,
+      "hasNextPage": false,
+      "hasPrevPage": false
+    }
+  }
+}

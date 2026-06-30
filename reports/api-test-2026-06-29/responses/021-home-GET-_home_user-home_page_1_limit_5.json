@@ -1,0 +1,108 @@
+{
+  "success": true,
+  "message": "Listeners fetched successfully",
+  "data": {
+    "docs": [
+      {
+        "_id": "6a3245bc0d3a67122fdcd4bb",
+        "userId": "6a3245bb0d3a67122fdcd4b2",
+        "bio": "Professional relationship counselor and life coach. Let's talk and resolve your doubts!",
+        "profilePhotos": [],
+        "categories": [
+          "Relationship Advice",
+          "Casual Chat"
+        ],
+        "chatRate": 10,
+        "voiceRate": 15,
+        "videoRate": 20,
+        "avgRating": 5,
+        "totalRatings": 1,
+        "totalSessions": 19,
+        "availability": "ONLINE",
+        "isFeatured": false,
+        "followersCount": 0,
+        "anchorLevel": 0,
+        "user": {
+          "_id": "6a3245bb0d3a67122fdcd4b2",
+          "firstName": "Aaravi",
+          "lastName": "Mehta",
+          "isOnline": false,
+          "currentLevel": 2
+        },
+        "languageDetails": []
+      },
+      {
+        "_id": "6a3dfdba4cea8bbb9bb774fb",
+        "userId": "6a3dfdba4cea8bbb9bb774ea",
+        "bio": "Professional relationship counselor and life coach. Let's talk!",
+        "profilePhotos": [],
+        "categories": [
+          "Friendly Talk",
+          "Casual Chat"
+        ],
+        "chatRate": 10,
+        "voiceRate": 15,
+        "videoRate": 20,
+        "avgRating": 0,
+        "totalRatings": 0,
+        "totalSessions": 0,
+        "availability": "OFFLINE",
+        "isFeatured": false,
+        "followersCount": 0,
+        "anchorLevel": 0,
+        "user": {
+          "_id": "6a3dfdba4cea8bbb9bb774ea",
+          "firstName": "Aularis",
+          "lastName": "Listener",
+          "countryCode": "IN",
+          "isOnline": true,
+          "currentLevel": 1
+        },
+        "languageDetails": [],
+        "countryDetails": {
+          "_id": "6a3cb3fc588bd4e36b4d1629",
+          "name": "India",
+          "code": "IN",
+          "dialCode": "+91",
+          "flagUrl": "https://flagcdn.com/in.svg"
+        }
+      },
+      {
+        "_id": "6a3245bd0d3a67122fdcd4c4",
+        "userId": "6a3245bc0d3a67122fdcd4c1",
+        "bio": "Experienced wellness coach and motivational speaker. Let's find your peace.",
+        "profilePhotos": [],
+        "categories": [
+          "Motivation",
+          "Mental Wellness"
+        ],
+        "chatRate": 12,
+        "voiceRate": 18,
+        "videoRate": 25,
+        "avgRating": 0,
+        "totalRatings": 0,
+        "totalSessions": 3,
+        "availability": "ONLINE",
+        "isFeatured": false,
+        "followersCount": 0,
+        "anchorLevel": 0,
+        "user": {
+          "_id": "6a3245bc0d3a67122fdcd4c1",
+          "firstName": "Ananya",
+          "lastName": "Iyer",
+          "isOnline": false,
+          "currentLevel": 1
+        },
+        "languageDetails": []
+      }
+    ],
+    "meta": {
+      "totalDocuments": 3,
+      "totalPages": 1,
+      "currentPage": 1,
+      "limit": 5,
+      "hasNextPage": false,
+      "hasPrevPage": false
+    }
+  }
+}

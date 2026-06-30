@@ -1,0 +1,9 @@
+{
+  "success": true,
+  "message": "Follow counts fetched successfully",
+  "data": {
+    "followingCount": 0,
+    "followersCount": 0,
+    "isListener": false
+  }
+}

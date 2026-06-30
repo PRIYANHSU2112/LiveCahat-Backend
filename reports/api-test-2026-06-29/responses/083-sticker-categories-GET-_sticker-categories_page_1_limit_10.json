@@ -1,0 +1,70 @@
+{
+  "success": true,
+  "message": "Sticker categories fetched successfully",
+  "data": {
+    "docs": [
+      {
+        "_id": "6a425f6a5f8b04d72118d3a4",
+        "name": "SetupCat1782734698202",
+        "sortOrder": 0,
+        "isActive": true,
+        "createdAt": "2026-06-29T12:04:58.564Z",
+        "updatedAt": "2026-06-29T12:04:58.564Z",
+        "__v": 0
+      },
+      {
+        "_id": "6a4260290ca30d2754e1f8d7",
+        "name": "SetupCat1782734889170",
+        "sortOrder": 0,
+        "isActive": true,
+        "createdAt": "2026-06-29T12:08:09.231Z",
+        "updatedAt": "2026-06-29T12:08:09.231Z",
+        "__v": 0
+      },
+      {
+        "_id": "6a34f044a33a6b51acca3dbe",
+        "name": "Expressive Emojis",
+        "slug": "expressive-emojis",
+        "icon": "😊",
+        "description": "Standard expressive emoji stickers for casual chatting.",
+        "sortOrder": 1,
+        "isActive": true,
+        "createdAt": "2026-06-19T07:31:16.735Z",
+        "updatedAt": "2026-06-19T07:31:16.735Z",
+        "__v": 0
+      },
+      {
+        "_id": "6a34f045a33a6b51acca3dc0",
+        "name": "Internet Memes",
+        "slug": "internet-memes",
+        "icon": "😂",
+        "description": "Popular internet memes to keep the chats entertaining.",
+        "sortOrder": 2,
+        "isActive": true,
+        "createdAt": "2026-06-19T07:31:17.087Z",
+        "updatedAt": "2026-06-19T07:31:17.087Z",
+        "__v": 0
+      },
+      {
+        "_id": "6a34f045a33a6b51acca3dc2",
+        "name": "Premium Reactions",
+        "slug": "premium-reactions",
+        "icon": "🔥",
+        "description": "Exclusive and high-value sticker reactions for top tier conversations.",
+        "sortOrder": 3,
+        "isActive": true,
+        "createdAt": "2026-06-19T07:31:17.490Z",
+        "updatedAt": "2026-06-19T07:31:17.490Z",
+        "__v": 0
+      }
+    ],
+    "meta": {
+      "totalDocuments": 5,
+      "totalPages": 1,
+      "currentPage": 1,
+      "limit": 10,
+      "hasNextPage": false,
+      "hasPrevPage": false
+    }
+  }
+}

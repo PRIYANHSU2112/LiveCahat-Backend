@@ -1,0 +1,8 @@
+{
+  "success": true,
+  "message": "Dashboard fetched successfully",
+  "data": {
+    "todayEarnings": 0,
+    "activeMinutes": 0
+  }
+}

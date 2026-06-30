@@ -1,0 +1,61 @@
+{
+  "success": true,
+  "message": "Countries fetched successfully",
+  "data": [
+    {
+      "_id": "6a3cb3fc588bd4e36b4d1635",
+      "name": "Australia",
+      "code": "AU",
+      "dialCode": "+61",
+      "flagUrl": "https://flagcdn.com/au.svg",
+      "isActive": true,
+      "createdAt": "2026-06-25T04:52:12.921Z",
+      "updatedAt": "2026-06-25T04:52:12.921Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a3cb3fc588bd4e36b4d1629",
+      "name": "India",
+      "code": "IN",
+      "dialCode": "+91",
+      "flagUrl": "https://flagcdn.com/in.svg",
+      "isActive": true,
+      "createdAt": "2026-06-25T04:52:12.358Z",
+      "updatedAt": "2026-06-25T04:52:12.358Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a3cb3fc588bd4e36b4d1632",
+      "name": "United Arab Emirates",
+      "code": "AE",
+      "dialCode": "+971",
+      "flagUrl": "https://flagcdn.com/ae.svg",
+      "isActive": true,
+      "createdAt": "2026-06-25T04:52:12.789Z",
+      "updatedAt": "2026-06-25T04:52:12.789Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a3cb3fc588bd4e36b4d162f",
+      "name": "United Kingdom",
+      "code": "GB",
+      "dialCode": "+44",
+      "flagUrl": "https://flagcdn.com/gb.svg",
+      "isActive": true,
+      "createdAt": "2026-06-25T04:52:12.650Z",
+      "updatedAt": "2026-06-25T04:52:12.650Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a3cb3fc588bd4e36b4d162c",
+      "name": "United States",
+      "code": "US",
+      "dialCode": "+1",
+      "flagUrl": "https://flagcdn.com/us.svg",
+      "isActive": true,
+      "createdAt": "2026-06-25T04:52:12.525Z",
+      "updatedAt": "2026-06-25T04:52:12.525Z",
+      "__v": 0
+    }
+  ]
+}

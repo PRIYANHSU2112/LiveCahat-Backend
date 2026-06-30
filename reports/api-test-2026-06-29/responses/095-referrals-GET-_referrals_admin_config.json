@@ -1,0 +1,13 @@
+{
+  "success": true,
+  "message": "Referral config fetched successfully",
+  "data": {
+    "_id": "6a363a37a4db3e2dbf179699",
+    "referrerRewardCoins": 50,
+    "referredRewardCoins": 50,
+    "inviteLinkPrefix": "https://cornerchat.com/invite?code=",
+    "createdAt": "2026-06-20T06:59:03.676Z",
+    "updatedAt": "2026-06-20T06:59:03.676Z",
+    "__v": 0
+  }
+}

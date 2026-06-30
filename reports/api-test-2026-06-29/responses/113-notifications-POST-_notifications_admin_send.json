@@ -1,0 +1,19 @@
+{
+  "success": true,
+  "message": "Notification sent successfully",
+  "data": {
+    "recipientId": "6a4260c70ca30d2754e1fa10",
+    "senderId": "6a425f685f8b04d72118d399",
+    "title": "Test",
+    "body": "Hello from API test",
+    "type": "SYSTEM",
+    "status": "UNREAD",
+    "metadata": {},
+    "pushSent": false,
+    "pushError": null,
+    "_id": "6a4260dd0ca30d2754e1fb25",
+    "createdAt": "2026-06-29T12:11:09.606Z",
+    "updatedAt": "2026-06-29T12:11:09.606Z",
+    "__v": 0
+  }
+}

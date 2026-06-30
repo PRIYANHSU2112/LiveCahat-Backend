@@ -1,0 +1,19 @@
+{
+  "success": true,
+  "message": "Bank accounts fetched successfully",
+  "data": [
+    {
+      "_id": "6a4260c90ca30d2754e1fa33",
+      "userId": "6a4260c80ca30d2754e1fa15",
+      "methodType": "BANK",
+      "bankName": "HDFC",
+      "accountHolderName": "Setup Listener",
+      "accountNumber": "9876543210",
+      "ifscCode": "HDFC0001234",
+      "isDefault": false,
+      "createdAt": "2026-06-29T12:10:49.987Z",
+      "updatedAt": "2026-06-29T12:10:49.987Z",
+      "__v": 0
+    }
+  ]
+}

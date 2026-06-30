@@ -1,0 +1,20 @@
+{
+  "success": true,
+  "message": "Gift sent successfully",
+  "data": {
+    "giftId": "6a4260c80ca30d2754e1fa20",
+    "senderId": "6a4260c70ca30d2754e1fa10",
+    "receiverId": "6a3dfdba4cea8bbb9bb774ea",
+    "coins": 5,
+    "earningPercent": 70,
+    "adminPercent": 30,
+    "earningCoins": 3,
+    "adminCoins": 2,
+    "type": "USER_TO_LISTENER",
+    "status": "SUCCESS",
+    "_id": "6a4260e10ca30d2754e1fb58",
+    "createdAt": "2026-06-29T12:11:13.854Z",
+    "updatedAt": "2026-06-29T12:11:13.854Z",
+    "__v": 0
+  }
+}

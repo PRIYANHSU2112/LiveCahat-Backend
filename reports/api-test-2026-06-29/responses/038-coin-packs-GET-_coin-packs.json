@@ -1,0 +1,110 @@
+{
+  "success": true,
+  "message": "Coin packs fetched successfully",
+  "data": [
+    {
+      "_id": "6a3245be0d3a67122fdcd4ca",
+      "name": "Starter Pack",
+      "coins": 50,
+      "price": 49,
+      "currency": "INR",
+      "isActive": true,
+      "badge": "Value Pack",
+      "description": "Ideal for quick casual chats.",
+      "__v": 0,
+      "createdAt": "2026-06-17T06:59:10.486Z",
+      "updatedAt": "2026-06-17T06:59:10.486Z"
+    },
+    {
+      "_id": "6a425f695f8b04d72118d3a0",
+      "name": "SetupPack1782734697500",
+      "coins": 50,
+      "price": 49,
+      "currency": "INR",
+      "referralBonusCoins": 0,
+      "isActive": true,
+      "createdAt": "2026-06-29T12:04:57.813Z",
+      "updatedAt": "2026-06-29T12:04:57.813Z",
+      "ratePerCoin": 0.98,
+      "__v": 0
+    },
+    {
+      "_id": "6a4260c80ca30d2754e1fa1d",
+      "name": "SetupPack1782735048429",
+      "coins": 50,
+      "price": 49,
+      "currency": "INR",
+      "referralBonusCoins": 0,
+      "isActive": true,
+      "createdAt": "2026-06-29T12:10:48.504Z",
+      "updatedAt": "2026-06-29T12:10:48.504Z",
+      "ratePerCoin": 0.98,
+      "__v": 0
+    },
+    {
+      "_id": "6a3245be0d3a67122fdcd4cb",
+      "name": "Popular Pack",
+      "coins": 120,
+      "price": 99,
+      "currency": "INR",
+      "isActive": true,
+      "badge": "Most Popular",
+      "description": "Get more value for longer conversations.",
+      "__v": 0,
+      "createdAt": "2026-06-17T06:59:10.487Z",
+      "updatedAt": "2026-06-17T06:59:10.487Z"
+    },
+    {
+      "_id": "6a42602f0ca30d2754e1f937",
+      "name": "Pack1782734889986",
+      "coins": 100,
+      "price": 99,
+      "currency": "INR",
+      "referralBonusCoins": 0,
+      "isActive": true,
+      "createdAt": "2026-06-29T12:08:15.061Z",
+      "updatedAt": "2026-06-29T12:08:15.061Z",
+      "ratePerCoin": 0.99,
+      "__v": 0
+    },
+    {
+      "_id": "6a3245be0d3a67122fdcd4cc",
+      "name": "Super Saver",
+      "coins": 300,
+      "price": 249,
+      "currency": "INR",
+      "isActive": true,
+      "badge": "Best Value",
+      "description": "Our best rate for deep venting sessions.",
+      "__v": 0,
+      "createdAt": "2026-06-17T06:59:10.487Z",
+      "updatedAt": "2026-06-17T06:59:10.487Z"
+    },
+    {
+      "_id": "6a3245be0d3a67122fdcd4cd",
+      "name": "Mega Pack",
+      "coins": 650,
+      "price": 499,
+      "currency": "INR",
+      "isActive": true,
+      "badge": "Mega Saver",
+      "description": "Uninterrupted talking time.",
+      "__v": 0,
+      "createdAt": "2026-06-17T06:59:10.487Z",
+      "updatedAt": "2026-06-17T06:59:10.487Z"
+    },
+    {
+      "_id": "6a3245be0d3a67122fdcd4ce",
+      "name": "Ultimate Pack",
+      "coins": 15000,
+      "price": 999,
+      "currency": "INR",
+      "isActive": true,
+      "badge": "Premium Choice",
+      "description": "For long term advice and coaching sessions.",
+      "__v": 0,
+      "createdAt": "2026-06-17T06:59:10.487Z",
+      "updatedAt": "2026-06-17T06:59:10.487Z"
+    }
+  ]
+}

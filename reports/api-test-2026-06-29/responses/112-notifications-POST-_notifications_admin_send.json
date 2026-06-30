@@ -1,0 +1,4 @@
+{
+  "success": false,
+  "message": "\"body.recipientId\" is required, \"body.type\" must be one of [CALL_INCOMING, CHAT_MESSAGE, GIFT_RECEIVED, BALANCE_LOW, SESSION_ENDED, VERIFICATION_APPROVED, VERIFICATION_REJECTED, PAYOUT_PROCESSED, PROMO_OFFER, SYSTEM, LEVEL_UP]"
+}

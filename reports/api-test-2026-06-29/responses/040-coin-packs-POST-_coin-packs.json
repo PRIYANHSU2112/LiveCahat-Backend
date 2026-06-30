@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "message": "Coin pack created successfully",
+  "data": {
+    "name": "Pack1782735050427",
+    "coins": 100,
+    "price": 99,
+    "currency": "INR",
+    "referralBonusCoins": 0,
+    "isActive": true,
+    "_id": "6a4260d20ca30d2754e1fa8e",
+    "createdAt": "2026-06-29T12:10:58.106Z",
+    "updatedAt": "2026-06-29T12:10:58.106Z",
+    "ratePerCoin": 0.99,
+    "__v": 0
+  }
+}

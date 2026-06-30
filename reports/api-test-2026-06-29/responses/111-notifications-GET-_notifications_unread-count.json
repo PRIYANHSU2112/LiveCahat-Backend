@@ -1,0 +1,7 @@
+{
+  "success": true,
+  "message": "Unread count fetched successfully",
+  "data": {
+    "unreadCount": 0
+  }
+}

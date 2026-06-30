@@ -1,0 +1,25 @@
+{
+  "success": true,
+  "message": "Companies fetched successfully",
+  "data": [
+    {
+      "_id": "6a42602a0ca30d2754e1f8ee",
+      "name": "TestCo 1782734889986",
+      "email": "co1782734889986@test.com",
+      "phone": "9999999999",
+      "address": "Test",
+      "createdAt": "2026-06-29T12:08:10.705Z",
+      "updatedAt": "2026-06-29T12:08:10.705Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a420456e6c31b8667c40074",
+      "name": "Updated Test Co",
+      "description": "Company description goes here.",
+      "email": "info@company.com",
+      "createdAt": "2026-06-29T05:36:22.572Z",
+      "updatedAt": "2026-06-29T12:08:10.853Z",
+      "__v": 0
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "success": true,
+  "message": "XP profile fetched successfully",
+  "data": {
+    "currentLevel": 1,
+    "currentXp": 10,
+    "xpForCurrentLevel": 0,
+    "xpForNextLevel": 100,
+    "xpToNextLevel": 90,
+    "progressPercent": 10,
+    "title": "Newcomer",
+    "badge": null,
+    "nextLevelTitle": "Explorer",
+    "badges": []
+  }
+}

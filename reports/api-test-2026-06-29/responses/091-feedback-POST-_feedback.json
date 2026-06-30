@@ -1,0 +1,19 @@
+{
+  "success": true,
+  "message": "Feedback submitted successfully",
+  "data": {
+    "userId": "6a4260c70ca30d2754e1fa10",
+    "userType": "CUSTOMER",
+    "category": "OTHER",
+    "message": "API test feedback",
+    "rating": 4,
+    "status": "OPEN",
+    "adminResponse": null,
+    "respondedBy": null,
+    "respondedAt": null,
+    "_id": "6a4260da0ca30d2754e1fafb",
+    "createdAt": "2026-06-29T12:11:06.700Z",
+    "updatedAt": "2026-06-29T12:11:06.700Z",
+    "__v": 0
+  }
+}

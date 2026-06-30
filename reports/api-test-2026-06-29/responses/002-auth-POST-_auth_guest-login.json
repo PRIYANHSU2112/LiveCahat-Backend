@@ -1,0 +1,50 @@
+{
+  "success": true,
+  "message": "Guest account created",
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhNDI2MGNhMGNhMzBkMjc1NGUxZmEzNyIsInR5cGUiOiJDVVNUT01FUiIsImlhdCI6MTc4MjczNTA1MSwiZXhwIjoxNzg3OTE5MDUxfQ.7JEVxtOmMDax-2xQrLfonOBF8PJnbsEBJCFroMsnJgg",
+    "user": {
+      "type": "CUSTOMER",
+      "country": null,
+      "roleId": null,
+      "languages": [],
+      "isOnline": false,
+      "profileCompleted": false,
+      "blockedUsers": [],
+      "isBlocked": false,
+      "blockedAt": null,
+      "isDeleted": false,
+      "deletedAt": null,
+      "followingCount": 0,
+      "unlockedAvatars": [],
+      "unlockedStickers": [],
+      "isGuest": true,
+      "deviceId": "dev-1782735050426",
+      "ageVerified": true,
+      "totalXp": 0,
+      "currentLevel": 1,
+      "badges": [],
+      "profileXpAwarded": false,
+      "firstCallDone": false,
+      "referredBy": null,
+      "referralCount": 0,
+      "referralEarnings": 0,
+      "referralRewardAwarded": false,
+      "commissionPercentage": 0,
+      "settings": {
+        "notifications": true,
+        "acceptIncomingCalls": true,
+        "dndChats": false,
+        "dndVoiceCall": false,
+        "dndVideoCall": false
+      },
+      "_id": "6a4260ca0ca30d2754e1fa37",
+      "createdAt": "2026-06-29T12:10:50.824Z",
+      "updatedAt": "2026-06-29T12:10:50.824Z",
+      "inviteCode": "MJA3575",
+      "__v": 0,
+      "fullName": "",
+      "id": "6a4260ca0ca30d2754e1fa37"
+    }
+  }
+}

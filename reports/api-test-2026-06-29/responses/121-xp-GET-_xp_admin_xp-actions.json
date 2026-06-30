@@ -1,0 +1,106 @@
+{
+  "success": true,
+  "message": "XP action configs fetched successfully",
+  "data": [
+    {
+      "_id": "6a33cb0de72746abeb261142",
+      "action": "AVATAR_UNLOCK",
+      "xp": 10,
+      "isActive": true,
+      "label": "Unlock a Paid Avatar",
+      "createdAt": "2026-06-18T10:40:13.053Z",
+      "updatedAt": "2026-06-18T10:40:13.053Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a33cb0be72746abeb261130",
+      "action": "CHAT_MESSAGE",
+      "xp": 2,
+      "isActive": true,
+      "label": "Send Chat Message",
+      "createdAt": "2026-06-18T10:40:11.269Z",
+      "updatedAt": "2026-06-18T10:40:11.269Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a33cb0be72746abeb26112d",
+      "action": "DAILY_LOGIN",
+      "xp": 10,
+      "isActive": true,
+      "label": "Daily Login",
+      "createdAt": "2026-06-18T10:40:11.148Z",
+      "updatedAt": "2026-06-18T10:40:11.148Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a33cb0ce72746abeb26113f",
+      "action": "DAILY_STREAK_BONUS",
+      "xp": 15,
+      "isActive": true,
+      "label": "Daily Streak Bonus",
+      "createdAt": "2026-06-18T10:40:12.445Z",
+      "updatedAt": "2026-06-18T10:40:12.445Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a33cb0de72746abeb261145",
+      "action": "FIRST_CALL",
+      "xp": 50,
+      "isActive": true,
+      "label": "First Ever Call (one-time)",
+      "createdAt": "2026-06-18T10:40:13.452Z",
+      "updatedAt": "2026-06-18T10:40:13.452Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a33cb0de72746abeb261148",
+      "action": "FOLLOW_USER",
+      "xp": 5,
+      "isActive": true,
+      "label": "Follow a User",
+      "createdAt": "2026-06-18T10:40:13.805Z",
+      "updatedAt": "2026-06-18T10:40:13.805Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a33cb0be72746abeb26113c",
+      "action": "GIFT_SENT",
+      "xp": 20,
+      "isActive": true,
+      "label": "Send a Gift",
+      "createdAt": "2026-06-18T10:40:11.737Z",
+      "updatedAt": "2026-06-18T10:40:11.737Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a33cb0be72746abeb261139",
+      "action": "PROFILE_COMPLETE",
+      "xp": 100,
+      "isActive": true,
+      "label": "Complete Profile (one-time)",
+      "createdAt": "2026-06-18T10:40:11.630Z",
+      "updatedAt": "2026-06-18T10:40:11.630Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a33cb0be72746abeb261136",
+      "action": "VIDEO_CALL",
+      "xp": 50,
+      "isActive": true,
+      "label": "Complete Video Call Session",
+      "createdAt": "2026-06-18T10:40:11.496Z",
+      "updatedAt": "2026-06-18T10:40:11.496Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a33cb0be72746abeb261133",
+      "action": "VOICE_CALL",
+      "xp": 30,
+      "isActive": true,
+      "label": "Complete Voice Call Session",
+      "createdAt": "2026-06-18T10:40:11.379Z",
+      "updatedAt": "2026-06-18T10:40:11.379Z",
+      "__v": 0
+    }
+  ]
+}

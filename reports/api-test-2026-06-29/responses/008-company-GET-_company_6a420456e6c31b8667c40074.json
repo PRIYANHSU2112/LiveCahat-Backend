@@ -1,0 +1,13 @@
+{
+  "success": true,
+  "message": "Company fetched successfully",
+  "data": {
+    "_id": "6a420456e6c31b8667c40074",
+    "name": "Default Company Name",
+    "description": "Company description goes here.",
+    "email": "info@company.com",
+    "createdAt": "2026-06-29T05:36:22.572Z",
+    "updatedAt": "2026-06-29T05:36:22.572Z",
+    "__v": 0
+  }
+}

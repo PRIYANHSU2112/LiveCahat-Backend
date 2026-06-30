@@ -1,0 +1,75 @@
+{
+  "success": true,
+  "message": "Gifts fetched successfully",
+  "data": [
+    {
+      "_id": "6a4260c80ca30d2754e1fa20",
+      "name": "SetupGift1782735048570",
+      "coin": 5,
+      "earningPercent": 70,
+      "adminPercent": 30,
+      "icon": "https://example.com/g.png",
+      "category": "REGULAR",
+      "isActive": true,
+      "createdAt": "2026-06-29T12:10:48.645Z",
+      "updatedAt": "2026-06-29T12:10:48.645Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a311b35e3df08db1d8ffea6",
+      "name": "Diamond Mystery Chest",
+      "coin": 2500,
+      "earningPercent": 70,
+      "adminPercent": 30,
+      "icon": "https://cdn-icons-png.flaticon.com/512/3082/3082076.png",
+      "category": "SPECIAL",
+      "isActive": true,
+      "description": "Contains ultimate rewards.",
+      "createdAt": "2026-06-16T09:45:25.830Z",
+      "updatedAt": "2026-06-16T09:45:25.830Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a311b35e3df08db1d8ffe9e",
+      "name": "Gold Mystery Chest",
+      "coin": 1000,
+      "earningPercent": 70,
+      "adminPercent": 30,
+      "icon": "https://cdn-icons-png.flaticon.com/512/3082/3082071.png",
+      "category": "SPECIAL",
+      "isActive": true,
+      "description": "Contains premium rewards.",
+      "createdAt": "2026-06-16T09:45:25.712Z",
+      "updatedAt": "2026-06-16T09:45:25.712Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a311b35e3df08db1d8ffe96",
+      "name": "Silver Mystery Chest",
+      "coin": 500,
+      "earningPercent": 70,
+      "adminPercent": 30,
+      "icon": "https://cdn-icons-png.flaticon.com/512/3082/3082066.png",
+      "category": "SPECIAL",
+      "isActive": true,
+      "description": "Contains standard rewards.",
+      "createdAt": "2026-06-16T09:45:25.528Z",
+      "updatedAt": "2026-06-16T09:45:25.528Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a311b34e3df08db1d8ffe7b",
+      "name": "Bronze Mystery Chest",
+      "coin": 200,
+      "earningPercent": 70,
+      "adminPercent": 30,
+      "icon": "https://cdn-icons-png.flaticon.com/512/3082/3082060.png",
+      "category": "SPECIAL",
+      "isActive": true,
+      "description": "Contains starter rewards.",
+      "createdAt": "2026-06-16T09:45:24.855Z",
+      "updatedAt": "2026-06-16T09:45:24.855Z",
+      "__v": 0
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "success": true,
+  "message": "Wallet balance adjusted successfully",
+  "data": {
+    "wallet": {
+      "_id": "6a4260c90ca30d2754e1fa2b",
+      "userId": "6a4260c70ca30d2754e1fa10",
+      "coinBalance": 10,
+      "totalRecharge": 0,
+      "totalSpent": 0,
+      "totalEarned": 10,
+      "totalWithdrawn": 0,
+      "status": "ACTIVE",
+      "createdAt": "2026-06-29T12:10:49.248Z",
+      "updatedAt": "2026-06-29T12:10:59.811Z",
+      "__v": 0
+    },
+    "transaction": {
+      "userId": "6a4260c70ca30d2754e1fa10",
+      "type": "CREDIT",
+      "amount": 10,
+      "balanceAfter": 10,
+      "referenceType": "BONUS",
+      "description": "API test credit",
+      "_id": "6a4260d30ca30d2754e1faa0",
+      "createdAt": "2026-06-29T12:10:59.873Z",
+      "updatedAt": "2026-06-29T12:10:59.873Z",
+      "__v": 0
+    }
+  }
+}

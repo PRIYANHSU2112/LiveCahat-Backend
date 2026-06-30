@@ -1,0 +1,27 @@
+{
+  "success": true,
+  "message": "Top followed listeners fetched",
+  "data": [
+    {
+      "followersCount": 1,
+      "user": {
+        "_id": "6a3dfdba4cea8bbb9bb774ea",
+        "firstName": "Aularis",
+        "lastName": "Listener",
+        "isOnline": true
+      },
+      "listenerProfile": {
+        "_id": "6a3dfdba4cea8bbb9bb774fb",
+        "bio": "Professional relationship counselor and life coach. Let's talk!",
+        "categories": [
+          "Friendly Talk",
+          "Casual Chat"
+        ],
+        "avgRating": 0,
+        "totalRatings": 0,
+        "availability": "OFFLINE"
+      },
+      "listenerId": "6a3dfdba4cea8bbb9bb774ea"
+    }
+  ]
+}

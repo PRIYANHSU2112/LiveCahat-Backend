@@ -1,6 +1,7 @@
 import BaseService from './base.service.js';
 import chatMessageRepository from '../repositories/chat-message.repository.js';
 import communicationSessionRepository from '../repositories/communication-session.repository.js';
+import presenceService from './presence.service.js';
 import redisClient from '../config/redis.js';
 import mongoose from 'mongoose';
 import logger from '../utils/logger.util.js';
@@ -117,6 +118,7 @@ class ChatMessageService extends BaseService {
 
   /**
    * Get list of all conversation threads (grouped by other participant) for a user.
+   * @deprecated Prefer getConversations for production inbox UI.
    */
   async getUserChatSessions(userId, query = {}) {
     const page = parseInt(query.page) || 1;
@@ -232,6 +234,45 @@ class ChatMessageService extends BaseService {
         totalPages: Math.ceil(total / limit),
       },
     };
+  }
+
+  /**
+   * Production inbox: conversations sorted by most recent message with search + pagination.
+   */
+  async getConversations(userId, query = {}) {
+    const page = parseInt(query.page, 10) || 1;
+    const limit = parseInt(query.limit, 10) || 20;
+    const search = query.search || '';
+
+    const result = await this.repository.findConversationsForUser(userId, { page, limit, search });
+
+    if (!result.conversations?.length) {
+      return result;
+    }
+
+    const partnerIds = result.conversations.map((c) => c.user?.id?.toString()).filter(Boolean);
+    const statusMap = await presenceService.getStatusBatch(partnerIds);
+    const redisAvailable = redisClient.isRedisAvailable;
+
+    result.conversations = result.conversations.map((conversation) => {
+      const partnerId = conversation.user?.id?.toString();
+      let status = statusMap.get(partnerId) || 'OFFLINE';
+
+      if (!redisAvailable) {
+        status = conversation.user?.isOnline ? 'ONLINE' : 'OFFLINE';
+      }
+
+      return {
+        ...conversation,
+        user: {
+          ...conversation.user,
+          status,
+          isOnline: status !== 'OFFLINE',
+        },
+      };
+    });
+
+    return result;
   }
 
   /**

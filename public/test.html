@@ -847,13 +847,22 @@
     button.btn-live:hover { box-shadow: 0 4px 20px rgba(220, 38, 38, 0.55); }
   </style>
 
-  <!-- Socket.io client script -->
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="http://localhost:5000/socket.io/socket.io.js"></script>
+  <!-- Socket.io client — load from backend (not Live Server origin) -->
   <script>
-    if (typeof io === 'undefined') {
-      document.write('<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"><\/script>');
-    }
+    (function () {
+      var livePreviewPorts = { '5500': 1, '5501': 1, '5173': 1 };
+      var backend = livePreviewPorts[window.location.port]
+        ? 'http://127.0.0.1:5000'
+        : window.location.origin;
+      var s = document.createElement('script');
+      s.src = backend + '/socket.io/socket.io.js';
+      s.onerror = function () {
+        var c = document.createElement('script');
+        c.src = 'https://cdn.socket.io/4.7.5/socket.io.min.js';
+        document.head.appendChild(c);
+      };
+      document.head.appendChild(s);
+    })();
   </script>
 
   <!-- Agora Web SDK 4.x (NG) via CDN -->
@@ -869,7 +878,7 @@
     </div>
     <div style="display: flex; align-items: center; gap: 10px;">
       <label style="font-size: 12px; font-weight: 600; color: var(--text-muted);">Backend URL:</label>
-      <input type="text" id="backendUrl" value="http://localhost:5000"
+      <input type="text" id="backendUrl" value="http://127.0.0.1:5000"
         style="width: 220px; padding: 6px 10px; font-size: 13px; background-color: rgba(15, 23, 42, 0.9);">
     </div>
   </header>
@@ -1442,8 +1451,9 @@
       return url || window.location.origin;
     }
 
-    const defaultBackendUrl = (window.location.port === '5500' || !window.location.port)
-      ? 'http://localhost:5000'
+    const livePreviewPorts = ['5500', '5501', '5173'];
+    const defaultBackendUrl = (livePreviewPorts.includes(window.location.port) || !window.location.port)
+      ? 'http://127.0.0.1:5000'
       : window.location.origin;
     document.getElementById('backendUrl').value = defaultBackendUrl;
 
@@ -2067,7 +2077,12 @@
 
       try {
         appendLog(role === 'caller' ? 'Caller' : 'Receiver', `Joining Agora channel: ${agoraData.channelName} (UID: ${agoraData.uid})`);
-        await client.join(agoraData.appId, agoraData.channelName, agoraData.token, agoraData.uid);
+        await client.join(
+          agoraData.appId,
+          agoraData.channelName,
+          agoraData.token || null,
+          Number(agoraData.uid)
+        );
         appendLog(role === 'caller' ? 'Caller' : 'Receiver', '✅ Joined Agora channel successfully.');
 
         // Create local tracks
@@ -2085,6 +2100,9 @@
 
       } catch (err) {
         appendLog(role === 'caller' ? 'Caller' : 'Receiver', `❌ Agora error: ${err.message}`);
+        if (String(err.message).includes('invalid token')) {
+          appendLog(role === 'caller' ? 'Caller' : 'Receiver', 'Hint: AGORA_APP_ID + AGORA_APP_CERTIFICATE must be from the SAME Agora project. If App Certificate is disabled in console, set AGORA_AUTH_MODE=testing in .env and restart backend.');
+        }
       }
 
       // Handle remote user published

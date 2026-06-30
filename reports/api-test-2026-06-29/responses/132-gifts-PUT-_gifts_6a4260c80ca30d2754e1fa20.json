@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "message": "Gift updated successfully",
+  "data": {
+    "_id": "6a4260c80ca30d2754e1fa20",
+    "name": "Updated Gift",
+    "coin": 5,
+    "earningPercent": 70,
+    "adminPercent": 30,
+    "icon": "https://example.com/g.png",
+    "category": "REGULAR",
+    "isActive": true,
+    "createdAt": "2026-06-29T12:10:48.645Z",
+    "updatedAt": "2026-06-29T12:11:14.064Z",
+    "__v": 0
+  }
+}

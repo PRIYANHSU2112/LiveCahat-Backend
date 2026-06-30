@@ -1,0 +1,4 @@
+{
+  "success": false,
+  "message": "\"body.methodType\" is required, \"body.bankName\" is not allowed, \"body.accountHolderName\" is not allowed, \"body.accountNumber\" is not allowed, \"body.ifscCode\" is not allowed"
+}
