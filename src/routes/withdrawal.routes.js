@@ -8,6 +8,7 @@ import {
   quoteQuerySchema,
   createWithdrawalSchema,
   listWithdrawalQuerySchema,
+  withdrawalStatsQuerySchema,
   rejectWithdrawalSchema,
   updateWithdrawalConfigSchema,
   idParamSchema,
@@ -27,6 +28,7 @@ router.delete('/bank-accounts/:id', validate(idParamSchema), bankAccountControll
 router.get('/config', withdrawalController.getConfig); // show rate
 router.get('/quote', validate(quoteQuerySchema), withdrawalController.quote); // calcluation rate coin in inr
 router.post('/', validate(createWithdrawalSchema), withdrawalController.requestWithdrawal);
+router.get('/me/stats', validate(withdrawalStatsQuerySchema), withdrawalController.getMyWithdrawalStats);
 router.get('/me', validate(listWithdrawalQuerySchema), withdrawalController.getMyWithdrawals);
 
 // ─── Admin (declared before /:id to avoid param capture) ────────

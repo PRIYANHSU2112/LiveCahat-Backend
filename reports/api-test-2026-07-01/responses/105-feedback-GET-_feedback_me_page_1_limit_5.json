@@ -1,0 +1,46 @@
+{
+  "success": true,
+  "message": "Feedback fetched successfully",
+  "data": {
+    "docs": [
+      {
+        "_id": "6a450673e8206d5819c66de6",
+        "userId": "6a45065ce8206d5819c66cc5",
+        "userType": "CUSTOMER",
+        "category": "OTHER",
+        "message": "API test feedback",
+        "rating": 4,
+        "status": "OPEN",
+        "adminResponse": null,
+        "respondedBy": null,
+        "respondedAt": null,
+        "createdAt": "2026-07-01T12:22:11.803Z",
+        "updatedAt": "2026-07-01T12:22:11.803Z",
+        "__v": 0
+      },
+      {
+        "_id": "6a45065ee8206d5819c66ce5",
+        "userId": "6a45065ce8206d5819c66cc5",
+        "userType": "CUSTOMER",
+        "category": "OTHER",
+        "message": "Setup feedback",
+        "rating": 4,
+        "status": "OPEN",
+        "adminResponse": null,
+        "respondedBy": null,
+        "respondedAt": null,
+        "createdAt": "2026-07-01T12:21:50.277Z",
+        "updatedAt": "2026-07-01T12:21:50.277Z",
+        "__v": 0
+      }
+    ],
+    "meta": {
+      "totalDocuments": 2,
+      "totalPages": 1,
+      "currentPage": 1,
+      "limit": 5,
+      "hasNextPage": false,
+      "hasPrevPage": false
+    }
+  }
+}

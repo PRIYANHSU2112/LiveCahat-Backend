@@ -1,0 +1,84 @@
+{
+  "success": true,
+  "message": "Leaderboard fetched successfully",
+  "data": [
+    {
+      "_id": "6a363e9aa4db3e2dbf1796b0",
+      "totalXp": 238,
+      "currentLevel": 2,
+      "badges": []
+    },
+    {
+      "_id": "6a3245bb0d3a67122fdcd4b2",
+      "firstName": "Aaravi",
+      "lastName": "Mehta",
+      "currentLevel": 2,
+      "totalXp": 236,
+      "badges": []
+    },
+    {
+      "_id": "6a32445cd61900d4c18f58c9",
+      "profileImage": "https://api.dicebear.com/7.x/bottts/svg?seed=MysticSorcerer",
+      "currentLevel": 2,
+      "totalXp": 104,
+      "badges": []
+    },
+    {
+      "_id": "6a3245bc0d3a67122fdcd4c1",
+      "firstName": "Ananya",
+      "lastName": "Iyer",
+      "currentLevel": 1,
+      "totalXp": 96
+    },
+    {
+      "_id": "6a4260c70ca30d2754e1fa10",
+      "totalXp": 15,
+      "currentLevel": 1,
+      "badges": [],
+      "firstName": "Test",
+      "lastName": "Customer",
+      "profileImage": "https://api.dicebear.com/7.x/bottts/svg?seed=NeonHacker"
+    },
+    {
+      "_id": "6a4260280ca30d2754e1f8c6",
+      "totalXp": 10,
+      "currentLevel": 1,
+      "badges": [],
+      "firstName": "Test",
+      "lastName": "Customer",
+      "profileImage": "https://api.dicebear.com/7.x/bottts/svg?seed=CosmicVoyager"
+    },
+    {
+      "_id": "6a45065ce8206d5819c66cc5",
+      "totalXp": 10,
+      "currentLevel": 1,
+      "badges": [],
+      "firstName": "Test",
+      "lastName": "Customer"
+    },
+    {
+      "_id": "6a311b35e3df08db1d8ffe8d",
+      "firstName": "Super",
+      "lastName": "Admin",
+      "badges": [],
+      "currentLevel": 1,
+      "totalXp": 0
+    },
+    {
+      "_id": "6a3ceec0f6d1853979b322ea",
+      "firstName": "Satya",
+      "lastName": "Kabir",
+      "totalXp": 0,
+      "currentLevel": 1,
+      "badges": []
+    },
+    {
+      "_id": "6a3cf0a9904be500d9a04c2a",
+      "firstName": "wfs",
+      "lastName": "",
+      "totalXp": 0,
+      "currentLevel": 1,
+      "badges": []
+    }
+  ]
+}

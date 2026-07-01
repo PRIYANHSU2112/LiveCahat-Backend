@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "message": "Wallet details fetched successfully",
+  "data": {
+    "userId": "6a45065ce8206d5819c66cca",
+    "coinBalance": 0,
+    "totalRecharge": 0,
+    "totalSpent": 0,
+    "totalEarned": 0,
+    "totalWithdrawn": 0,
+    "status": "ACTIVE",
+    "_id": "6a450669e8206d5819c66d72",
+    "createdAt": "2026-07-01T12:22:01.182Z",
+    "updatedAt": "2026-07-01T12:22:01.182Z",
+    "__v": 0
+  }
+}

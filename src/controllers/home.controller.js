@@ -1,5 +1,6 @@
 import BaseController from './base.controller.js';
 import listenerService from '../services/listener.service.js';
+import listenerHomeService from '../services/listener-home.service.js';
 import catchAsync from '../utils/catchAsync.util.js';
 
 /**
@@ -11,6 +12,11 @@ class HomeController extends BaseController {
   getHomeListeners = catchAsync(async (req, res) => {
     const result = await listenerService.getHomeListeners(req.query);
     this.sendResponse(res, 200, 'Listeners fetched successfully', result);
+  });
+
+  getListenerHome = catchAsync(async (req, res) => {
+    const result = await listenerHomeService.getListenerHome(req.user._id, req.query);
+    this.sendResponse(res, 200, 'Listener home fetched successfully', result);
   });
 }
 

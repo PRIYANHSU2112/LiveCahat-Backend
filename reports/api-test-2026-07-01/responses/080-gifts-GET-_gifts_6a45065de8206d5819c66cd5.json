@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "message": "Gift details fetched successfully",
+  "data": {
+    "_id": "6a45065de8206d5819c66cd5",
+    "name": "SetupGift1782908509285",
+    "coin": 5,
+    "earningPercent": 70,
+    "adminPercent": 30,
+    "icon": "https://example.com/g.png",
+    "category": "REGULAR",
+    "isActive": true,
+    "createdAt": "2026-07-01T12:21:49.410Z",
+    "updatedAt": "2026-07-01T12:21:49.410Z",
+    "__v": 0
+  }
+}

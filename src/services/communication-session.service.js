@@ -7,6 +7,7 @@ import redisClient from '../config/redis.js';
 import { KEYS } from '../utils/socket-redis-keys.util.js';
 import presenceService from './presence.service.js';
 import logger from '../utils/logger.util.js';
+import listenerInteractionService from './listener-interaction.service.js';
 import xpService from './xp.service.js';
 
 class CommunicationSessionService extends BaseService {
@@ -60,6 +61,12 @@ class CommunicationSessionService extends BaseService {
 
     // 4. Update listener presence status to BUSY
     await presenceService.setBusy(listenerId.toString());
+
+    await listenerInteractionService.markListenerCustomerInteraction(
+      listenerId,
+      callerId,
+      { emit: false }
+    );
 
     return session;
   }
@@ -121,6 +128,11 @@ class CommunicationSessionService extends BaseService {
       if (listenerProfile) {
         listenerProfile.totalSessions = (listenerProfile.totalSessions || 0) + 1;
         await listenerProfile.save();
+
+        if (listenerProfile.createdByAgentId) {
+          const { default: agentService } = await import('./agent.service.js');
+          await agentService.bumpCache(listenerProfile.createdByAgentId.toString());
+        }
       }
 
       // 3. Clear session keys in Redis

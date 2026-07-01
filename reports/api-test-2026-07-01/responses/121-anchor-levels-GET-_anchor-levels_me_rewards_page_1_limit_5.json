@@ -1,0 +1,8 @@
+{
+  "success": true,
+  "message": "Reward inventory fetched successfully",
+  "data": {
+    "rewards": [],
+    "unclaimedCount": 0
+  }
+}

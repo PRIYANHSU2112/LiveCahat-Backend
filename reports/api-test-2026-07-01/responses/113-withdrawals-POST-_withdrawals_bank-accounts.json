@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "message": "Bank account added successfully",
+  "data": {
+    "userId": "6a45065ce8206d5819c66cca",
+    "methodType": "BANK",
+    "bankName": "SBI",
+    "accountHolderName": "Test Listener",
+    "accountNumber": "1234567890",
+    "ifscCode": "SBIN0001234",
+    "isDefault": false,
+    "_id": "6a450674e8206d5819c66df6",
+    "createdAt": "2026-07-01T12:22:12.737Z",
+    "updatedAt": "2026-07-01T12:22:12.737Z",
+    "__v": 0
+  }
+}

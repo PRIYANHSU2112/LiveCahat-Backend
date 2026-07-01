@@ -1,0 +1,8 @@
+{
+  "success": true,
+  "message": "Already following this listener",
+  "data": {
+    "followed": true,
+    "alreadyFollowing": true
+  }
+}

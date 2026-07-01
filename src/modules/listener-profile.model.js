@@ -167,6 +167,8 @@ listenerProfileSchema.index({ kycStatus: 1, isFeatured: -1, followersCount: -1 }
 listenerProfileSchema.index({ kycStatus: 1, avgRating: -1 });
 listenerProfileSchema.index({ kycStatus: 1, languages: 1 });
 listenerProfileSchema.index({ kycStatus: 1, country: 1 });
+listenerProfileSchema.index({ kycStatus: 1, country: 1, anchorLevel: -1, avgRating: -1 });
+listenerProfileSchema.index({ kycStatus: 1, anchorLevel: -1, avgRating: -1 });
 // Agent panel: list + stat cards are always scoped to the owning agent.
 listenerProfileSchema.index({ createdByAgentId: 1 });
 listenerProfileSchema.index({ createdByAgentId: 1, kycStatus: 1 });

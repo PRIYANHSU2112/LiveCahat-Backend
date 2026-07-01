@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "message": "Wallet status updated to ACTIVE successfully",
+  "data": {
+    "_id": "6a45065ee8206d5819c66ce0",
+    "userId": "6a45065ce8206d5819c66cc5",
+    "coinBalance": 10,
+    "totalRecharge": 0,
+    "totalSpent": 0,
+    "totalEarned": 10,
+    "totalWithdrawn": 0,
+    "status": "ACTIVE",
+    "createdAt": "2026-07-01T12:21:50.003Z",
+    "updatedAt": "2026-07-01T12:22:03.461Z",
+    "__v": 0
+  }
+}

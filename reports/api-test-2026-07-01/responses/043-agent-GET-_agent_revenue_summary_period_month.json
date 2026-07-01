@@ -1,0 +1,117 @@
+{
+  "success": true,
+  "message": "Agent revenue summary fetched successfully",
+  "data": {
+    "commissionPercentage": 0,
+    "cards": [
+      {
+        "label": "Total Revenue",
+        "value": 0,
+        "trend": 0,
+        "positive": true,
+        "spark": [
+          0,
+          2,
+          4,
+          0,
+          2,
+          4,
+          0,
+          2,
+          4,
+          0
+        ]
+      },
+      {
+        "label": "Commission Earned",
+        "value": 0,
+        "trend": 0,
+        "positive": true,
+        "spark": [
+          0,
+          2,
+          4,
+          0,
+          2,
+          4,
+          0,
+          2,
+          4,
+          0
+        ]
+      },
+      {
+        "label": "Today's Commission",
+        "value": 0,
+        "trend": 0,
+        "positive": true,
+        "spark": [
+          0,
+          2,
+          4,
+          0,
+          2,
+          4,
+          0,
+          2,
+          4,
+          0
+        ]
+      },
+      {
+        "label": "Monthly Commission",
+        "value": 0,
+        "trend": 0,
+        "positive": true,
+        "spark": [
+          0,
+          2,
+          4,
+          0,
+          2,
+          4,
+          0,
+          2,
+          4,
+          0
+        ]
+      },
+      {
+        "label": "Pending Commission",
+        "value": 0,
+        "trend": 0,
+        "positive": false,
+        "spark": [
+          0,
+          2,
+          4,
+          0,
+          2,
+          4,
+          0,
+          2,
+          4,
+          0
+        ]
+      },
+      {
+        "label": "Paid Commission",
+        "value": 0,
+        "trend": 0,
+        "positive": true,
+        "spark": [
+          0,
+          2,
+          4,
+          0,
+          2,
+          4,
+          0,
+          2,
+          4,
+          0
+        ]
+      }
+    ]
+  }
+}

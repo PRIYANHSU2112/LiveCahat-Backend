@@ -1,0 +1,88 @@
+{
+  "success": true,
+  "message": "Agent listeners fetched successfully",
+  "data": {
+    "docs": [
+      {
+        "_id": "6a4260d10ca30d2754e1fa83",
+        "userId": {
+          "_id": "6a4260d10ca30d2754e1fa80",
+          "firstName": "Agent",
+          "lastName": "Listener Test",
+          "username": "agentlst050427",
+          "email": "agentlst1782735050427@test.com",
+          "mobileNumber": "2735050427",
+          "isBlocked": false,
+          "currentLevel": 1
+        },
+        "country": {
+          "_id": "6a3cb3fc588bd4e36b4d1629",
+          "name": "India",
+          "code": "IN",
+          "flagUrl": "https://flagcdn.com/in.svg"
+        },
+        "totalSessions": 0,
+        "kycStatus": "PENDING",
+        "availability": "OFFLINE",
+        "totalEarnings": 0,
+        "availableBalance": 0,
+        "anchorLevel": 0,
+        "profileStatus": "completed",
+        "magicLoginToken": "ceec4a18a6f15382aeeb3060848fe13f0caf8fcc778ef65e206a1e465128c502",
+        "giftsReceivedCount": 0,
+        "createdAt": "2026-06-29T12:10:57.357Z",
+        "wallet": 0,
+        "recharge": 0,
+        "earnings": 0,
+        "revenue": 0,
+        "gifts": 0,
+        "level": 1,
+        "online": false
+      },
+      {
+        "_id": "6a3cf0a9904be500d9a04c2d",
+        "userId": {
+          "_id": "6a3cf0a9904be500d9a04c2a",
+          "firstName": "wfs",
+          "lastName": "",
+          "username": "@fsf",
+          "email": "sajjlkpriyanshujluhghji@123",
+          "mobileNumber": "9898989898",
+          "isBlocked": false,
+          "currentLevel": 1
+        },
+        "country": {
+          "_id": "6a3cb3fc588bd4e36b4d1629",
+          "name": "India",
+          "code": "IN",
+          "flagUrl": "https://flagcdn.com/in.svg"
+        },
+        "totalSessions": 0,
+        "kycStatus": "PENDING",
+        "availability": "OFFLINE",
+        "totalEarnings": 0,
+        "availableBalance": 0,
+        "anchorLevel": 0,
+        "profileStatus": "completed",
+        "magicLoginToken": "5c29ba1c19668d24383b75457a7a5d21469df6ca94deba18207458345094994c",
+        "createdAt": "2026-06-25T09:11:05.357Z",
+        "giftsReceivedCount": 0,
+        "wallet": 0,
+        "recharge": 0,
+        "earnings": 0,
+        "revenue": 0,
+        "gifts": 0,
+        "level": 1,
+        "online": false
+      }
+    ],
+    "meta": {
+      "totalDocuments": 2,
+      "totalPages": 1,
+      "currentPage": 1,
+      "limit": 5,
+      "hasNextPage": false,
+      "hasPrevPage": false
+    }
+  }
+}

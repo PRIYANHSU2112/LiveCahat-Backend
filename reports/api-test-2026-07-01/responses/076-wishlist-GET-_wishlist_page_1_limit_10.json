@@ -1,0 +1,38 @@
+{
+  "success": true,
+  "message": "Wishlist fetched successfully",
+  "data": {
+    "docs": [
+      {
+        "_id": "6a45066db46d99b4e52fc75b",
+        "user": {
+          "_id": "6a4260e00ca30d2754e1fb43",
+          "firstName": "AdminCreated",
+          "lastName": "Listener",
+          "isOnline": false
+        },
+        "listenerProfile": {
+          "_id": "6a4260e00ca30d2754e1fb46",
+          "profilePhotos": [],
+          "categories": [],
+          "interests": [],
+          "chatRate": 0,
+          "voiceRate": 0,
+          "videoRate": 0,
+          "avgRating": 0,
+          "totalRatings": 0,
+          "availability": "OFFLINE"
+        },
+        "listenerId": "6a4260e00ca30d2754e1fb43"
+      }
+    ],
+    "meta": {
+      "totalDocuments": 1,
+      "totalPages": 1,
+      "currentPage": 1,
+      "limit": 10,
+      "hasNextPage": false,
+      "hasPrevPage": false
+    }
+  }
+}

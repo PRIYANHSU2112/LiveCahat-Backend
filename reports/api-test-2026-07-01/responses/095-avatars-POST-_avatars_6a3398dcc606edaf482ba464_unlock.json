@@ -1,0 +1,22 @@
+{
+  "success": true,
+  "message": "Successfully unlocked avatar: \"Shadow Samurai\"!",
+  "data": {
+    "success": true,
+    "message": "Successfully unlocked avatar: \"Shadow Samurai\"!",
+    "avatar": {
+      "_id": "6a3398dcc606edaf482ba464",
+      "name": "Shadow Samurai",
+      "image": "https://api.dicebear.com/7.x/bottts/svg?seed=ShadowSamurai",
+      "priceType": "PAID",
+      "price": 50,
+      "category": "PREMIUM",
+      "isActive": true,
+      "__v": 0,
+      "createdAt": "2026-06-18T07:06:04.021Z",
+      "updatedAt": "2026-06-18T07:06:04.021Z"
+    },
+    "price": 50,
+    "newBalance": 60
+  }
+}

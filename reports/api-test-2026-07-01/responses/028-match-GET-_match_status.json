@@ -1,0 +1,8 @@
+{
+  "success": true,
+  "message": "Match status fetched successfully",
+  "data": {
+    "available": true,
+    "onlineCount": 1
+  }
+}

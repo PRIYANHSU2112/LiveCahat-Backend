@@ -1,0 +1,92 @@
+{
+  "success": true,
+  "message": "Listeners discovered successfully",
+  "data": {
+    "docs": [
+      {
+        "listenerId": "6a3245bb0d3a67122fdcd4b2",
+        "firstName": "Aaravi",
+        "lastName": "Mehta",
+        "profileImage": null,
+        "avgRating": 4.8,
+        "totalRatings": 12,
+        "chatRate": 10,
+        "voiceRate": 15,
+        "videoRate": 20,
+        "availability": "ONLINE",
+        "isFeatured": true,
+        "followersCount": 0,
+        "bio": "Professional relationship counselor — aligned for match testing with your customer profile.",
+        "categories": [
+          "Relationship Advice",
+          "Casual Chat",
+          "Friendly Talk"
+        ],
+        "languages": [],
+        "country": {
+          "_id": "6a3cb3fc588bd4e36b4d1629",
+          "name": "India",
+          "code": "IN",
+          "dialCode": "+91",
+          "flagUrl": "https://flagcdn.com/in.svg"
+        },
+        "anchorLevel": 2,
+        "isOnline": true,
+        "liveStatus": "ONLINE"
+      },
+      {
+        "listenerId": "6a3dfdba4cea8bbb9bb774ea",
+        "firstName": "Aularis",
+        "lastName": "Listener",
+        "profileImage": null,
+        "avgRating": 0,
+        "totalRatings": 0,
+        "chatRate": 10,
+        "voiceRate": 15,
+        "videoRate": 20,
+        "availability": "OFFLINE",
+        "isFeatured": false,
+        "followersCount": 0,
+        "bio": "Professional relationship counselor and life coach. Let's talk!",
+        "categories": [
+          "Friendly Talk",
+          "Casual Chat"
+        ],
+        "languages": [],
+        "country": {
+          "_id": "6a3cb3fc588bd4e36b4d1629",
+          "name": "India",
+          "code": "IN",
+          "dialCode": "+91",
+          "flagUrl": "https://flagcdn.com/in.svg"
+        },
+        "anchorLevel": 0,
+        "isOnline": false,
+        "liveStatus": "OFFLINE"
+      }
+    ],
+    "meta": {
+      "totalDocuments": 2,
+      "totalPages": 1,
+      "currentPage": 1,
+      "limit": 10,
+      "hasNextPage": false,
+      "hasPrevPage": false
+    },
+    "appliedFilters": {
+      "sort": "combined",
+      "sameCountry": true,
+      "country": "6a3cb3fc588bd4e36b4d1629",
+      "countryRelaxed": false,
+      "minRating": null,
+      "maxRating": null,
+      "minAnchorLevel": null,
+      "maxAnchorLevel": null,
+      "anchorLevel": null,
+      "language": null,
+      "category": null,
+      "status": null,
+      "q": null
+    }
+  }
+}

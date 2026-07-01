@@ -1,0 +1,40 @@
+{
+  "success": true,
+  "message": "Agent revenue graphs fetched successfully",
+  "data": {
+    "monthlyRevenueData": [
+      {
+        "name": "Feb",
+        "value": 0,
+        "value2": 0
+      },
+      {
+        "name": "Mar",
+        "value": 0,
+        "value2": 0
+      },
+      {
+        "name": "Apr",
+        "value": 0,
+        "value2": 0
+      },
+      {
+        "name": "May",
+        "value": 0,
+        "value2": 0
+      },
+      {
+        "name": "Jun",
+        "value": 0,
+        "value2": 0
+      },
+      {
+        "name": "Jul",
+        "value": 0,
+        "value2": 0
+      }
+    ],
+    "commissionTrendData": [],
+    "revenueBreakdown": []
+  }
+}

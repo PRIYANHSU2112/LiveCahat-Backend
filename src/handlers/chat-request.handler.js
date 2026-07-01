@@ -3,6 +3,7 @@ import { KEYS } from '../utils/socket-redis-keys.util.js';
 import { CLIENT_EVENTS, SERVER_EVENTS } from '../constants/socket-event.constant.js';
 import presenceService from '../services/presence.service.js';
 import communicationSessionService from '../services/communication-session.service.js';
+import listenerInteractionService from '../services/listener-interaction.service.js';
 import ListenerProfile from '../modules/listener-profile.model.js';
 import Wallet from '../modules/wallet.model.js';
 import logger from '../utils/logger.util.js';
@@ -86,6 +87,8 @@ class ChatRequestHandler {
           }
         });
         await redisClient.set(requestKey, payload, 'EX', 30);
+
+        await listenerInteractionService.markListenerCustomerInteraction(listenerId, callerId);
       } else {
         return socket.emit(SERVER_EVENTS.ERROR, { message: 'Service temporarily unavailable. Please try again.' });
       }

@@ -1,0 +1,51 @@
+{
+  "success": true,
+  "message": "Agent stats fetched successfully",
+  "data": {
+    "totalListeners": {
+      "count": 2
+    },
+    "onlineNow": {
+      "count": 0
+    },
+    "totalBlocked": {
+      "count": 0,
+      "percentageChange": 0,
+      "trend": "no_change"
+    },
+    "blockedThisMonth": {
+      "count": 0,
+      "percentageChange": 0,
+      "trend": "no_change"
+    },
+    "inSession": {
+      "count": 0
+    },
+    "idle": {
+      "count": 0
+    },
+    "peakToday": {
+      "count": 0,
+      "percentageChange": 0,
+      "trend": "no_change"
+    },
+    "pendingListeners": {
+      "count": 2,
+      "percentageChange": 0,
+      "trend": "no_change"
+    },
+    "inReview": {
+      "count": 0
+    },
+    "totalApproved": {
+      "count": 0,
+      "percentageChange": 0,
+      "trend": "no_change"
+    },
+    "todayApproved": {
+      "count": 0,
+      "percentageChange": 0,
+      "trend": "no_change"
+    }
+  }
+}

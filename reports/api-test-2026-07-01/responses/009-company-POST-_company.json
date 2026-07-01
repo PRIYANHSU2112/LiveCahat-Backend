@@ -1,0 +1,14 @@
+{
+  "success": true,
+  "message": "Company created successfully",
+  "data": {
+    "name": "TestCo 1782908510571",
+    "email": "co1782908510571@test.com",
+    "phone": "9999999999",
+    "address": "Test",
+    "_id": "6a450660e8206d5819c66cf5",
+    "createdAt": "2026-07-01T12:21:52.730Z",
+    "updatedAt": "2026-07-01T12:21:52.730Z",
+    "__v": 0
+  }
+}

@@ -306,6 +306,24 @@ function buildTests(ctx) {
   // ─── HOME ───
   add('home', 'CUSTOMER', 'GET', '/home/user-home?page=1&limit=5', { token: c });
   add('home', 'LISTENER', 'GET', '/home/user-home?page=1&limit=5', { token: l });
+  add('home', 'LISTENER', 'GET', '/home/listener-home?onlineLimit=5&newLimit=5&popularLimit=5', { token: l });
+  add('home', 'CUSTOMER', 'GET', '/home/listener-home', { token: c, expectedStatus: [403] });
+
+  // ─── MATCH ───
+  add('match', 'ADMIN', 'GET', '/match/admin/config', { token: A });
+  add('match', 'ADMIN', 'PUT', '/match/admin/config', {
+    token: A,
+    body: { instantMatchFee: 5, isEnabled: true },
+  });
+  add('match', 'CUSTOMER', 'GET', '/match/fee', { token: c });
+  add('match', 'CUSTOMER', 'GET', '/match/status', { token: c });
+  add('match', 'CUSTOMER', 'GET', '/match/discover?page=1&limit=10&sort=combined', { token: c });
+  add('match', 'CUSTOMER', 'POST', '/match/instant', {
+    token: c,
+    body: { mode: 'CHAT' },
+    expectedStatus: [200, 404, 402, 503],
+    remark: '404 if no ONLINE listener; 402 if wallet too low; debits instantMatchFee on success',
+  });
 
   // ─── LISTENERS ───
   add('listeners', 'CUSTOMER', 'GET', '/listeners?page=1&limit=5', { token: c });
@@ -339,6 +357,15 @@ function buildTests(ctx) {
     },
     expectedStatus: [200, 201],
   });
+
+  // ─── AGENT REVENUE ───
+  add('agent', 'AGENT', 'GET', '/agent/revenue/summary?period=month', { token: AGENT_TOKEN });
+  add('agent', 'AGENT', 'GET', '/agent/revenue/graphs?period=6months', { token: AGENT_TOKEN });
+  add('agent', 'AGENT', 'GET', '/agent/revenue/history?page=1&limit=20&source=all&status=all', {
+    token: AGENT_TOKEN,
+  });
+  add('agent', 'CUSTOMER', 'GET', '/agent/revenue/summary?period=month', { token: c, expectedStatus: [403] });
+  add('agent', 'LISTENER', 'GET', '/agent/revenue/summary?period=month', { token: l, expectedStatus: [403] });
 
   // ─── LANGUAGES ───
   add('languages', 'CUSTOMER', 'GET', '/languages', { token: c });
@@ -566,6 +593,9 @@ function buildTests(ctx) {
     expectedStatus: [200, 201],
   });
   add('withdrawals', 'LISTENER', 'GET', '/withdrawals/me?page=1&limit=5', { token: l });
+  add('withdrawals', 'LISTENER', 'GET', '/withdrawals/me/stats?status=PENDING', { token: l });
+  add('withdrawals', 'LISTENER', 'GET', '/withdrawals/me/stats?status=APPROVED', { token: l });
+  add('withdrawals', 'LISTENER', 'GET', '/withdrawals/me/stats?status=REJECTED', { token: l });
   add('withdrawals', 'ADMIN', 'GET', '/withdrawals/admin?page=1&limit=5', { token: A });
   add('withdrawals', 'ADMIN', 'PUT', '/withdrawals/admin/config', {
     token: A,

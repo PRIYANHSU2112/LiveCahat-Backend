@@ -1,0 +1,40 @@
+{
+  "success": true,
+  "message": "Following list fetched successfully",
+  "data": {
+    "docs": [
+      {
+        "_id": "6a45066bb46d99b4e52fc75a",
+        "followingId": "6a4260e00ca30d2754e1fb43",
+        "createdAt": "2026-07-01T12:22:03.913Z",
+        "isFavorite": true,
+        "user": {
+          "_id": "6a4260e00ca30d2754e1fb43",
+          "firstName": "AdminCreated",
+          "lastName": "Listener",
+          "isOnline": false
+        },
+        "listenerProfile": {
+          "_id": "6a4260e00ca30d2754e1fb46",
+          "profilePhotos": [],
+          "categories": [],
+          "chatRate": 0,
+          "voiceRate": 0,
+          "videoRate": 0,
+          "avgRating": 0,
+          "totalRatings": 0,
+          "availability": "OFFLINE",
+          "followersCount": 0
+        }
+      }
+    ],
+    "meta": {
+      "totalDocuments": 1,
+      "totalPages": 1,
+      "currentPage": 1,
+      "limit": 10,
+      "hasNextPage": false,
+      "hasPrevPage": false
+    }
+  }
+}

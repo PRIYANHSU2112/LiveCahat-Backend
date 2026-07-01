@@ -1,0 +1,16 @@
+{
+  "success": true,
+  "message": "Avatar created successfully",
+  "data": {
+    "name": "Av1782908510571",
+    "image": "https://example.com/a.png",
+    "priceType": "FREE",
+    "price": 0,
+    "category": "REGULAR",
+    "isActive": true,
+    "_id": "6a450672e8206d5819c66dd2",
+    "createdAt": "2026-07-01T12:22:10.674Z",
+    "updatedAt": "2026-07-01T12:22:10.674Z",
+    "__v": 0
+  }
+}

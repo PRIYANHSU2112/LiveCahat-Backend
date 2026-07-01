@@ -1,0 +1,23 @@
+{
+  "success": true,
+  "message": "Top followed listeners fetched",
+  "data": [
+    {
+      "followersCount": 1,
+      "user": {
+        "_id": "6a4260e00ca30d2754e1fb43",
+        "firstName": "AdminCreated",
+        "lastName": "Listener",
+        "isOnline": false
+      },
+      "listenerProfile": {
+        "_id": "6a4260e00ca30d2754e1fb46",
+        "categories": [],
+        "avgRating": 0,
+        "totalRatings": 0,
+        "availability": "OFFLINE"
+      },
+      "listenerId": "6a4260e00ca30d2754e1fb43"
+    }
+  ]
+}

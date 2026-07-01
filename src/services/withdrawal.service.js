@@ -165,6 +165,136 @@ class WithdrawalService {
     return formatPaginatedResponse(docs, total, page, limit);
   }
 
+  /**
+   * Aggregated KPI stats for the agent withdrawal module stat cards.
+   */
+  async getMyWithdrawalStats(userId, status) {
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+    const match = { userId: userObjectId, status };
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    if (status === 'PENDING') {
+      const [row] = await Withdrawal.aggregate([
+        { $match: match },
+        {
+          $group: {
+            _id: null,
+            count: { $sum: 1 },
+            totalNetInr: { $sum: '$netInr' },
+            avgNetInr: { $avg: '$netInr' },
+            oldestCreatedAt: { $min: '$createdAt' },
+          },
+        },
+      ]);
+
+      const count = row?.count ?? 0;
+      const oldestDays = row?.oldestCreatedAt
+        ? Math.floor((now.getTime() - new Date(row.oldestCreatedAt).getTime()) / (1000 * 60 * 60 * 24))
+        : null;
+
+      return {
+        status,
+        count,
+        totalNetInr: round2(row?.totalNetInr ?? 0),
+        avgNetInr: count ? round2(row?.avgNetInr ?? 0) : 0,
+        oldestDays,
+        thisMonthNetInr: null,
+        thisMonthCount: null,
+        avgProcessingHours: null,
+        topReason: null,
+      };
+    }
+
+    if (status === 'APPROVED') {
+      const [row] = await Withdrawal.aggregate([
+        { $match: match },
+        {
+          $group: {
+            _id: null,
+            count: { $sum: 1 },
+            totalNetInr: { $sum: '$netInr' },
+            thisMonthNetInr: {
+              $sum: {
+                $cond: [{ $gte: ['$processedAt', monthStart] }, '$netInr', 0],
+              },
+            },
+            avgProcessingMs: {
+              $avg: {
+                $cond: [
+                  {
+                    $and: [
+                      { $ne: ['$processedAt', null] },
+                      { $ne: ['$createdAt', null] },
+                    ],
+                  },
+                  { $subtract: ['$processedAt', '$createdAt'] },
+                  null,
+                ],
+              },
+            },
+          },
+        },
+      ]);
+
+      const avgProcessingHours = row?.avgProcessingMs
+        ? Math.round(row.avgProcessingMs / (1000 * 60 * 60))
+        : null;
+
+      return {
+        status,
+        count: row?.count ?? 0,
+        totalNetInr: round2(row?.totalNetInr ?? 0),
+        avgNetInr: null,
+        oldestDays: null,
+        thisMonthNetInr: round2(row?.thisMonthNetInr ?? 0),
+        thisMonthCount: null,
+        avgProcessingHours,
+        topReason: null,
+      };
+    }
+
+    // REJECTED
+    const [[summary], topReasonRow] = await Promise.all([
+      Withdrawal.aggregate([
+        { $match: match },
+        {
+          $group: {
+            _id: null,
+            count: { $sum: 1 },
+            totalNetInr: { $sum: '$netInr' },
+            thisMonthCount: {
+              $sum: {
+                $cond: [{ $gte: ['$createdAt', monthStart] }, 1, 0],
+              },
+            },
+          },
+        },
+      ]),
+      Withdrawal.aggregate([
+        { $match: { ...match, rejectionReason: { $nin: [null, ''] } } },
+        { $group: { _id: '$rejectionReason', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 1 },
+      ]),
+    ]);
+
+    const row = summary ?? {};
+    const topReason = topReasonRow[0]?._id ?? null;
+
+    return {
+      status,
+      count: row.count ?? 0,
+      totalNetInr: round2(row.totalNetInr ?? 0),
+      avgNetInr: null,
+      oldestDays: null,
+      thisMonthNetInr: null,
+      thisMonthCount: row.thisMonthCount ?? 0,
+      avgProcessingHours: null,
+      topReason,
+    };
+  }
+
   async getWithdrawalById(id, user) {
     const withdrawal = await withdrawalRepository.findById(id);
     if (!withdrawal) throw new ApiError(404, 'Withdrawal not found');
@@ -323,11 +453,20 @@ class WithdrawalService {
   }
 
   async _invalidate(userId) {
-    await Promise.all([
+    const userIdStr = userId.toString();
+    const bumps = [
       bumpCacheVersion(CACHE_NS),
-      deleteCache(`user:${userId}`),
-      deleteCache(`auth:user:${userId}`),
-    ]);
+      deleteCache(`user:${userIdStr}`),
+      deleteCache(`auth:user:${userIdStr}`),
+    ];
+
+    const owner = await User.findById(userId).select('type').lean();
+    if (owner?.type === 'AGENT') {
+      const { default: agentService } = await import('./agent.service.js');
+      bumps.push(agentService.bumpCache(userIdStr));
+    }
+
+    await Promise.all(bumps);
   }
 }
 

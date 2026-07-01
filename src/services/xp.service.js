@@ -11,7 +11,7 @@ import Reward from '../modules/reward.model.js';
 import RewardHistory from '../modules/reward-history.model.js';
 import { ONE_TIME_XP_ACTIONS } from '../constants/enum.constant.js';
 import ApiError from '../utils/ApiError.js';
-import { getCache, setCache, deleteCache } from '../utils/redis.util.js';
+import { getCache, setCache, deleteCache, bumpCacheVersion } from '../utils/redis.util.js';
 import { emitToUser } from '../utils/socket.util.js';
 import logger from '../utils/logger.util.js';
 
@@ -85,6 +85,7 @@ class XpService {
       await Promise.all([
         deleteCache(`auth:user:${userId}`),
         deleteCache(`user:${userId}`),
+        bumpCacheVersion('customers:popular'),
       ]);
 
       // 9. Emit xp:earned socket event
@@ -322,6 +323,7 @@ class XpService {
     await Promise.all([
       deleteCache(`auth:user:${userId}`),
       deleteCache(`user:${userId}`),
+      bumpCacheVersion('customers:popular'),
     ]);
 
     emitToUser(userId.toString(), 'xp:earned', {

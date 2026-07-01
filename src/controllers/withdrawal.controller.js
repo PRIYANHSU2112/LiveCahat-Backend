@@ -24,6 +24,11 @@ class WithdrawalController extends BaseController {
     this.sendResponse(res, 200, 'Withdrawals fetched successfully', data);
   });
 
+  getMyWithdrawalStats = catchAsync(async (req, res) => {
+    const data = await withdrawalService.getMyWithdrawalStats(req.user._id, req.query.status);
+    this.sendResponse(res, 200, 'Withdrawal stats fetched successfully', data);
+  });
+
   getWithdrawalById = catchAsync(async (req, res) => {
     const data = await withdrawalService.getWithdrawalById(req.params.id, req.user);
     this.sendResponse(res, 200, 'Withdrawal fetched successfully', data);

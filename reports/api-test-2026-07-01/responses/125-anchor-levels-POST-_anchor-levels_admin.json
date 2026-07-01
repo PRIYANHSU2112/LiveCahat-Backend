@@ -1,0 +1,4 @@
+{
+  "success": false,
+  "message": "\"body.title\" is required, \"body.requiredEarnings\" is required"
+}

@@ -1,0 +1,13 @@
+{
+  "success": true,
+  "message": "Language created successfully",
+  "data": {
+    "name": "Lang10571",
+    "code": "L0571",
+    "isActive": true,
+    "_id": "6a450668e8206d5819c66d6a",
+    "createdAt": "2026-07-01T12:22:00.642Z",
+    "updatedAt": "2026-07-01T12:22:00.642Z",
+    "__v": 0
+  }
+}

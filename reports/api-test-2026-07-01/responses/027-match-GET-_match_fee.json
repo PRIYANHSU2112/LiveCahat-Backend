@@ -1,0 +1,8 @@
+{
+  "success": true,
+  "message": "Match fee fetched successfully",
+  "data": {
+    "instantMatchFee": 5,
+    "isEnabled": true
+  }
+}

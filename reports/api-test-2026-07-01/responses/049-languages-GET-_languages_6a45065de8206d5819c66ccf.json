@@ -1,0 +1,13 @@
+{
+  "success": true,
+  "message": "Language fetched successfully",
+  "data": {
+    "_id": "6a45065de8206d5819c66ccf",
+    "name": "SetupLang1782908508946",
+    "code": "S8946",
+    "isActive": true,
+    "createdAt": "2026-07-01T12:21:49.091Z",
+    "updatedAt": "2026-07-01T12:21:49.091Z",
+    "__v": 0
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "success": true,
+  "message": "Successfully claimed Day 1 reward!",
+  "data": {
+    "success": true,
+    "message": "Successfully claimed Day 1 reward!",
+    "claimedDay": 1,
+    "reward": {
+      "type": "COINS",
+      "value": 100
+    },
+    "streakState": {
+      "lastClaimedDay": 1,
+      "lastClaimedAt": "2026-07-01T12:22:07.481Z",
+      "specialGiftWeek": 1
+    }
+  }
+}

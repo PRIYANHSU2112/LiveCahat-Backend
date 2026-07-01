@@ -1,0 +1,13 @@
+{
+  "success": true,
+  "message": "Sticker category deactivated successfully",
+  "data": {
+    "_id": "6a45065de8206d5819c66cd8",
+    "name": "Updated Cat",
+    "sortOrder": 0,
+    "isActive": false,
+    "createdAt": "2026-07-01T12:21:49.570Z",
+    "updatedAt": "2026-07-01T12:22:19.586Z",
+    "__v": 0
+  }
+}

@@ -67,6 +67,7 @@ const giftTransactionSchema = new mongoose.Schema(
 // Compound indexes for fast transaction queries by sender/receiver
 giftTransactionSchema.index({ senderId: 1, createdAt: -1 });
 giftTransactionSchema.index({ receiverId: 1, createdAt: -1 });
+giftTransactionSchema.index({ receiverId: 1, status: 1, createdAt: -1 });
 
 const GiftTransaction = mongoose.model('GiftTransaction', giftTransactionSchema);
 export default GiftTransaction;

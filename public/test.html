@@ -908,6 +908,7 @@
           <div class="input-row">
             <input type="text" id="customerToken" placeholder="Paste customer token here...">
             <button id="btnConnectCustomer">Connect</button>
+            <button class="btn-success" id="btnInstantMatch" title="POST /match/instant — needs token only">⚡ Find Partner</button>
           </div>
         </div>
 
@@ -1008,6 +1009,27 @@
           <div style="display: flex; gap: 10px; margin-top: -6px; margin-bottom: 6px;">
             <button id="btnSetOnline" class="btn-success" style="flex: 1; padding: 8px 12px; font-size: 13px;">🟢 Go Online</button>
             <button id="btnSetOffline" class="btn-danger" style="flex: 1; padding: 8px 12px; font-size: 13px;">🔴 Go Offline</button>
+          </div>
+
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <label style="font-size: 13px; font-weight: 600;">Listener Home (API)</label>
+              <button class="btn-secondary" style="padding: 4px 8px; font-size: 11px;" id="btnLoadListenerHome">Refresh</button>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; font-size: 12px;">
+              <div>
+                <strong style="color: var(--success);">Online</strong>
+                <div class="listeners-card-list" id="listenerHomeOnline" style="max-height: 120px; margin-top: 4px;"></div>
+              </div>
+              <div>
+                <strong style="color: var(--accent);">New</strong>
+                <div class="listeners-card-list" id="listenerHomeNew" style="max-height: 120px; margin-top: 4px;"></div>
+              </div>
+              <div>
+                <strong style="color: var(--warning);">Popular</strong>
+                <div class="listeners-card-list" id="listenerHomePopular" style="max-height: 120px; margin-top: 4px;"></div>
+              </div>
+            </div>
           </div>
 
           <div>
@@ -1605,6 +1627,7 @@
         document.getElementById('listenerAvailabilityStatus').innerHTML = `Availability state: <strong style="color: var(--success);">ONLINE</strong>`;
         appendLog('Listener', `Connected. Socket ID: ${listenerSocket.id}`);
         fetchRecentSessions('listener');
+        fetchListenerHome();
       });
 
       listenerSocket.on('disconnect', () => {
@@ -1647,11 +1670,57 @@
 
       listenerSocket.on('receive_message', (data) => appendMsg('listenerMessages', data.senderId, data.message, false, data.messageType, data.fileUrl));
       listenerSocket.on('display_typing', (data) => { document.getElementById('listenerTypingInd').textContent = data.isTyping ? 'Customer is typing...' : ''; });
+      listenerSocket.on('listener_home_presence', (data) => patchListenerHomePresence(data));
+      listenerSocket.on('listener_home_interaction', (data) => {
+        appendLog('Listener', `Home interaction: ${data.customerId} (${data.action})`);
+        fetchListenerHome();
+      });
       listenerSocket.on('socket_error', (data) => { appendLog('Listener', `❌ ${data.message}`); alert(`Error: ${data.message}`); });
       listenerSocket.on('connect_error', (err) => { appendLog('Listener', `❌ Handshake: ${err.message}`); alert(`Rejected: ${err.message}`); });
     });
 
-    // Chat Actions (preserved from original)
+    document.getElementById('btnInstantMatch').addEventListener('click', async () => {
+      const token = document.getElementById('customerToken').value.trim();
+      if (!token) return alert('Please paste a customer JWT token first.');
+      const btn = document.getElementById('btnInstantMatch');
+      const prevText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Matching...';
+      try {
+        const res = await fetch(`${getBackendUrl()}/api/v1/match/instant`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode: 'CHAT' }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || `Match failed (${res.status})`);
+        const match = data.data || {};
+        const listener = match.listener || {};
+        currentSelectedListener = match.listenerId;
+        document.getElementById('selectedListenerName').textContent = `${listener.firstName || ''} ${listener.lastName || ''}`.trim() || 'Matched listener';
+        document.getElementById('selectedListenerId').textContent = match.listenerId;
+        document.getElementById('selectedListenerRate').textContent = listener.chatRate || 0;
+        document.getElementById('customerWorkspace').style.display = 'flex';
+        document.getElementById('requestArea').style.display = 'block';
+        const requestBtn = document.getElementById('btnRequestChat');
+        requestBtn.disabled = false;
+        requestBtn.textContent = '🚀 Request 1-to-1 Chat';
+        requestBtn.className = 'btn-success';
+        document.getElementById('customerSessionStatusBanner').style.display = 'none';
+        appendLog('Customer', `⚡ Instant match: ${match.listenerId} (${(match.matchReasons || []).join(', ')}) | fee: ${match.matchFeeCharged ?? 0} coins, balance: ${match.balanceAfter ?? '—'}`);
+        if (!customerSocket) {
+          appendLog('Customer', 'Tip: Click Connect to enable socket chat request.');
+        }
+        document.getElementById('btnLoadListeners').click();
+      } catch (err) {
+        appendLog('Customer', `❌ Instant match: ${err.message}`);
+        alert(`Instant match failed: ${err.message}`);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = prevText;
+      }
+    });
+
     document.getElementById('btnLoadListeners').addEventListener('click', async () => {
       const token = document.getElementById('customerToken').value.trim();
       if (!token) return;
@@ -1765,6 +1834,65 @@
 
     document.getElementById('btnSetOnline').addEventListener('click', () => setListenerAvailability('ONLINE'));
     document.getElementById('btnSetOffline').addEventListener('click', () => setListenerAvailability('OFFLINE'));
+
+    function renderListenerHomeSection(containerId, section) {
+      const el = document.getElementById(containerId);
+      if (!el) return;
+      el.innerHTML = '';
+      const docs = section?.docs || [];
+      if (!docs.length) {
+        el.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:8px;">—</div>';
+        return;
+      }
+      docs.forEach((u) => {
+        const item = document.createElement('div');
+        item.className = 'listener-item';
+        item.dataset.customerId = u.id;
+        const dot = u.isOnline ? '🟢' : '⚫';
+        item.innerHTML = `<div class="listener-info"><div class="listener-name">${dot} ${u.firstName || ''} ${u.lastName || ''}</div><div class="listener-meta">Lv.${u.currentLevel || 1}</div></div>`;
+        el.appendChild(item);
+      });
+    }
+
+    let listenerHomeCache = { onlineUsers: null, newUsers: null, popularUsers: null };
+
+    async function fetchListenerHome() {
+      const token = document.getElementById('listenerToken').value.trim();
+      if (!token) return alert('Please paste a listener JWT token first.');
+      try {
+        const res = await fetch(`${getBackendUrl()}/api/v1/home/listener-home?onlineLimit=5&newLimit=5&popularLimit=5`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
+        listenerHomeCache = data.data || {};
+        renderListenerHomeSection('listenerHomeOnline', listenerHomeCache.onlineUsers);
+        renderListenerHomeSection('listenerHomeNew', listenerHomeCache.newUsers);
+        renderListenerHomeSection('listenerHomePopular', listenerHomeCache.popularUsers);
+        appendLog('Listener', `Home loaded — online: ${listenerHomeCache.onlineUsers?.total || 0}, new: ${listenerHomeCache.newUsers?.total || 0}, popular: ${listenerHomeCache.popularUsers?.total || 0}`);
+      } catch (err) {
+        appendLog('Listener', `❌ Listener home: ${err.message}`);
+      }
+    }
+
+    document.getElementById('btnLoadListenerHome').addEventListener('click', fetchListenerHome);
+
+    function patchListenerHomePresence(payload) {
+      const { customerId, isOnline, status } = payload;
+      ['listenerHomeOnline', 'listenerHomeNew', 'listenerHomePopular'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const item = el.querySelector(`[data-customer-id="${customerId}"]`);
+        if (item) {
+          const nameEl = item.querySelector('.listener-name');
+          if (nameEl) {
+            const baseName = nameEl.textContent.replace(/^[🟢⚫]\s*/, '');
+            nameEl.textContent = `${isOnline ? '🟢' : '⚫'} ${baseName}`;
+          }
+        }
+      });
+      appendLog('Listener', `Home presence: ${customerId} → ${status}`);
+    }
 
     // Fetch helpers
     async function fetchRecentSessions(role) {

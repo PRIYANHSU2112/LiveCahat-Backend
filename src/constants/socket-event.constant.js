@@ -46,6 +46,10 @@ export const SERVER_EVENTS = {
   USER_RECONNECTED: 'user_reconnected',
   USER_JOINED: 'user_joined',
 
+  // ─── Listener Home ──────────────────────────────────────────────
+  LISTENER_HOME_PRESENCE: 'listener_home_presence',
+  LISTENER_HOME_INTERACTION: 'listener_home_interaction',
+
   // ─── Call (Audio / Video) ─────────────────────────────────────
   INCOMING_CALL_REQUEST: 'incoming_call_request',
   CALL_REQUEST_ACCEPTED: 'call_request_accepted',

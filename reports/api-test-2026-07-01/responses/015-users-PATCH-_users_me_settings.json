@@ -1,0 +1,11 @@
+{
+  "success": true,
+  "message": "Settings updated successfully",
+  "data": {
+    "notifications": true,
+    "acceptIncomingCalls": true,
+    "dndChats": false,
+    "dndVoiceCall": false,
+    "dndVideoCall": false
+  }
+}

@@ -16,13 +16,7 @@ const s3Client = new S3Client({
 const BUCKET_NAME = process.env.LINODE_OBJECT_BUCKET;
 const FOLDER_PATH = process.env.BUCKET_FOLDER_PATH || '';
 
-/**
- * Uploads a file buffer to S3 compatible storage
- * @param {Buffer} buffer - The file buffer
- * @param {String} originalName - Original file name
- * @param {String} mimetype - File mime type
- * @returns {Promise<String>} - URL of the uploaded file
- */
+
 export const uploadToS3 = async (buffer, originalName, mimetype) => {
   const extension = path.extname(originalName);
   const fileName = `${FOLDER_PATH}${uuidv4()}${extension}`;

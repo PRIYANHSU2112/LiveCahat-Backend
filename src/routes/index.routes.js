@@ -26,6 +26,8 @@ import notificationRoutes from './notification.routes.js';
 import xpRoutes from './xp.routes.js';
 import searchRoutes from './search.routes.js';
 import homeRoutes from './home.routes.js';
+import matchRoutes from './match.routes.js';
+import agentRoutes from './agent.routes.js';
 import countryRoutes from './country.routes.js';
 
 const router = express.Router();
@@ -33,6 +35,8 @@ const router = express.Router();
 router.use('/auth', authRoutes);
 router.use('/countries', countryRoutes);
 router.use('/home', homeRoutes);
+router.use('/match', matchRoutes);
+router.use('/agent', agentRoutes);
 router.use('/users', userRoutes);
 router.use('/listeners', listenerRoutes);
 router.use('/languages', languageRoutes);

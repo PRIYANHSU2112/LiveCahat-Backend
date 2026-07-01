@@ -1,0 +1,7 @@
+{
+  "success": true,
+  "message": "Wishlist status checked successfully",
+  "data": {
+    "isWishlisted": true
+  }
+}

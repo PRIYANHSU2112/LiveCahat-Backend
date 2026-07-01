@@ -1,0 +1,24 @@
+{
+  "success": true,
+  "message": "Admin gift analytics fetched successfully",
+  "data": {
+    "activeGiftsCount": 6,
+    "totalGiftsCount": 6,
+    "last7DaysStats": {
+      "sentCount": 1,
+      "totalCoinsSpent": 5,
+      "totalListenerEarnings": 3,
+      "totalPlatformCommission": 2
+    },
+    "topGifts": [
+      {
+        "giftId": "6a4260c80ca30d2754e1fa20",
+        "name": "Unknown Gift",
+        "icon": "",
+        "category": "Unknown",
+        "totalRevenue": 5,
+        "count": 1
+      }
+    ]
+  }
+}

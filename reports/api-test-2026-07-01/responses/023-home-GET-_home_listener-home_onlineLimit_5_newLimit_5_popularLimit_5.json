@@ -1,0 +1,123 @@
+{
+  "success": true,
+  "message": "Listener home fetched successfully",
+  "data": {
+    "onlineUsers": {
+      "docs": [],
+      "total": 0,
+      "page": 1,
+      "limit": 5,
+      "totalPages": 0
+    },
+    "newUsers": {
+      "docs": [
+        {
+          "id": "6a45065fe8206d5819c66ced",
+          "currentLevel": 1,
+          "totalXp": 0,
+          "isOnline": false,
+          "liveStatus": "OFFLINE"
+        },
+        {
+          "id": "6a45065ce8206d5819c66cc5",
+          "firstName": "Test",
+          "lastName": "Customer",
+          "gender": "MALE",
+          "countryCode": "+91",
+          "currentLevel": 1,
+          "totalXp": 0,
+          "isOnline": false,
+          "liveStatus": "OFFLINE"
+        },
+        {
+          "id": "6a4359219551d87020165520",
+          "gender": "MALE",
+          "countryCode": "+91",
+          "currentLevel": 1,
+          "totalXp": 0,
+          "isOnline": false,
+          "liveStatus": "OFFLINE"
+        },
+        {
+          "id": "6a43574b444b2fabe9c6a140",
+          "gender": "MALE",
+          "countryCode": "+91",
+          "currentLevel": 1,
+          "totalXp": 0,
+          "isOnline": false,
+          "liveStatus": "OFFLINE"
+        },
+        {
+          "id": "6a43570a40fae53badadcd0c",
+          "gender": "MALE",
+          "countryCode": "+91",
+          "currentLevel": 1,
+          "totalXp": 0,
+          "isOnline": false,
+          "liveStatus": "OFFLINE"
+        }
+      ],
+      "total": 18,
+      "page": 1,
+      "limit": 5,
+      "totalPages": 4
+    },
+    "popularUsers": {
+      "docs": [
+        {
+          "id": "6a363e9aa4db3e2dbf1796b0",
+          "gender": "MALE",
+          "currentLevel": 2,
+          "totalXp": 238,
+          "isOnline": true,
+          "liveStatus": "ONLINE"
+        },
+        {
+          "id": "6a32445cd61900d4c18f58c9",
+          "profileImage": "https://api.dicebear.com/7.x/bottts/svg?seed=MysticSorcerer",
+          "gender": "MALE",
+          "countryCode": "+91",
+          "currentLevel": 2,
+          "totalXp": 104,
+          "isOnline": true,
+          "liveStatus": "ONLINE"
+        },
+        {
+          "id": "6a4260c70ca30d2754e1fa10",
+          "firstName": "Test",
+          "lastName": "Customer",
+          "profileImage": "https://api.dicebear.com/7.x/bottts/svg?seed=NeonHacker",
+          "gender": "MALE",
+          "countryCode": "+91",
+          "currentLevel": 1,
+          "totalXp": 15,
+          "isOnline": false,
+          "liveStatus": "OFFLINE"
+        },
+        {
+          "id": "6a4260280ca30d2754e1f8c6",
+          "firstName": "Test",
+          "lastName": "Customer",
+          "profileImage": "https://api.dicebear.com/7.x/bottts/svg?seed=CosmicVoyager",
+          "gender": "MALE",
+          "countryCode": "+91",
+          "currentLevel": 1,
+          "totalXp": 10,
+          "isOnline": false,
+          "liveStatus": "OFFLINE"
+        },
+        {
+          "id": "6a45065fe8206d5819c66ced",
+          "currentLevel": 1,
+          "totalXp": 0,
+          "isOnline": false,
+          "liveStatus": "OFFLINE"
+        }
+      ],
+      "total": 18,
+      "page": 1,
+      "limit": 5,
+      "totalPages": 4
+    }
+  }
+}

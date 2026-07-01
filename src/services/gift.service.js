@@ -251,14 +251,24 @@ class GiftService {
       // Invalidate related cache tags
       const senderIdStr = senderId.toString();
       const receiverIdStr = receiverId.toString();
-      await Promise.all([
+      const cacheBumps = [
         deleteCache(`wallet:user:${senderIdStr}`),
         deleteCache(`wallet:user:${receiverIdStr}`),
         deleteCache(`listener:${receiverIdStr}`),
         bumpCacheVersion(`coin_transactions:user:${senderIdStr}`),
         bumpCacheVersion(`coin_transactions:user:${receiverIdStr}`),
-        bumpCacheVersion('admin:wallets')
-      ]);
+        bumpCacheVersion('admin:wallets'),
+      ];
+
+      if (receiver.type === 'LISTENER') {
+        const listenerProfile = await ListenerProfile.findOne({ userId: receiverId }).select('createdByAgentId').lean();
+        if (listenerProfile?.createdByAgentId) {
+          const { default: agentService } = await import('./agent.service.js');
+          cacheBumps.push(agentService.bumpCache(listenerProfile.createdByAgentId.toString()));
+        }
+      }
+
+      await Promise.all(cacheBumps);
 
       // Re-evaluate the listener's anchor level after earnings (fire-and-forget)
       anchorLevelService.evaluateAnchorLevel(receiverId).catch((err) =>

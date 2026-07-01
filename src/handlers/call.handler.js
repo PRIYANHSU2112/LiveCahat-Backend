@@ -2,6 +2,7 @@ import { CLIENT_EVENTS, SERVER_EVENTS } from '../constants/socket-event.constant
 import callService from '../services/call.service.js';
 import presenceService from '../services/presence.service.js';
 import communicationSessionService from '../services/communication-session.service.js';
+import listenerInteractionService from '../services/listener-interaction.service.js';
 import ListenerProfile from '../modules/listener-profile.model.js';
 import Wallet from '../modules/wallet.model.js';
 import redisClient from '../config/redis.js';
@@ -113,6 +114,8 @@ class CallHandler {
         },
       });
       await redisClient.set(requestKey, payload, 'EX', 30);
+
+      await listenerInteractionService.markListenerCustomerInteraction(listenerId, callerId);
 
       // ── Notify listener ─────────────────────────────────────────
       io.to(listenerId).emit(SERVER_EVENTS.INCOMING_CALL_REQUEST, {

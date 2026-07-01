@@ -1,0 +1,16 @@
+{
+  "success": true,
+  "message": "Avatar updated successfully",
+  "data": {
+    "_id": "6a3398dcc606edaf482ba464",
+    "name": "Upd Av",
+    "image": "https://api.dicebear.com/7.x/bottts/svg?seed=ShadowSamurai",
+    "priceType": "PAID",
+    "price": 50,
+    "category": "PREMIUM",
+    "isActive": true,
+    "__v": 0,
+    "createdAt": "2026-06-18T07:06:04.021Z",
+    "updatedAt": "2026-07-01T12:22:19.953Z"
+  }
+}

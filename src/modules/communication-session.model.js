@@ -67,6 +67,8 @@ const communicationSessionSchema = new mongoose.Schema(
 // Compound indexes for fetching sessions sorted by time for caller or listener
 communicationSessionSchema.index({ callerId: 1, createdAt: -1 });
 communicationSessionSchema.index({ listenerId: 1, createdAt: -1 });
+communicationSessionSchema.index({ listenerId: 1, callerId: 1 });
+communicationSessionSchema.index({ listenerId: 1, status: 1, createdAt: -1 });
 
 const CommunicationSession = mongoose.model('CommunicationSession', communicationSessionSchema);
 export default CommunicationSession;

@@ -1,0 +1,283 @@
+{
+  "success": true,
+  "message": "Level configs fetched successfully",
+  "data": [
+    {
+      "_id": "6a33cb0ae72746abeb261117",
+      "level": 1,
+      "xpRequired": 0,
+      "title": "Newcomer",
+      "rewards": [],
+      "isActive": true,
+      "createdAt": "2026-06-18T10:40:10.442Z",
+      "updatedAt": "2026-06-18T10:40:10.442Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a33cb0ae72746abeb261119",
+      "level": 2,
+      "xpRequired": 100,
+      "title": "Explorer",
+      "rewards": [
+        {
+          "_id": "6a33cb05e72746abeb2610a4",
+          "type": "COINS",
+          "value": 50,
+          "referenceId": null,
+          "label": "50 Bonus Coins",
+          "isActive": true,
+          "createdAt": "2026-06-18T10:40:05.528Z",
+          "updatedAt": "2026-06-18T10:40:05.528Z",
+          "__v": 0
+        }
+      ],
+      "isActive": true,
+      "createdAt": "2026-06-18T10:40:10.515Z",
+      "updatedAt": "2026-06-18T10:40:10.515Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a33cb0ae72746abeb26111b",
+      "level": 3,
+      "xpRequired": 250,
+      "title": "Chatter",
+      "rewards": [
+        {
+          "_id": "6a33cb07e72746abeb2610c1",
+          "type": "COINS",
+          "value": 100,
+          "referenceId": null,
+          "label": "100 Bonus Coins",
+          "isActive": true,
+          "createdAt": "2026-06-18T10:40:07.421Z",
+          "updatedAt": "2026-06-18T10:40:07.421Z",
+          "__v": 0
+        }
+      ],
+      "isActive": true,
+      "createdAt": "2026-06-18T10:40:10.574Z",
+      "updatedAt": "2026-06-18T10:40:10.574Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a33cb0ae72746abeb26111e",
+      "level": 4,
+      "xpRequired": 500,
+      "title": "Regular",
+      "rewards": [
+        {
+          "_id": "6a33cb08e72746abeb2610d6",
+          "type": "COINS",
+          "value": 150,
+          "referenceId": null,
+          "label": "150 Bonus Coins",
+          "isActive": true,
+          "createdAt": "2026-06-18T10:40:08.211Z",
+          "updatedAt": "2026-06-18T10:40:08.211Z",
+          "__v": 0
+        },
+        {
+          "_id": "6a33cb09e72746abeb261107",
+          "type": "AVATAR",
+          "value": 1,
+          "referenceId": "6a3398dcc606edaf482ba460",
+          "label": "Cyber Ninja Avatar",
+          "icon": "https://api.dicebear.com/7.x/bottts/svg?seed=CyberNinja",
+          "isActive": true,
+          "createdAt": "2026-06-18T10:40:09.712Z",
+          "updatedAt": "2026-06-18T10:40:09.712Z",
+          "__v": 0
+        }
+      ],
+      "isActive": true,
+      "createdAt": "2026-06-18T10:40:10.634Z",
+      "updatedAt": "2026-06-18T10:40:10.634Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a33cb0ae72746abeb261120",
+      "level": 5,
+      "xpRequired": 1000,
+      "title": "Adventurer",
+      "rewards": [
+        {
+          "_id": "6a33cb08e72746abeb2610e1",
+          "type": "COINS",
+          "value": 250,
+          "referenceId": null,
+          "label": "250 Bonus Coins",
+          "isActive": true,
+          "createdAt": "2026-06-18T10:40:08.829Z",
+          "updatedAt": "2026-06-18T10:40:08.829Z",
+          "__v": 0
+        }
+      ],
+      "isActive": true,
+      "createdAt": "2026-06-18T10:40:10.718Z",
+      "updatedAt": "2026-06-18T10:40:10.718Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a33cb0ae72746abeb261122",
+      "level": 6,
+      "xpRequired": 2000,
+      "title": "Super Fan",
+      "rewards": [
+        {
+          "_id": "6a33cb09e72746abeb2610e9",
+          "type": "COINS",
+          "value": 500,
+          "referenceId": null,
+          "label": "500 Bonus Coins",
+          "isActive": true,
+          "createdAt": "2026-06-18T10:40:09.158Z",
+          "updatedAt": "2026-06-18T10:40:09.158Z",
+          "__v": 0
+        }
+      ],
+      "isActive": true,
+      "createdAt": "2026-06-18T10:40:10.798Z",
+      "updatedAt": "2026-06-18T10:40:10.798Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a33cb0ae72746abeb261124",
+      "level": 7,
+      "xpRequired": 3500,
+      "title": "Elite",
+      "rewards": [
+        {
+          "_id": "6a33cb09e72746abeb2610f0",
+          "type": "COINS",
+          "value": 750,
+          "referenceId": null,
+          "label": "750 Bonus Coins",
+          "isActive": true,
+          "createdAt": "2026-06-18T10:40:09.331Z",
+          "updatedAt": "2026-06-18T10:40:09.331Z",
+          "__v": 0
+        },
+        {
+          "_id": "6a33cb09e72746abeb26110d",
+          "type": "AVATAR",
+          "value": 1,
+          "referenceId": "6a3398dcc606edaf482ba466",
+          "label": "Mystic Sorcerer Avatar",
+          "icon": "https://api.dicebear.com/7.x/bottts/svg?seed=MysticSorcerer",
+          "isActive": true,
+          "createdAt": "2026-06-18T10:40:09.869Z",
+          "updatedAt": "2026-06-18T10:40:09.869Z",
+          "__v": 0
+        }
+      ],
+      "isActive": true,
+      "createdAt": "2026-06-18T10:40:10.855Z",
+      "updatedAt": "2026-06-18T10:40:10.855Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a33cb0ae72746abeb261126",
+      "level": 8,
+      "xpRequired": 5500,
+      "title": "Legend",
+      "rewards": [
+        {
+          "_id": "6a33cb09e72746abeb2610f7",
+          "type": "COINS",
+          "value": 1000,
+          "referenceId": null,
+          "label": "1000 Bonus Coins",
+          "isActive": true,
+          "createdAt": "2026-06-18T10:40:09.443Z",
+          "updatedAt": "2026-06-18T10:40:09.443Z",
+          "__v": 0
+        }
+      ],
+      "isActive": true,
+      "createdAt": "2026-06-18T10:40:10.921Z",
+      "updatedAt": "2026-06-18T10:40:10.921Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a33cb0ae72746abeb261128",
+      "level": 9,
+      "xpRequired": 8000,
+      "title": "Master",
+      "rewards": [
+        {
+          "_id": "6a33cb09e72746abeb2610fb",
+          "type": "COINS",
+          "value": 1500,
+          "referenceId": null,
+          "label": "1500 Bonus Coins",
+          "isActive": true,
+          "createdAt": "2026-06-18T10:40:09.520Z",
+          "updatedAt": "2026-06-18T10:40:09.520Z",
+          "__v": 0
+        }
+      ],
+      "isActive": true,
+      "createdAt": "2026-06-18T10:40:10.982Z",
+      "updatedAt": "2026-06-18T10:40:10.982Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a33cb0be72746abeb26112a",
+      "level": 10,
+      "xpRequired": 11000,
+      "title": "Grand Master",
+      "rewards": [
+        {
+          "_id": "6a33cb09e72746abeb261100",
+          "type": "COINS",
+          "value": 2000,
+          "referenceId": null,
+          "label": "2000 Bonus Coins",
+          "isActive": true,
+          "createdAt": "2026-06-18T10:40:09.597Z",
+          "updatedAt": "2026-06-18T10:40:09.597Z",
+          "__v": 0
+        },
+        {
+          "_id": "6a33cb0ae72746abeb261112",
+          "type": "AVATAR",
+          "value": 1,
+          "referenceId": "6a3398dcc606edaf482ba467",
+          "label": "Golden Monarch Avatar",
+          "icon": "https://api.dicebear.com/7.x/bottts/svg?seed=GoldenMonarch",
+          "isActive": true,
+          "createdAt": "2026-06-18T10:40:10.048Z",
+          "updatedAt": "2026-06-18T10:40:10.048Z",
+          "__v": 0
+        },
+        {
+          "_id": "6a33cb0ae72746abeb261115",
+          "type": "BADGE",
+          "value": 1,
+          "referenceId": null,
+          "label": "Gold Badge",
+          "icon": "https://cdn-icons-png.flaticon.com/512/2583/2583344.png",
+          "isActive": true,
+          "createdAt": "2026-06-18T10:40:10.383Z",
+          "updatedAt": "2026-06-18T10:40:10.383Z",
+          "__v": 0
+        }
+      ],
+      "isActive": true,
+      "createdAt": "2026-06-18T10:40:11.039Z",
+      "updatedAt": "2026-06-18T10:40:11.039Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a42603b0ca30d2754e1f9fc",
+      "level": 50,
+      "xpRequired": 100,
+      "title": "Test Level",
+      "rewards": [],
+      "isActive": true,
+      "createdAt": "2026-06-29T12:08:27.896Z",
+      "updatedAt": "2026-06-29T12:08:27.896Z",
+      "__v": 0
+    }
+  ]
+}

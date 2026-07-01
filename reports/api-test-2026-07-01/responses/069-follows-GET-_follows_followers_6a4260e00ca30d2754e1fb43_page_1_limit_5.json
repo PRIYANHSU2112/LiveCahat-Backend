@@ -1,0 +1,27 @@
+{
+  "success": true,
+  "message": "Followers list fetched successfully",
+  "data": {
+    "docs": [
+      {
+        "_id": "6a45066bb46d99b4e52fc75a",
+        "followerId": "6a45065ce8206d5819c66cc5",
+        "createdAt": "2026-07-01T12:22:03.913Z",
+        "user": {
+          "_id": "6a45065ce8206d5819c66cc5",
+          "isOnline": false,
+          "firstName": "Test",
+          "lastName": "Customer"
+        }
+      }
+    ],
+    "meta": {
+      "totalDocuments": 1,
+      "totalPages": 1,
+      "currentPage": 1,
+      "limit": 5,
+      "hasNextPage": false,
+      "hasPrevPage": false
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "success": true,
+  "message": "Language updated successfully",
+  "data": {
+    "_id": "6a45065de8206d5819c66ccf",
+    "name": "Updated Lang",
+    "code": "S8946",
+    "isActive": true,
+    "createdAt": "2026-07-01T12:21:49.091Z",
+    "updatedAt": "2026-07-01T12:22:16.942Z",
+    "__v": 0
+  }
+}

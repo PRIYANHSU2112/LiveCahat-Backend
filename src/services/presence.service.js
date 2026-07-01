@@ -8,6 +8,10 @@ import logger from '../utils/logger.util.js';
 import { bumpCacheVersion, deleteCache } from '../utils/redis.util.js';
 import { formatDateKey } from '../utils/stats.util.js';
 
+// Lazy import to avoid circular dependency with listener-interaction.service
+const getListenerInteractionService = () =>
+  import('./listener-interaction.service.js').then((m) => m.default);
+
 // TTL for the daily peak key: ~48h so the previous day's peak survives for the
 // agent stats "Peak Today" comparison before auto-expiring.
 const AGENT_PEAK_TTL_SECONDS = 172800;
@@ -44,8 +48,11 @@ class PresenceService {
         } else {
           if (redisClient.isRedisAvailable) {
             await redisClient.set(statusKey, 'ONLINE');
+            if (userType === 'CUSTOMER') {
+              await redisClient.sadd(KEYS.onlineCustomers(), userId.toString());
+            }
           }
-          this.broadcastUserPresenceChange(userId, 'ONLINE');
+          this.broadcastUserPresenceChange(userId, 'ONLINE', userType);
         }
       } else {
         // Already online. If it's a listener and currently BUSY in DB, keep Redis BUSY.
@@ -96,6 +103,9 @@ class PresenceService {
         if (redisClient.isRedisAvailable) {
           await redisClient.del(statusKey);
           await redisClient.del(connKey);
+          if (userType === 'CUSTOMER') {
+            await redisClient.srem(KEYS.onlineCustomers(), userId.toString());
+          }
         }
 
         if (userType === 'LISTENER') {
@@ -104,7 +114,7 @@ class PresenceService {
           await bumpCacheVersion('listeners');
           this.broadcastStatusChange(userId, 'OFFLINE');
         } else {
-          this.broadcastUserPresenceChange(userId, 'OFFLINE');
+          this.broadcastUserPresenceChange(userId, 'OFFLINE', userType);
         }
       }
     } catch (err) {
@@ -257,7 +267,7 @@ class PresenceService {
   /**
    * Broadcast presence status changes for any user type.
    */
-  broadcastUserPresenceChange(userId, status) {
+  broadcastUserPresenceChange(userId, status, userType = null) {
     const io = getSocketIo();
     if (io) {
       io.emit(SERVER_EVENTS.USER_PRESENCE_CHANGED, {
@@ -265,6 +275,14 @@ class PresenceService {
         status,
         isOnline: status !== 'OFFLINE',
       });
+    }
+
+    if (userType === 'CUSTOMER') {
+      getListenerInteractionService()
+        .then((svc) => svc.broadcastListenerHomePresence(userId, status))
+        .catch((err) => {
+          logger.error(`[Presence] listener home broadcast failed: ${err.message}`);
+        });
     }
   }
 }

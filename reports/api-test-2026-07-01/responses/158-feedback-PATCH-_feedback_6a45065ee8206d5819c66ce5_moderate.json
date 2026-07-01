@@ -1,0 +1,4 @@
+{
+  "success": false,
+  "message": "\"body.status\" must be one of [OPEN, IN_REVIEW, RESOLVED]"
+}

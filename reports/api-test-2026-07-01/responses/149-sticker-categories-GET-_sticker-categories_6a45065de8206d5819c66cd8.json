@@ -1,0 +1,13 @@
+{
+  "success": true,
+  "message": "Sticker category fetched successfully",
+  "data": {
+    "_id": "6a45065de8206d5819c66cd8",
+    "name": "SetupCat1782908509484",
+    "sortOrder": 0,
+    "isActive": true,
+    "createdAt": "2026-07-01T12:21:49.570Z",
+    "updatedAt": "2026-07-01T12:21:49.570Z",
+    "__v": 0
+  }
+}

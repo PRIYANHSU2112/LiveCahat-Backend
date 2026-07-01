@@ -1,0 +1,73 @@
+{
+  "success": true,
+  "message": "Referral details fetched successfully",
+  "data": {
+    "inviteCode": "UMO5484",
+    "inviteLink": "https://cornerchat.com/invite?code=UMO5484",
+    "referralCount": 0,
+    "referralEarnings": 0,
+    "currentLevel": 1,
+    "commissionTable": [
+      {
+        "_id": "6a3245be0d3a67122fdcd4ca",
+        "name": "Starter Pack",
+        "price": 49,
+        "referralBonusCoins": 0
+      },
+      {
+        "_id": "6a425f695f8b04d72118d3a0",
+        "name": "SetupPack1782734697500",
+        "price": 49,
+        "referralBonusCoins": 0
+      },
+      {
+        "_id": "6a45065de8206d5819c66cd2",
+        "name": "SetupPack1782908509160",
+        "price": 49,
+        "referralBonusCoins": 0
+      },
+      {
+        "_id": "6a4260d20ca30d2754e1fa8e",
+        "name": "Pack1782735050427",
+        "price": 99,
+        "referralBonusCoins": 0
+      },
+      {
+        "_id": "6a3245be0d3a67122fdcd4cb",
+        "name": "Popular Pack",
+        "price": 99,
+        "referralBonusCoins": 0
+      },
+      {
+        "_id": "6a450668e8206d5819c66d6f",
+        "name": "Pack1782908510571",
+        "price": 99,
+        "referralBonusCoins": 0
+      },
+      {
+        "_id": "6a42602f0ca30d2754e1f937",
+        "name": "Pack1782734889986",
+        "price": 99,
+        "referralBonusCoins": 0
+      },
+      {
+        "_id": "6a3245be0d3a67122fdcd4cc",
+        "name": "Super Saver",
+        "price": 249,
+        "referralBonusCoins": 0
+      },
+      {
+        "_id": "6a3245be0d3a67122fdcd4cd",
+        "name": "Mega Pack",
+        "price": 499,
+        "referralBonusCoins": 0
+      },
+      {
+        "_id": "6a3245be0d3a67122fdcd4ce",
+        "name": "Ultimate Pack",
+        "price": 999,
+        "referralBonusCoins": 0
+      }
+    ]
+  }
+}

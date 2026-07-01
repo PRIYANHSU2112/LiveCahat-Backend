@@ -26,6 +26,12 @@ export const listWithdrawalQuerySchema = {
   }),
 };
 
+export const withdrawalStatsQuerySchema = {
+  query: Joi.object().keys({
+    status: Joi.string().valid('PENDING', 'APPROVED', 'REJECTED').required(),
+  }),
+};
+
 export const rejectWithdrawalSchema = {
   body: Joi.object().keys({
     reason: Joi.string().trim().min(3).required(),

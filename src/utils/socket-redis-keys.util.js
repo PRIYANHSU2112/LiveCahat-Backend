@@ -67,6 +67,24 @@ export const KEYS = {
    * Value: Integer string.
    */
   agentPeak: (agentId, dateStr) => `agent_peak:${agentId}:${dateStr}`,
+
+  /** Last instant-match listener for a customer (5-min TTL). Value: listenerId */
+  matchSticky: (customerId) => `match:sticky:${customerId}`,
+
+  /** Customer paid instant-match fee within sticky window (5-min TTL). Value: "1" */
+  matchPaid: (customerId) => `match:paid:${customerId}`,
+
+  /** Cached singleton match config JSON. TTL ~60s */
+  matchConfigCache: () => 'match:config',
+
+  /** SET of customerIds who have interacted with a listener (chat/call request or session) */
+  listenerInteracted: (listenerId) => `listener:interacted:${listenerId}`,
+
+  /** Reverse index: SET of listenerIds a customer has interacted with */
+  customerInteractedListeners: (customerId) => `customer:interacted_listeners:${customerId}`,
+
+  /** Global SET of customer userIds currently online (socket connected) */
+  onlineCustomers: () => 'presence:online:customers',
 };
 
 export const PATTERNS = {

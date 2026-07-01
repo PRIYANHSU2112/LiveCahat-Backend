@@ -1,0 +1,15 @@
+{
+  "success": true,
+  "message": "Withdrawal stats fetched successfully",
+  "data": {
+    "status": "REJECTED",
+    "count": 0,
+    "totalNetInr": 0,
+    "avgNetInr": null,
+    "oldestDays": null,
+    "thisMonthNetInr": null,
+    "thisMonthCount": 0,
+    "avgProcessingHours": null,
+    "topReason": null
+  }
+}

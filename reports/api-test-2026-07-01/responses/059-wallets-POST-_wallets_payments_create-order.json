@@ -1,0 +1,23 @@
+{
+  "success": true,
+  "message": "Payment order created successfully",
+  "data": {
+    "transactionId": "6a450669e8206d5819c66d77",
+    "razorpayOrderId": "order_T8EjZFUTl3JYgu",
+    "amount": 4900,
+    "currency": "INR",
+    "coinPack": {
+      "_id": "6a45065de8206d5819c66cd2",
+      "name": "SetupPack1782908509160",
+      "coins": 50,
+      "price": 49,
+      "currency": "INR",
+      "referralBonusCoins": 0,
+      "isActive": true,
+      "createdAt": "2026-07-01T12:21:49.224Z",
+      "updatedAt": "2026-07-01T12:21:49.224Z",
+      "ratePerCoin": 0.98,
+      "__v": 0
+    }
+  }
+}

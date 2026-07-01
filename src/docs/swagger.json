@@ -22,6 +22,37 @@
         "scheme": "bearer",
         "bearerFormat": "JWT"
       }
+    },
+    "schemas": {
+      "ListenerHomeCustomerCard": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "firstName": { "type": "string" },
+          "lastName": { "type": "string" },
+          "profileImage": { "type": "string" },
+          "gender": { "type": "string" },
+          "countryCode": { "type": "string" },
+          "currentLevel": { "type": "integer" },
+          "totalXp": { "type": "integer" },
+          "isOnline": { "type": "boolean" },
+          "liveStatus": { "type": "string", "enum": ["ONLINE", "OFFLINE", "BUSY"] },
+          "lastInteractionAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ListenerHomeSection": {
+        "type": "object",
+        "properties": {
+          "docs": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ListenerHomeCustomerCard" }
+          },
+          "total": { "type": "integer" },
+          "page": { "type": "integer" },
+          "limit": { "type": "integer" },
+          "totalPages": { "type": "integer" }
+        }
+      }
     }
   },
   "tags": [
@@ -32,6 +63,10 @@
     {
       "name": "Home",
       "description": "User home screen feed"
+    },
+    {
+      "name": "Match",
+      "description": "Instant partner matching for customers"
     },
     {
       "name": "Users",
@@ -9513,6 +9548,185 @@
           "403": {
             "description": "Forbidden - only CUSTOMER or LISTENER accounts may access the home feed"
           }
+        }
+      }
+    },
+    "/home/listener-home": {
+      "get": {
+        "summary": "Listener home feed (customers)",
+        "description": "Returns online, new, and popular customer sections for the logged-in listener. Online users are interacted customers currently online. New users have never chatted or called this listener. Popular users are ranked by currentLevel and totalXp. Presence is overlaid from Redis in real time. Socket events listener_home_presence and listener_home_interaction push live updates.",
+        "tags": ["Home"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "section",
+            "schema": { "type": "string", "enum": ["online", "new", "popular"] },
+            "description": "Return a single section only (omit for all three)"
+          },
+          { "in": "query", "name": "onlinePage", "schema": { "type": "integer", "default": 1 } },
+          { "in": "query", "name": "onlineLimit", "schema": { "type": "integer", "default": 10, "maximum": 50 } },
+          { "in": "query", "name": "newPage", "schema": { "type": "integer", "default": 1 } },
+          { "in": "query", "name": "newLimit", "schema": { "type": "integer", "default": 10, "maximum": 50 } },
+          { "in": "query", "name": "popularPage", "schema": { "type": "integer", "default": 1 } },
+          { "in": "query", "name": "popularLimit", "schema": { "type": "integer", "default": 10, "maximum": 50 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Listener home fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "Listener home fetched successfully" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "onlineUsers": { "$ref": "#/components/schemas/ListenerHomeSection" },
+                        "newUsers": { "$ref": "#/components/schemas/ListenerHomeSection" },
+                        "popularUsers": { "$ref": "#/components/schemas/ListenerHomeSection" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden — LISTENER role required" }
+        }
+      }
+    },
+    "/match/fee": {
+      "get": {
+        "summary": "Instant match fee (customer)",
+        "description": "Returns admin-configured instant match fee and whether the feature is enabled. No wallet debit.",
+        "tags": ["Match"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Fee info returned" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "CUSTOMER role required" }
+        }
+      }
+    },
+    "/match/admin/config": {
+      "get": {
+        "summary": "Get match config (Admin)",
+        "tags": ["Match"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Match config returned" },
+          "403": { "description": "ADMIN role required" }
+        }
+      },
+      "put": {
+        "summary": "Update match config (Admin)",
+        "tags": ["Match"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "instantMatchFee": { "type": "number", "minimum": 0, "example": 5 },
+                  "isEnabled": { "type": "boolean", "example": true }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Config updated" },
+          "403": { "description": "ADMIN role required" }
+        }
+      }
+    },
+    "/match/instant": {
+      "post": {
+        "summary": "Instant partner match",
+        "description": "One-click match: debits admin-configured instantMatchFee on successful match (not on 404). No re-charge within 5-min sticky window. Does not start a session — use socket request_chat or POST /calls/initiate afterward.",
+        "tags": ["Match"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "mode": { "type": "string", "enum": ["CHAT", "AUDIO", "VIDEO"], "default": "CHAT", "description": "Wallet pre-check rate mode for session" },
+                  "language": { "type": "string", "description": "Language ObjectId, name, or code" },
+                  "country": { "type": "string", "description": "Country ObjectId or ISO code" },
+                  "category": { "type": "string", "description": "Listener category filter" },
+                  "excludeListenerIds": { "type": "array", "items": { "type": "string" }, "description": "Recently skipped listener IDs" },
+                  "refresh": { "type": "boolean", "default": false, "description": "Skip sticky match and fee-paid window" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Partner matched; includes matchFeeCharged, balanceAfter, instantMatchFee" },
+          "402": { "description": "Insufficient wallet balance for match fee or session rate" },
+          "404": { "description": "No suitable partner available (no fee debited)" },
+          "409": { "description": "Customer already in an active session" },
+          "503": { "description": "Instant match disabled by admin" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "CUSTOMER role required" }
+        }
+      }
+    },
+    "/match/status": {
+      "get": {
+        "summary": "Match availability probe",
+        "description": "Quick check whether any ONLINE partner exists for the customer. No wallet debit.",
+        "tags": ["Match"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "query", "name": "language", "schema": { "type": "string" } },
+          { "in": "query", "name": "country", "schema": { "type": "string" } },
+          { "in": "query", "name": "category", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Availability status returned" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "CUSTOMER role required" }
+        }
+      }
+    },
+    "/match/discover": {
+      "get": {
+        "summary": "Discover listeners (rating & anchor level)",
+        "description": "Paginated listener discovery for customers. Defaults to the customer's country (`sameCountry=true`). Sort modes: combined (anchor level + rating), rating, anchor_level, featured, popular. Mongo results are Redis-cached (60s, version-invalidated); live availability is batch-overlaid from Redis presence on every response.",
+        "tags": ["Match"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "in": "query", "name": "page", "schema": { "type": "integer", "default": 1 } },
+          { "in": "query", "name": "limit", "schema": { "type": "integer", "default": 10, "maximum": 50 } },
+          { "in": "query", "name": "sort", "schema": { "type": "string", "enum": ["combined", "rating", "anchor_level", "featured", "popular"], "default": "combined" } },
+          { "in": "query", "name": "minRating", "schema": { "type": "number", "minimum": 0, "maximum": 5 } },
+          { "in": "query", "name": "maxRating", "schema": { "type": "number", "minimum": 0, "maximum": 5 } },
+          { "in": "query", "name": "minAnchorLevel", "schema": { "type": "integer", "minimum": 0 } },
+          { "in": "query", "name": "maxAnchorLevel", "schema": { "type": "integer", "minimum": 0 } },
+          { "in": "query", "name": "anchorLevel", "schema": { "type": "integer", "minimum": 0 } },
+          { "in": "query", "name": "language", "schema": { "type": "string" } },
+          { "in": "query", "name": "country", "schema": { "type": "string", "description": "Overrides default country when provided" } },
+          { "in": "query", "name": "sameCountry", "schema": { "type": "boolean", "default": true } },
+          { "in": "query", "name": "relaxCountry", "schema": { "type": "boolean", "default": false, "description": "Retry without country filter when the first page is empty" } },
+          { "in": "query", "name": "category", "schema": { "type": "string" } },
+          { "in": "query", "name": "status", "schema": { "type": "string", "enum": ["ONLINE", "OFFLINE", "BUSY"] } },
+          { "in": "query", "name": "q", "schema": { "type": "string", "description": "Name search" } }
+        ],
+        "responses": {
+          "200": { "description": "Paginated listener list with appliedFilters metadata" },
+          "400": { "description": "Invalid query parameters" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "CUSTOMER role required" }
         }
       }
     }

@@ -1,0 +1,24 @@
+{
+  "success": true,
+  "message": "Feedback fetched successfully",
+  "data": {
+    "_id": "6a45065ee8206d5819c66ce5",
+    "userId": {
+      "_id": "6a45065ce8206d5819c66cc5",
+      "firstName": "Test",
+      "lastName": "Customer",
+      "profileImage": "https://api.dicebear.com/7.x/bottts/svg?seed=ShadowSamurai"
+    },
+    "userType": "CUSTOMER",
+    "category": "OTHER",
+    "message": "Setup feedback",
+    "rating": 4,
+    "status": "OPEN",
+    "adminResponse": null,
+    "respondedBy": null,
+    "respondedAt": null,
+    "createdAt": "2026-07-01T12:21:50.277Z",
+    "updatedAt": "2026-07-01T12:21:50.277Z",
+    "__v": 0
+  }
+}

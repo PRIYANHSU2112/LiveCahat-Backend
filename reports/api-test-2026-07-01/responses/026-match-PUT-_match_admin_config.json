@@ -1,0 +1,8 @@
+{
+  "success": true,
+  "message": "Match config updated successfully",
+  "data": {
+    "instantMatchFee": 5,
+    "isEnabled": true
+  }
+}

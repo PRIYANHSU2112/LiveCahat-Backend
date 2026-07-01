@@ -1,0 +1,8 @@
+{
+  "success": true,
+  "message": "Follow status fetched",
+  "data": {
+    "isFollowing": true,
+    "isFavorite": false
+  }
+}
