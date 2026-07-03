@@ -943,6 +943,11 @@
               Listener ID: <strong id="selectedListenerId">None</strong><br>
               Rate: <strong id="selectedListenerRate">0</strong> coins/min
             </div>
+            <div class="test-helper-card" style="margin-top: 8px;">
+              Report APIs: <strong>GET /api/v1/reports/reasons</strong> for checkbox options, then
+              <strong>POST /api/v1/reports</strong> with <code>targetId</code>, <code>reasonIds[]</code>,
+              and <code>message</code>. Admin manages reasons at <strong>/api/v1/reports/reasons/admin</strong>.
+            </div>
             <button class="btn-success" style="width: 100%; margin-top: 12px; padding: 12px;" id="btnRequestChat">
               🚀 Request 1-to-1 Chat
             </button>

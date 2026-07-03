@@ -212,18 +212,26 @@ class AgentRepository {
     return { gifts: giftCoins, calls: sessionCoins, total };
   }
 
-  async getCommissionHistory(listenerIds, { skip, limit, source }) {
-    if (!listenerIds.length) {
-      return { total: 0, docs: [] };
-    }
+  _buildCommissionDateMatch(dateFrom, dateTo) {
+    if (!dateFrom && !dateTo) return {};
+    const createdAt = {};
+    if (dateFrom) createdAt.$gte = new Date(dateFrom);
+    if (dateTo) createdAt.$lte = new Date(dateTo);
+    return { createdAt };
+  }
+
+  async getCommissionHistoryRows(listenerIds, { source = 'all', dateFrom, dateTo, search } = {}) {
+    if (!listenerIds.length) return [];
 
     const ids = toObjectIds(listenerIds);
+    const dateMatch = this._buildCommissionDateMatch(dateFrom, dateTo);
 
     const sessionStages = [
       {
         $match: {
           listenerId: { $in: ids },
           status: 'COMPLETED',
+          ...dateMatch,
         },
       },
       {
@@ -243,6 +251,7 @@ class AgentRepository {
           receiverId: { $in: ids },
           type: { $in: RECEIVED_GIFT_TYPES },
           status: 'SUCCESS',
+          ...dateMatch,
         },
       },
       {
@@ -256,57 +265,68 @@ class AgentRepository {
       },
     ];
 
+    const lookupStages = [
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'listenerId',
+          foreignField: '_id',
+          as: 'listenerUser',
+        },
+      },
+      { $unwind: '$listenerUser' },
+      {
+        $addFields: {
+          listenerName: {
+            $trim: {
+              input: {
+                $concat: [
+                  { $ifNull: ['$listenerUser.firstName', ''] },
+                  ' ',
+                  { $ifNull: ['$listenerUser.lastName', ''] },
+                ],
+              },
+            },
+          },
+        },
+      },
+    ];
+
+    if (search?.trim()) {
+      lookupStages.push({
+        $match: {
+          listenerName: { $regex: search.trim(), $options: 'i' },
+        },
+      });
+    }
+
     let pipeline;
     let model = CommunicationSession;
 
     if (source === 'gift') {
       model = GiftTransaction;
-      pipeline = [...giftStages, { $sort: { createdAt: -1 } }];
+      pipeline = [...giftStages, ...lookupStages, { $sort: { createdAt: -1 } }];
     } else if (source === 'call') {
-      pipeline = [...sessionStages, { $sort: { createdAt: -1 } }];
+      pipeline = [...sessionStages, ...lookupStages, { $sort: { createdAt: -1 } }];
     } else {
       pipeline = [
         ...sessionStages,
         { $unionWith: { coll: 'gifttransactions', pipeline: giftStages } },
+        ...lookupStages,
         { $sort: { createdAt: -1 } },
       ];
     }
 
-    pipeline.push({
-      $facet: {
-        metadata: [{ $count: 'total' }],
-        data: [{ $skip: skip }, { $limit: limit }],
-      },
-    });
+    const rows = await model.aggregate(pipeline);
 
-    const [result] = await model.aggregate(pipeline);
-
-    const total = result?.metadata?.[0]?.total ?? 0;
-    const rows = result?.data ?? [];
-
-    if (!rows.length) return { total, docs: [] };
-
-    const listenerObjectIds = [...new Set(rows.map((r) => r.listenerId.toString()))];
-    const users = await User.find({ _id: { $in: listenerObjectIds } })
-      .select('firstName lastName')
-      .lean();
-    const nameMap = new Map(
-      users.map((u) => [
-        u._id.toString(),
-        `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Listener',
-      ])
-    );
-
-    const docs = rows.map((row) => ({
+    return rows.map((row) => ({
       id: row.refId.toString(),
       source: row.source,
-      listener: nameMap.get(row.listenerId.toString()) || 'Listener',
-      amount: row.amount,
+      listenerId: row.listenerId.toString(),
+      listener: row.listenerName?.trim() || 'Listener',
+      amount: row.amount ?? 0,
       date: row.createdAt,
-      status: 'pending',
     }));
-
-    return { total, docs };
   }
 }
 

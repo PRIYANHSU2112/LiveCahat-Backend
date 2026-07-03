@@ -17,6 +17,12 @@ class NotificationController extends BaseController {
     this.sendResponse(res, 200, 'Unread count fetched successfully', data);
   });
 
+  // GET /notifications/stats — personal inbox KPIs (agent / admin / all roles)
+  getMyStats = catchAsync(async (req, res) => {
+    const data = await notificationService.getMyStats(req.user._id);
+    this.sendResponse(res, 200, 'Notification stats fetched successfully', data);
+  });
+
   // PATCH /notifications/:id/read
   markAsRead = catchAsync(async (req, res) => {
     const data = await notificationService.markAsRead(req.user._id, req.params.id);
@@ -47,6 +53,12 @@ class NotificationController extends BaseController {
   broadcast = catchAsync(async (req, res) => {
     const data = await notificationService.broadcast(req.user._id, req.body);
     this.sendResponse(res, 201, 'Broadcast notification sent successfully', data);
+  });
+
+  // GET /notifications/admin/stats — platform-wide KPIs
+  getAdminStats = catchAsync(async (req, res) => {
+    const data = await notificationService.getAdminStats();
+    this.sendResponse(res, 200, 'Admin notification stats fetched successfully', data);
   });
 }
 

@@ -3,6 +3,7 @@ import Notification from '../modules/notification.model.js';
 import User from '../modules/user.model.js';
 import ApiError from '../utils/ApiError.js';
 import { getPaginationOptions, formatPaginatedResponse } from '../utils/pagination.util.js';
+import { getPeriodRange } from '../utils/date.util.js';
 import logger from '../utils/logger.util.js';
 
 // Audience → user `type` mapping for admin broadcasts.
@@ -48,6 +49,24 @@ class NotificationService {
       status: 'UNREAD',
     });
     return { unreadCount };
+  }
+
+  /**
+   * KPI strip for the current user's inbox: unread, today, this week, muted.
+   */
+  async getMyStats(userId) {
+    const { start: todayStart } = getPeriodRange('today');
+    const { start: weekStart } = getPeriodRange('week');
+    return notificationRepository.getStatsCounts({ recipientId: userId }, todayStart, weekStart);
+  }
+
+  /**
+   * Platform-wide KPI strip for admin dashboards.
+   */
+  async getAdminStats() {
+    const { start: todayStart } = getPeriodRange('today');
+    const { start: weekStart } = getPeriodRange('week');
+    return notificationRepository.getStatsCounts({}, todayStart, weekStart);
   }
 
   async markAsRead(userId, notificationId) {

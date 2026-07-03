@@ -1,5 +1,6 @@
 import presenceService from '../services/presence.service.js';
 import communicationSessionService from '../services/communication-session.service.js';
+import agentDashboardService from '../services/agent-dashboard.service.js';
 import redisClient from '../config/redis.js';
 import { KEYS } from '../utils/socket-redis-keys.util.js';
 import { SERVER_EVENTS } from '../constants/socket-event.constant.js';
@@ -17,6 +18,13 @@ class ConnectionHandler {
 
     // Join user-specific private room
     socket.join(userId);
+
+    if (userType === 'AGENT') {
+      const agentRoom = agentDashboardService.agentRoom(userId);
+      socket.join(agentRoom);
+      const snapshot = await agentDashboardService.getLiveSnapshot(userId);
+      socket.emit(SERVER_EVENTS.AGENT_DASHBOARD_LIVE, snapshot);
+    }
 
     // Track presence online
     await presenceService.goOnline(userId, socket.id, userType);

@@ -270,6 +270,14 @@ class GiftService {
 
       await Promise.all(cacheBumps);
 
+      if (receiver.type === 'LISTENER' && transactionType === 'USER_TO_LISTENER') {
+        const { default: agentDashboardService } = await import('./agent-dashboard.service.js');
+        await agentDashboardService.recordActivityForListener(receiverIdStr, {
+          type: 'gift',
+          text: `${gift.name} gift received`,
+        });
+      }
+
       // Re-evaluate the listener's anchor level after earnings (fire-and-forget)
       anchorLevelService.evaluateAnchorLevel(receiverId).catch((err) =>
         logger.error(`[Gift Service] anchor eval failed for ${receiverIdStr}: ${err.message}`)

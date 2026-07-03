@@ -60,6 +60,12 @@ export const KEYS = {
   /** Grace-period key set on host disconnect (30s TTL). Value: String roomId */
   liveRoomDisconnectGrace: (hostId) => `live_room:disconnect_grace:${hostId}`,
 
+  /** Recent agent dashboard activity feed (Redis LIST). */
+  agentActivity: (agentId) => `agent:activity:${agentId}`,
+
+  /** Debounce key for live dashboard socket updates per agent. */
+  agentLiveDebounce: (agentId) => `agent:live:debounce:${agentId}`,
+
   /**
    * Daily peak of concurrently-online listeners for an agent (running max).
    * `dateStr` is YYYY-MM-DD (server local time). Set with a ~48h TTL so the

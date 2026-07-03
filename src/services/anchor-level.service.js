@@ -179,6 +179,14 @@ class AnchorLevelService {
         levels: crossed.map((l) => ({ level: l.level, title: l.title })),
       });
 
+      if (crossed.length) {
+        const { default: agentDashboardService } = await import('./agent-dashboard.service.js');
+        await agentDashboardService.recordActivityForListener(userId.toString(), {
+          type: 'levelup',
+          text: `Listener reached Level ${newLevel}`,
+        });
+      }
+
       return { oldLevel, newLevel };
     } catch (error) {
       await session.abortTransaction();

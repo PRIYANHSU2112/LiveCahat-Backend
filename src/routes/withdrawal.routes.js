@@ -13,6 +13,7 @@ import {
   updateWithdrawalConfigSchema,
   idParamSchema,
 } from '../validators/withdrawal.validator.js';
+import { runSettlementsSchema } from '../validators/agent-settlement.validator.js';
 
 const router = express.Router();
 const adminOnly = restrictTo('ADMIN');
@@ -33,7 +34,9 @@ router.get('/me', validate(listWithdrawalQuerySchema), withdrawalController.getM
 
 // ─── Admin (declared before /:id to avoid param capture) ────────
 router.put('/admin/config', adminOnly, validate(updateWithdrawalConfigSchema), withdrawalController.updateConfig);
+router.get('/admin/stats', adminOnly, withdrawalController.getAdminWithdrawalStats);
 router.get('/admin', adminOnly, validate(listWithdrawalQuerySchema), withdrawalController.adminListWithdrawals);
+router.post('/admin/settlements/run', adminOnly, validate(runSettlementsSchema), withdrawalController.runSettlements);
 router.patch('/admin/:id/approve', adminOnly, validate(idParamSchema), withdrawalController.adminApprove);
 router.patch('/admin/:id/reject', adminOnly, validate(idParamSchema), validate(rejectWithdrawalSchema), withdrawalController.adminReject);
 

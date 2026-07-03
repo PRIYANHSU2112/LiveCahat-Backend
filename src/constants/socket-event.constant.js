@@ -64,5 +64,7 @@ export const SERVER_EVENTS = {
   LIVE_VIEWER_LEFT: 'live:viewer_left',
   LIVE_NEW_COMMENT: 'live:new_comment',
   LIVE_LIKE_UPDATE: 'live:like_update',
-  LIVE_VIEWER_COUNT_UPDATE: 'live:viewer_count_update',
+  // ─── Agent Dashboard ─────────────────────────────────────────────
+  AGENT_DASHBOARD_LIVE: 'agent:dashboard:live',
+  AGENT_ACTIVITY: 'agent:activity',
 };

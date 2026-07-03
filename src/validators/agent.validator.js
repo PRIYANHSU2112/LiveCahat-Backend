@@ -18,5 +18,12 @@ export const agentRevenueHistoryQuerySchema = {
     limit: Joi.number().integer().min(1).max(50),
     source: Joi.string().valid('all', 'gift', 'call').default('all'),
     status: Joi.string().valid('all', 'paid', 'pending').default('all'),
+    search: Joi.string().trim().allow(''),
+    dateFrom: Joi.date().iso(),
+    dateTo: Joi.date().iso(),
   }),
+};
+
+export const agentRevenueHistoryStatsQuerySchema = {
+  query: Joi.object({}),
 };

@@ -23,6 +23,8 @@ export const listWithdrawalQuerySchema = {
     sortOrder: Joi.string().valid('asc', 'desc'),
     status: Joi.string().valid(...WITHDRAWAL_STATUSES),
     userId: objectId,
+    userType: Joi.string().valid('AGENT', 'LISTENER'),
+    search: Joi.string().trim().allow(''),
   }),
 };
 

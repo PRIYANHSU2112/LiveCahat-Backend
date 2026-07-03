@@ -1,4 +1,6 @@
 import agentRepository from '../repositories/agent.repository.js';
+import agentAnalyticsService from './agent-analytics.service.js';
+import agentDashboardService from './agent-dashboard.service.js';
 import { getCache, setCache, getCacheVersion, bumpCacheVersion } from '../utils/redis.util.js';
 import { getPeriodRange } from '../utils/date.util.js';
 import { formatPaginatedResponse, getPaginationOptions } from '../utils/pagination.util.js';
@@ -40,6 +42,22 @@ const previousDayRange = () => {
   return { start, end };
 };
 
+const assignFifoStatus = (rows, paidCommission) => {
+  const chronological = [...rows].sort((a, b) => new Date(a.date) - new Date(b.date));
+  let cumulative = 0;
+  const statusById = new Map();
+
+  for (const row of chronological) {
+    cumulative = round(cumulative + row.commission);
+    statusById.set(row.id, cumulative <= paidCommission ? 'paid' : 'pending');
+  }
+
+  return rows.map((row) => ({
+    ...row,
+    status: statusById.get(row.id) ?? 'pending',
+  }));
+};
+
 class AgentService {
   async _getContext(agentId) {
     const [listenerIds, commissionRate] = await Promise.all([
@@ -49,8 +67,39 @@ class AgentService {
     return { listenerIds, commissionRate };
   }
 
+  async _getCommissionSnapshot(agentId) {
+    const { listenerIds, commissionRate } = await this._getContext(agentId);
+    const [lifetime, withdrawals] = await Promise.all([
+      agentRepository.sumEarnings(listenerIds),
+      agentRepository.getWithdrawalTotals(agentId),
+    ]);
+
+    const totalCommission = commissionFrom(lifetime.total, commissionRate);
+    const paidCommission = commissionFrom(withdrawals.paidCoins, commissionRate);
+    const pendingCommission = Math.max(
+      0,
+      round(
+        totalCommission -
+          paidCommission -
+          commissionFrom(withdrawals.pendingWithdrawalCoins, commissionRate)
+      )
+    );
+
+    return {
+      listenerIds,
+      commissionRate,
+      totalCommission,
+      paidCommission,
+      pendingCommission,
+    };
+  }
+
   async bumpCache(agentId) {
-    await bumpCacheVersion(`${CACHE_NS_PREFIX}:${agentId}`);
+    await Promise.all([
+      bumpCacheVersion(`${CACHE_NS_PREFIX}:${agentId}`),
+      agentAnalyticsService.bumpCache(agentId),
+      agentDashboardService.bumpCache(agentId),
+    ]);
   }
 
   async getSummary(agentId, query = {}) {
@@ -61,40 +110,27 @@ class AgentService {
     const cached = await getCache(cacheKey);
     if (cached) return cached;
 
-    const { listenerIds, commissionRate } = await this._getContext(agentId);
+    const { listenerIds, commissionRate, totalCommission, paidCommission, pendingCommission } =
+      await this._getCommissionSnapshot(agentId);
+
     const todayRange = getPeriodRange('today');
     const prevDay = previousDayRange();
     const prevMonth = previousMonthRange();
     const monthStartDate = monthStart();
 
-    const [
-      lifetime,
-      todayEarn,
-      monthEarn,
-      prevDayEarn,
-      prevMonthEarn,
-      withdrawals,
-    ] = await Promise.all([
+    const [lifetime, todayEarn, monthEarn, prevDayEarn, prevMonthEarn] = await Promise.all([
       agentRepository.sumEarnings(listenerIds),
       agentRepository.sumEarnings(listenerIds, todayRange.start, todayRange.end),
       agentRepository.sumEarnings(listenerIds, monthStartDate, new Date()),
       agentRepository.sumEarnings(listenerIds, prevDay.start, prevDay.end),
       agentRepository.sumEarnings(listenerIds, prevMonth.start, prevMonth.end),
-      agentRepository.getWithdrawalTotals(agentId),
     ]);
 
     const totalRevenue = lifetime.total;
-    const totalCommission = commissionFrom(totalRevenue, commissionRate);
     const todayCommission = commissionFrom(todayEarn.total, commissionRate);
     const monthlyCommission = commissionFrom(monthEarn.total, commissionRate);
     const prevDayCommission = commissionFrom(prevDayEarn.total, commissionRate);
     const prevMonthCommission = commissionFrom(prevMonthEarn.total, commissionRate);
-
-    const paidCommission = commissionFrom(withdrawals.paidCoins, commissionRate);
-    const pendingCommission = Math.max(
-      0,
-      round(totalCommission - paidCommission - commissionFrom(withdrawals.pendingWithdrawalCoins, commissionRate))
-    );
 
     const payload = {
       commissionPercentage: commissionRate,
@@ -148,6 +184,27 @@ class AgentService {
     return payload;
   }
 
+  async getHistoryStats(agentId) {
+    const version = await getCacheVersion(`${CACHE_NS_PREFIX}:${agentId}`);
+    const cacheKey = `${CACHE_NS_PREFIX}:history-stats:v${version}:${agentId}`;
+
+    const cached = await getCache(cacheKey);
+    if (cached) return cached;
+
+    const { commissionRate, totalCommission, paidCommission, pendingCommission } =
+      await this._getCommissionSnapshot(agentId);
+
+    const payload = {
+      totalCommission,
+      paidCommission,
+      pendingCommission,
+      avgRate: commissionRate,
+    };
+
+    await setCache(cacheKey, payload, CACHE_TTL);
+    return payload;
+  }
+
   async getGraphs(agentId, query = {}) {
     const period = query.period || '6months';
     const version = await getCacheVersion(`${CACHE_NS_PREFIX}:${agentId}`);
@@ -193,31 +250,42 @@ class AgentService {
     });
     const source = (query.source || 'all').toLowerCase();
     const status = (query.status || 'all').toLowerCase();
+    const search = query.search?.trim() || '';
+    const dateFrom = query.dateFrom || '';
+    const dateTo = query.dateTo || '';
+
     const version = await getCacheVersion(`${CACHE_NS_PREFIX}:${agentId}`);
-    const cacheKey = `${CACHE_NS_PREFIX}:history:v${version}:${agentId}:${page}:${limit}:${source}:${status}`;
+    const cacheKey = `${CACHE_NS_PREFIX}:history:v${version}:${agentId}:${page}:${limit}:${source}:${status}:${search}:${dateFrom}:${dateTo}`;
 
     const cached = await getCache(cacheKey);
     if (cached) return cached;
 
-    const { listenerIds, commissionRate } = await this._getContext(agentId);
+    const { listenerIds, commissionRate, paidCommission } =
+      await this._getCommissionSnapshot(agentId);
 
-    const { total, docs } = await agentRepository.getCommissionHistory(listenerIds, {
-      skip,
-      limit,
+    const rawRows = await agentRepository.getCommissionHistoryRows(listenerIds, {
       source: source === 'all' ? 'all' : source,
+      dateFrom: dateFrom || undefined,
+      dateTo: dateTo || undefined,
+      search: search || undefined,
     });
 
-    let rows = docs.map((row) => ({
+    let rows = rawRows.map((row) => ({
       ...row,
       rate: commissionRate,
       commission: commissionFrom(row.amount, commissionRate),
     }));
 
+    rows = assignFifoStatus(rows, paidCommission);
+
     if (status !== 'all') {
       rows = rows.filter((row) => row.status === status);
     }
 
-    const payload = formatPaginatedResponse(rows, total, page, limit);
+    const total = rows.length;
+    const pagedRows = rows.slice(skip, skip + limit);
+    const payload = formatPaginatedResponse(pagedRows, total, page, limit);
+
     await setCache(cacheKey, payload, CACHE_TTL);
     return payload;
   }

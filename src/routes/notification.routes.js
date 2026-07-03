@@ -16,6 +16,7 @@ router.use(authenticate);
 // ─── Authenticated users (customer / listener / agent / admin) ──────
 // Everyone only ever sees and manages their OWN notifications.
 router.get('/', validate(listNotificationQuerySchema), notificationController.getMyNotifications);
+router.get('/stats', notificationController.getMyStats);
 router.get('/unread-count', notificationController.getUnreadCount);
 router.patch('/read-all', notificationController.markAllAsRead);
 router.patch('/:id/read', validate(idParamSchema), notificationController.markAsRead);
@@ -27,5 +28,6 @@ router.use(restrictTo('ADMIN'));
 router.post('/admin/send', validate(sendNotificationSchema), notificationController.sendToUser);
 // Broadcast to all users / all listeners / all agents / everyone
 router.post('/admin/broadcast', validate(broadcastNotificationSchema), notificationController.broadcast);
+router.get('/admin/stats', notificationController.getAdminStats);
 
 export default router;

@@ -49,6 +49,11 @@ const notificationSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    isMuted: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
   },
   {
     timestamps: true,

@@ -274,6 +274,12 @@ function buildTests(ctx) {
   add('users', 'CUSTOMER', 'GET', '/users/me', { token: c });
   add('users', 'LISTENER', 'GET', '/users/me', { token: l });
   add('users', 'ADMIN', 'GET', '/users/me', { token: A });
+  add('users', 'AGENT', 'GET', '/users/me', { token: AGENT_TOKEN });
+  add('users', 'AGENT', 'PUT', '/users/me', {
+    token: AGENT_TOKEN,
+    body: { firstName: 'Agent', lastName: 'Test', email: 'agent@test.com' },
+    expectedStatus: [200],
+  });
   add('users', 'CUSTOMER', 'GET', '/users/me/settings', { token: c });
   add('users', 'CUSTOMER', 'PATCH', '/users/me/settings', {
     token: c,
@@ -364,8 +370,35 @@ function buildTests(ctx) {
   add('agent', 'AGENT', 'GET', '/agent/revenue/history?page=1&limit=20&source=all&status=all', {
     token: AGENT_TOKEN,
   });
+  add('agent', 'AGENT', 'GET', '/agent/revenue/history/stats', { token: AGENT_TOKEN });
+  add('agent', 'AGENT', 'GET', '/agent/analytics/revenue/summary?period=6months', { token: AGENT_TOKEN });
+  add('agent', 'AGENT', 'GET', '/agent/analytics/revenue/charts?period=6months', { token: AGENT_TOKEN });
+  add('agent', 'AGENT', 'GET', '/agent/analytics/listeners/summary?period=6months', { token: AGENT_TOKEN });
+  add('agent', 'AGENT', 'GET', '/agent/analytics/listeners/charts?period=6months', { token: AGENT_TOKEN });
+  add('agent', 'AGENT', 'GET', '/agent/analytics/retention/summary?cohortMonths=6', { token: AGENT_TOKEN });
+  add('agent', 'AGENT', 'GET', '/agent/analytics/retention/charts?cohortMonths=6', { token: AGENT_TOKEN });
+  add('agent', 'AGENT', 'GET', '/agent/analytics/period-reports?period=daily', { token: AGENT_TOKEN });
+  add('agent', 'AGENT', 'GET', '/agent/analytics/period-reports?period=weekly', { token: AGENT_TOKEN });
+  add('agent', 'AGENT', 'GET', '/agent/analytics/period-reports?period=monthly', { token: AGENT_TOKEN });
+  add('agent', 'AGENT', 'GET', '/agent/dashboard/summary?period=7d', { token: AGENT_TOKEN });
+  add('agent', 'AGENT', 'GET', '/agent/dashboard/summary?period=24h', { token: AGENT_TOKEN });
+  add('agent', 'AGENT', 'GET', '/agent/dashboard/charts?period=7d', { token: AGENT_TOKEN });
+  add('agent', 'AGENT', 'GET', '/agent/dashboard/charts?period=30d', { token: AGENT_TOKEN });
+  add('agent', 'AGENT', 'GET', '/agent/dashboard/activity?limit=20', { token: AGENT_TOKEN });
+  add('agent', 'CUSTOMER', 'GET', '/agent/dashboard/summary?period=7d', { token: c, expectedStatus: [403] });
+  add('agent', 'CUSTOMER', 'GET', '/agent/analytics/revenue/summary?period=6months', { token: c, expectedStatus: [403] });
+  add('agent', 'AGENT', 'GET', '/agent/settlements/stats', { token: AGENT_TOKEN });
+  add('agent', 'AGENT', 'GET', '/agent/settlements?page=1&limit=25', { token: AGENT_TOKEN });
+  add('withdrawals', 'ADMIN', 'GET', '/withdrawals/admin/stats', { token: ADMIN_TOKEN });
+  add('withdrawals', 'ADMIN', 'GET', '/withdrawals/admin?page=1&limit=25&status=PENDING', { token: ADMIN_TOKEN });
+  add('withdrawals', 'ADMIN', 'POST', '/withdrawals/admin/settlements/run', { token: ADMIN_TOKEN, body: {} });
+  add('agent', 'AGENT', 'GET', '/agent/revenue/history?page=1&limit=20&source=gift&status=pending', {
+    token: AGENT_TOKEN,
+  });
   add('agent', 'CUSTOMER', 'GET', '/agent/revenue/summary?period=month', { token: c, expectedStatus: [403] });
   add('agent', 'LISTENER', 'GET', '/agent/revenue/summary?period=month', { token: l, expectedStatus: [403] });
+  add('agent', 'CUSTOMER', 'GET', '/agent/revenue/history/stats', { token: c, expectedStatus: [403] });
+  add('agent', 'LISTENER', 'GET', '/agent/revenue/history/stats', { token: l, expectedStatus: [403] });
 
   // ─── LANGUAGES ───
   add('languages', 'CUSTOMER', 'GET', '/languages', { token: c });
@@ -568,6 +601,87 @@ function buildTests(ctx) {
   add('feedback', 'CUSTOMER', 'GET', '/feedback/me?page=1&limit=5', { token: c });
   add('feedback', 'ADMIN', 'GET', '/feedback?page=1&limit=5', { token: A });
 
+  // ─── USER REPORTS ───
+  add('reports', 'ADMIN', 'POST', '/reports/reasons', {
+    token: A,
+    body: { label: `Harassment-${Date.now()}`, description: 'Test reason', sortOrder: 1 },
+    expectedStatus: [200, 201],
+  });
+  add('reports', 'CUSTOMER', 'POST', '/reports/reasons', {
+    token: c,
+    body: { label: 'Should fail' },
+    expectedStatus: [403],
+    skipPassCheck: true,
+    remark: 'Customers cannot manage report reasons',
+  });
+  add('reports', 'CUSTOMER', 'GET', '/reports/reasons', { token: c });
+  add('reports', 'ADMIN', 'GET', '/reports/reasons/admin', { token: A });
+  if (ids.reportReasonId && ids.approvedListenerId) {
+    add('reports', 'CUSTOMER', 'POST', '/reports', {
+      token: c,
+      body: {
+        targetId: ids.approvedListenerId,
+        reasonIds: [ids.reportReasonId],
+        message: 'API test report message with enough length.',
+      },
+      expectedStatus: [200, 201],
+    });
+    add('reports', 'CUSTOMER', 'POST', '/reports', {
+      token: c,
+      body: {
+        targetId: ids.approvedListenerId,
+        reasonIds: [ids.reportReasonId],
+        message: 'Duplicate open report should fail validation.',
+      },
+      expectedStatus: [400],
+      skipPassCheck: true,
+      remark: 'Duplicate open report for same pair',
+    });
+  }
+  add('reports', 'CUSTOMER', 'POST', '/reports', {
+    token: c,
+    body: { targetId: ids.approvedListenerId || '507f1f77bcf86cd799439011', reasonIds: [], message: 'short' },
+    expectedStatus: [400],
+    skipPassCheck: true,
+    remark: 'Empty reasons and short message',
+  });
+  if (customerUser?._id) {
+    add('reports', 'LISTENER', 'POST', '/reports', {
+      token: l,
+      body: {
+        targetId: customerUser._id,
+        reasonIds: ids.reportReasonId ? [ids.reportReasonId] : ['507f1f77bcf86cd799439011'],
+        message: 'Listener reporting a customer during API test.',
+      },
+      expectedStatus: [200, 201, 400],
+    });
+  }
+  add('reports', 'CUSTOMER', 'GET', '/reports/me?page=1&limit=5', { token: c });
+  add('reports', 'CUSTOMER', 'GET', '/reports?page=1&limit=5', {
+    token: c,
+    expectedStatus: [403],
+    skipPassCheck: true,
+    remark: 'Customers cannot access admin report list',
+  });
+  add('reports', 'ADMIN', 'GET', '/reports?page=1&limit=5', { token: A });
+  add('reports', 'ADMIN', 'GET', '/reports/stats', { token: A });
+  add('reports', 'AGENT', 'GET', '/agent/reports?page=1&limit=5', { token: AGENT_TOKEN });
+  if (ids.userReportId) {
+    add('reports', 'ADMIN', 'GET', `/reports/${ids.userReportId}`, { token: A });
+    add('reports', 'ADMIN', 'PATCH', `/reports/${ids.userReportId}/moderate`, {
+      token: A,
+      body: { status: 'RESOLVED', adminNote: 'Resolved in API test' },
+      expectedStatus: [200],
+    });
+    add('reports', 'AGENT', 'PATCH', `/reports/${ids.userReportId}/moderate`, {
+      token: AGENT_TOKEN,
+      body: { status: 'DISMISSED' },
+      expectedStatus: [403],
+      skipPassCheck: true,
+      remark: 'Agents cannot moderate reports',
+    });
+  }
+
   // ─── REFERRALS ───
   add('referrals', 'CUSTOMER', 'GET', '/referrals/details', { token: c });
   add('referrals', 'ADMIN', 'GET', '/referrals/admin/config', { token: A });
@@ -617,7 +731,13 @@ function buildTests(ctx) {
 
   // ─── NOTIFICATIONS ───
   add('notifications', 'CUSTOMER', 'GET', '/notifications?page=1&limit=10', { token: c });
+  add('notifications', 'CUSTOMER', 'GET', '/notifications/stats', { token: c });
   add('notifications', 'CUSTOMER', 'GET', '/notifications/unread-count', { token: c });
+  add('notifications', 'AGENT', 'GET', '/notifications/stats', { token: AGENT_TOKEN });
+  add('notifications', 'ADMIN', 'GET', '/notifications/stats', { token: A });
+  add('notifications', 'ADMIN', 'GET', '/notifications/admin/stats', { token: A });
+  add('notifications', 'CUSTOMER', 'GET', '/notifications/admin/stats', { token: c, expectedStatus: [403] });
+  add('notifications', 'AGENT', 'GET', '/notifications/admin/stats', { token: AGENT_TOKEN, expectedStatus: [403] });
   add('notifications', 'CUSTOMER', 'PATCH', '/notifications/read-all', { token: c });
   if (ids.customerId) {
     add('notifications', 'ADMIN', 'POST', '/notifications/admin/send', {
@@ -975,6 +1095,28 @@ async function setupFixtures(ctx) {
     expectedStatus: [200, 201],
   });
   ids.feedbackId = pickId(feedback);
+
+  const reportReason = await req('POST', '/reports/reasons', {
+    token: A,
+    module: 'setup',
+    body: { label: `SetupReason${Date.now()}`, description: 'Setup', sortOrder: 1 },
+    expectedStatus: [200, 201],
+  });
+  ids.reportReasonId = pickId(reportReason);
+
+  if (ids.reportReasonId && ids.approvedListenerId) {
+    const userReport = await req('POST', '/reports', {
+      token: ctx.customerToken,
+      module: 'setup',
+      body: {
+        targetId: ids.approvedListenerId,
+        reasonIds: [ids.reportReasonId],
+        message: 'Setup user report for API test suite.',
+      },
+      expectedStatus: [200, 201],
+    });
+    ids.userReportId = pickId(userReport);
+  }
 
   const bank = await req('POST', '/withdrawals/bank-accounts', {
     token: ctx.listenerToken,

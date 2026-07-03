@@ -335,17 +335,133 @@ class WithdrawalService {
   }
 
   // ─── Admin ──────────────────────────────────────────────────────
+  async getAdminStats() {
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000);
+
+    const [pendingRow, processedRow, rejectedRow] = await Promise.all([
+      Withdrawal.aggregate([
+        { $match: { status: 'PENDING' } },
+        { $group: { _id: null, count: { $sum: 1 }, totalNetInr: { $sum: '$netInr' } } },
+      ]),
+      Withdrawal.aggregate([
+        {
+          $match: {
+            status: 'APPROVED',
+            processedAt: { $gte: sevenDaysAgo },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            count: { $sum: 1 },
+            totalNetInr: { $sum: '$netInr' },
+            avgProcessingMs: {
+              $avg: {
+                $cond: [
+                  { $and: [{ $ne: ['$processedAt', null] }, { $ne: ['$createdAt', null] }] },
+                  { $subtract: ['$processedAt', '$createdAt'] },
+                  null,
+                ],
+              },
+            },
+          },
+        },
+      ]),
+      Withdrawal.countDocuments({ status: 'REJECTED', processedAt: { $gte: sevenDaysAgo } }),
+    ]);
+
+    const pending = pendingRow[0] ?? {};
+    const processed = processedRow[0] ?? {};
+
+    return {
+      pending: {
+        count: pending.count ?? 0,
+        totalNetInr: round2(pending.totalNetInr ?? 0),
+      },
+      processed7d: {
+        count: processed.count ?? 0,
+        totalNetInr: round2(processed.totalNetInr ?? 0),
+      },
+      failed: { count: rejectedRow },
+      avgProcessingHours: processed.avgProcessingMs
+        ? Math.round(processed.avgProcessingMs / (1000 * 60 * 60))
+        : null,
+    };
+  }
+
   async adminListWithdrawals(query = {}) {
     const { page, limit, skip, sort } = getPaginationOptions({ sortBy: 'createdAt', sortOrder: 'desc', ...query });
-    const filter = {};
-    if (query.status) filter.status = query.status;
-    if (query.userId) filter.userId = query.userId;
 
-    const [docs, total] = await Promise.all([
-      withdrawalRepository.findMany(filter, '', USER_POPULATE, sort, limit, skip),
-      withdrawalRepository.countDocuments(filter),
+    const match = {};
+    if (query.status) match.status = query.status;
+    if (query.userId) match.userId = new mongoose.Types.ObjectId(query.userId);
+
+    const pipeline = [
+      { $match: match },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      { $unwind: '$user' },
+    ];
+
+    if (query.userType) {
+      pipeline.push({ $match: { 'user.type': query.userType } });
+    }
+
+    if (query.search?.trim()) {
+      const regex = { $regex: query.search.trim(), $options: 'i' };
+      pipeline.push({
+        $match: {
+          $or: [
+            { 'user.firstName': regex },
+            { 'user.lastName': regex },
+            { 'user.email': regex },
+          ],
+        },
+      });
+    }
+
+    const countPipeline = [...pipeline, { $count: 'total' }];
+    pipeline.push({ $sort: sort }, { $skip: skip }, { $limit: limit });
+
+    const [countResult, docs] = await Promise.all([
+      Withdrawal.aggregate(countPipeline),
+      Withdrawal.aggregate(pipeline),
     ]);
-    return formatPaginatedResponse(docs, total, page, limit);
+
+    const total = countResult[0]?.total ?? 0;
+    const rows = docs.map((w) => ({
+      id: w._id.toString(),
+      user: {
+        id: w.user._id.toString(),
+        firstName: w.user.firstName,
+        lastName: w.user.lastName,
+        email: w.user.email,
+        type: w.user.type,
+      },
+      listener:
+        w.user.type === 'LISTENER'
+          ? `${w.user.firstName || ''} ${w.user.lastName || ''}`.trim() || w.user.email
+          : `${w.user.firstName || ''} ${w.user.lastName || ''}`.trim() || 'Agent',
+      amountCoins: w.coinsRequested,
+      netInr: w.netInr,
+      amount: w.netInr,
+      method: w.bankAccountSnapshot?.methodType
+        ? `${w.bankAccountSnapshot.methodType}${w.bankAccountSnapshot.maskedAccount ? ` · ${w.bankAccountSnapshot.maskedAccount}` : ''}`
+        : '—',
+      status: w.status,
+      requestedAt: w.createdAt,
+      processedAt: w.processedAt,
+      createdAt: w.createdAt,
+    }));
+
+    return formatPaginatedResponse(rows, total, page, limit);
   }
 
   async adminApprove(adminId, id) {

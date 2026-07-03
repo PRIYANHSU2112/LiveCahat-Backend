@@ -1,6 +1,7 @@
 import BaseController from './base.controller.js';
 import withdrawalService from '../services/withdrawal.service.js';
 import catchAsync from '../utils/catchAsync.util.js';
+import agentSettlementService from '../services/agent-settlement.service.js';
 
 class WithdrawalController extends BaseController {
   // ─── User ───────────────────────────────────────────────────────
@@ -48,6 +49,16 @@ class WithdrawalController extends BaseController {
   adminListWithdrawals = catchAsync(async (req, res) => {
     const data = await withdrawalService.adminListWithdrawals(req.query);
     this.sendResponse(res, 200, 'Withdrawal requests fetched successfully', data);
+  });
+
+  getAdminWithdrawalStats = catchAsync(async (req, res) => {
+    const data = await withdrawalService.getAdminStats();
+    this.sendResponse(res, 200, 'Withdrawal stats fetched successfully', data);
+  });
+
+  runSettlements = catchAsync(async (req, res) => {
+    const data = await agentSettlementService.runSettlements(req.user._id, req.body);
+    this.sendResponse(res, 200, 'Settlements processed successfully', data);
   });
 
   adminApprove = catchAsync(async (req, res) => {

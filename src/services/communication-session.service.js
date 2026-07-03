@@ -130,8 +130,19 @@ class CommunicationSessionService extends BaseService {
         await listenerProfile.save();
 
         if (listenerProfile.createdByAgentId) {
+          const agentId = listenerProfile.createdByAgentId.toString();
           const { default: agentService } = await import('./agent.service.js');
-          await agentService.bumpCache(listenerProfile.createdByAgentId.toString());
+          await agentService.bumpCache(agentId);
+
+          if (totalCoinsEarned > 0) {
+            const { default: agentDashboardService } = await import('./agent-dashboard.service.js');
+            await agentDashboardService.recordActivity(agentId, {
+              type: 'revenue',
+              text: `Revenue generated · ${totalCoinsEarned} coins`,
+            });
+            await agentDashboardService.emitLiveUpdate(agentId);
+            await agentDashboardService.bumpCache(agentId);
+          }
         }
       }
 

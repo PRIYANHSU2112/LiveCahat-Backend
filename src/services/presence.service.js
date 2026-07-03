@@ -45,6 +45,7 @@ class PresenceService {
           await deleteCache(`listener:${userId}`);
           await bumpCacheVersion('listeners');
           this.broadcastStatusChange(userId, 'ONLINE');
+          this._touchAgentDashboard(userId, { type: 'online', text: 'Listener went online' });
         } else {
           if (redisClient.isRedisAvailable) {
             await redisClient.set(statusKey, 'ONLINE');
@@ -113,6 +114,7 @@ class PresenceService {
           await deleteCache(`listener:${userId}`);
           await bumpCacheVersion('listeners');
           this.broadcastStatusChange(userId, 'OFFLINE');
+          this._touchAgentDashboard(userId, { type: 'offline', text: 'Listener went offline' });
         } else {
           this.broadcastUserPresenceChange(userId, 'OFFLINE', userType);
         }
@@ -136,6 +138,7 @@ class PresenceService {
       await bumpCacheVersion('listeners');
       this.broadcastStatusChange(userId, 'BUSY');
       await this.recordAgentOnlinePeak(userId);
+      await this._touchAgentDashboard(userId);
     } catch (err) {
       logger.error(`[Presence setBusy Error] Failed for listener ${userId}: ${err.message}`);
     }
@@ -155,6 +158,7 @@ class PresenceService {
       await bumpCacheVersion('listeners');
       this.broadcastStatusChange(userId, 'ONLINE');
       await this.recordAgentOnlinePeak(userId);
+      await this._touchAgentDashboard(userId);
     } catch (err) {
       logger.error(`[Presence setAvailable Error] Failed for listener ${userId}: ${err.message}`);
     }
@@ -262,6 +266,24 @@ class PresenceService {
       });
     }
     this.broadcastUserPresenceChange(listenerId, status);
+  }
+
+  /**
+   * Notify agent dashboard live counters (and optional activity) for agent-owned listeners.
+   */
+  async _touchAgentDashboard(listenerUserId, activity = null) {
+    try {
+      const { default: agentDashboardService } = await import('./agent-dashboard.service.js');
+      const { default: repo } = await import('../repositories/agent-dashboard.repository.js');
+      const agentId = await repo.getAgentIdForListener(listenerUserId);
+      if (!agentId) return;
+      if (activity) {
+        await agentDashboardService.recordActivity(agentId, activity);
+      }
+      await agentDashboardService.emitLiveUpdate(agentId);
+    } catch (err) {
+      logger.error(`[Presence] agent dashboard notify failed: ${err.message}`);
+    }
   }
 
   /**

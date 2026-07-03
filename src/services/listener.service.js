@@ -489,6 +489,21 @@ class ListenerService extends BaseService {
       bumpCacheVersion('listeners')
     ]);
 
+    if (kycStatus === 'APPROVED' && profile.createdByAgentId) {
+      const agentId = profile.createdByAgentId.toString();
+      const { default: agentDashboardService } = await import('./agent-dashboard.service.js');
+      const user = await userRepository.findById(profile.userId, 'firstName lastName');
+      const name = user
+        ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
+        : 'Listener';
+      await agentDashboardService.recordActivity(agentId, {
+        type: 'register',
+        text: `New listener ${name || 'registered'} registered`,
+      });
+      await agentDashboardService.emitLiveUpdate(agentId);
+      await agentDashboardService.bumpCache(agentId);
+    }
+
     // In a real app, send push notification/email to listener here
     return profile;
   }
