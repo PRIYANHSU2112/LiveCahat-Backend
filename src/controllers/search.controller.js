@@ -1,5 +1,6 @@
 import BaseController from './base.controller.js';
 import searchService from '../services/search.service.js';
+import listenerService from '../services/listener.service.js';
 import catchAsync from '../utils/catchAsync.util.js';
 
 class SearchController extends BaseController {
@@ -12,6 +13,15 @@ class SearchController extends BaseController {
   searchListeners = catchAsync(async (req, res) => {
     const result = await searchService.searchListeners(req.query);
     this.sendResponse(res, 200, 'Listeners search results fetched successfully', result);
+  });
+
+  /**
+   * GET /search/agent/listeners
+   * Agent-facing compact listener search — scoped to agent-owned listeners.
+   */
+  searchAgentListeners = catchAsync(async (req, res) => {
+    const result = await listenerService.searchAgentListeners(req.user._id, req.query);
+    this.sendResponse(res, 200, 'Agent listener search results fetched successfully', result);
   });
 
   /**

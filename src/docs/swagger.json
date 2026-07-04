@@ -8828,6 +8828,70 @@
         }
       }
     },
+    "/search/agent/listeners": {
+      "get": {
+        "summary": "Agent listener search (agent-only)",
+        "description": "Lightweight search for listeners owned by the authenticated agent. Supports keyword search by name, username, email, or mobile number, plus filters for country, account status, KYC status, and live availability. Returns a compact payload optimized for top-bar autocomplete.",
+        "tags": [
+          "Search"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "schema": { "type": "string", "minLength": 2 },
+            "description": "Keyword to match name, username, email, or mobile number"
+          },
+          {
+            "in": "query",
+            "name": "country",
+            "schema": { "type": "string" },
+            "description": "Country ObjectId, ISO code, or country name"
+          },
+          {
+            "in": "query",
+            "name": "accountStatus",
+            "schema": { "type": "string", "enum": ["active", "blocked", "pending"] }
+          },
+          {
+            "in": "query",
+            "name": "kycStatus",
+            "schema": { "type": "string", "enum": ["PENDING", "UNDER_REVIEW", "APPROVED", "REJECTED"] }
+          },
+          {
+            "in": "query",
+            "name": "liveStatus",
+            "schema": { "type": "string", "enum": ["ONLINE", "OFFLINE", "BUSY"] }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": { "type": "integer", "default": 1 }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": { "type": "integer", "default": 10, "maximum": 20 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Compact paginated listener search results"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden — AGENT role required"
+          }
+        }
+      }
+    },
     "/search/admin": {
       "get": {
         "summary": "Admin global search (admin-only)",

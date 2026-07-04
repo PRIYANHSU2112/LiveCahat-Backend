@@ -186,7 +186,7 @@ class SearchService {
     if (queryParams.q) {
       const regex = { $regex: queryParams.q, $options: 'i' };
       userMatch.$or = [
-        { firstName: regex },
+        { firstName: regex  },
         { lastName: regex },
         { email: regex },
         { mobileNumber: regex },

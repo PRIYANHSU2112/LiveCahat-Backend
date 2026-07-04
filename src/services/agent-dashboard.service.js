@@ -87,7 +87,8 @@ class AgentDashboardService {
 
   async getLiveSnapshot(agentId) {
     const todayStart = startOfToday();
-    const [onlineListeners, activeSessions, earnings, newRegistrations] = await Promise.all([
+    const [onlineListeners, activeSessions, earnings, newRegistrations, activeSessionFeed] =
+      await Promise.all([
       agentDashboardRepository.countOnlineListeners(agentId),
       agentDashboardRepository.countActiveSessions(agentId),
       agentDashboardRepository.sumEarningsInRange(
@@ -96,6 +97,7 @@ class AgentDashboardService {
         new Date(),
       ),
       agentDashboardRepository.countTodayRegistrations(agentId, todayStart),
+      agentDashboardRepository.listActiveSessionsForAgent(agentId),
     ]);
 
     return {
@@ -103,6 +105,7 @@ class AgentDashboardService {
       activeSessions,
       revenueToday: round(earnings.total),
       newRegistrations,
+      activeSessionFeed,
     };
   }
 

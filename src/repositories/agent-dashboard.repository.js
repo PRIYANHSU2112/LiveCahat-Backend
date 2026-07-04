@@ -5,6 +5,7 @@ import CommunicationSession from '../modules/communication-session.model.js';
 import GiftTransaction from '../modules/gift-transaction.model.js';
 import Withdrawal from '../modules/withdrawal.model.js';
 import User from '../modules/user.model.js';
+import SessionSegment from '../modules/session-segment.model.js';
 import { KEYS } from '../utils/socket-redis-keys.util.js';
 import { DASHBOARD_TZ } from '../utils/date.util.js';
 import agentAnalyticsRepository from './agent-analytics.repository.js';
@@ -58,6 +59,71 @@ class AgentDashboardRepository {
     return ListenerProfile.countDocuments({
       createdByAgentId: agentObjectId,
       availability: 'BUSY',
+    });
+  }
+
+  /**
+   * List listeners currently in ONGOING sessions for this agent (live feed).
+   */
+  async listActiveSessionsForAgent(agentId) {
+    const listenerIds = await this.getListenerIdsForAgent(agentId);
+    if (!listenerIds.length) return [];
+
+    const ids = toObjectIds(listenerIds);
+    const sessions = await CommunicationSession.find({
+      listenerId: { $in: ids },
+      status: 'ONGOING',
+    })
+      .sort({ startTime: -1 })
+      .limit(20)
+      .lean();
+
+    if (!sessions.length) return [];
+
+    const listenerObjectIds = sessions.map((s) => s.listenerId);
+    const sessionIds = sessions.map((s) => s._id);
+
+    const [users, segments] = await Promise.all([
+      User.find({ _id: { $in: listenerObjectIds } })
+        .select('firstName lastName')
+        .lean(),
+      SessionSegment.aggregate([
+        { $match: { sessionId: { $in: sessionIds }, status: 'ONGOING' } },
+        { $sort: { startTime: -1 } },
+        {
+          $group: {
+            _id: '$sessionId',
+            mode: { $first: '$mode' },
+          },
+        },
+      ]),
+    ]);
+
+    const userMap = new Map(users.map((u) => [u._id.toString(), u]));
+    const modeMap = new Map(segments.map((s) => [s._id.toString(), s.mode]));
+
+    const modeLabel = (mode) => {
+      if (mode === 'VIDEO') return 'video';
+      if (mode === 'AUDIO') return 'voice';
+      if (mode === 'CHAT') return 'chat';
+      return 'session';
+    };
+
+    return sessions.map((session) => {
+      const uid = session.listenerId.toString();
+      const u = userMap.get(uid);
+      const name = u ? `${u.firstName || ''} ${u.lastName || ''}`.trim() : 'Listener';
+      const mode = modeMap.get(session._id.toString()) || 'CHAT';
+      const modeText = modeLabel(mode);
+      return {
+        id: session._id.toString(),
+        type: 'session',
+        listenerId: uid,
+        listenerName: name || 'Listener',
+        mode,
+        text: `${name || 'Listener'} is in an active ${modeText} session`,
+        startedAt: session.startTime?.toISOString?.() ?? new Date().toISOString(),
+      };
     });
   }
 

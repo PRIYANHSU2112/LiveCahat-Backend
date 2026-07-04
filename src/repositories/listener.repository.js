@@ -171,9 +171,95 @@ class ListenerRepository {
    * @param {Object} sort
    * @param {Number} skip
    * @param {Number} limit
+   * @param {{ compact?: boolean }} [options]  compact=true skips wallet join and returns a smaller projection
    * @returns {{ total: Number, data: Array }}
    */
-  async getAgentListenersPaginated(matchQuery, userMatch, sort, skip, limit) {
+  async getAgentListenersPaginated(matchQuery, userMatch, sort, skip, limit, options = {}) {
+    const { compact = false } = options;
+
+    const dataStages = [
+      { $sort: sort },
+      { $skip: skip },
+      { $limit: limit },
+      {
+        $lookup: {
+          from: 'countries',
+          localField: 'country',
+          foreignField: '_id',
+          as: 'country',
+        },
+      },
+      { $unwind: { path: '$country', preserveNullAndEmptyArrays: true } },
+    ];
+
+    if (!compact) {
+      dataStages.push(
+        {
+          $lookup: {
+            from: 'wallets',
+            localField: 'userId._id',
+            foreignField: 'userId',
+            as: 'wallet',
+          },
+        },
+        { $unwind: { path: '$wallet', preserveNullAndEmptyArrays: true } },
+      );
+    }
+
+    dataStages.push({
+      $project: compact
+        ? {
+            _id: 1,
+            anchorLevel: 1,
+            availability: 1,
+            kycStatus: 1,
+            'userId._id': 1,
+            'userId.firstName': 1,
+            'userId.lastName': 1,
+            'userId.username': 1,
+            'userId.email': 1,
+            'userId.mobileNumber': 1,
+            'userId.profileImage': 1,
+            'userId.isBlocked': 1,
+            'country._id': 1,
+            'country.name': 1,
+            'country.code': 1,
+            'country.flagUrl': 1,
+          }
+        : {
+            _id: 1,
+            createdAt: 1,
+            anchorLevel: 1,
+            availability: 1,
+            profileStatus: 1,
+            kycStatus: 1,
+            magicLoginToken: 1,
+            totalEarnings: 1,
+            availableBalance: 1,
+            totalSessions: 1,
+            giftsReceivedCount: 1,
+            'userId._id': 1,
+            'userId.firstName': 1,
+            'userId.lastName': 1,
+            'userId.username': 1,
+            'userId.email': 1,
+            'userId.mobileNumber': 1,
+            'userId.profileImage': 1,
+            'userId.currentLevel': 1,
+            'userId.isBlocked': 1,
+            'country._id': 1,
+            'country.name': 1,
+            'country.code': 1,
+            'country.flagUrl': 1,
+            wallet: { $ifNull: ['$wallet.coinBalance', 0] },
+            recharge: { $ifNull: ['$wallet.totalRecharge', 0] },
+            earnings: { $ifNull: ['$totalEarnings', 0] },
+            revenue: { $ifNull: ['$totalEarnings', 0] },
+            gifts: { $ifNull: ['$giftsReceivedCount', 0] },
+            level: { $ifNull: ['$userId.currentLevel', 1] },
+          },
+    });
+
     const pipeline = [
       { $match: matchQuery },
       {
@@ -189,64 +275,7 @@ class ListenerRepository {
       {
         $facet: {
           metadata: [{ $count: 'total' }],
-          data: [
-            { $sort: sort },
-            { $skip: skip },
-            { $limit: limit },
-            {
-              $lookup: {
-                from: 'countries',
-                localField: 'country',
-                foreignField: '_id',
-                as: 'country',
-              },
-            },
-            { $unwind: { path: '$country', preserveNullAndEmptyArrays: true } },
-            {
-              $lookup: {
-                from: 'wallets',
-                localField: 'userId._id',
-                foreignField: 'userId',
-                as: 'wallet',
-              },
-            },
-            { $unwind: { path: '$wallet', preserveNullAndEmptyArrays: true } },
-            {
-              $project: {
-                _id: 1,
-                createdAt: 1,
-                anchorLevel: 1,
-                availability: 1,
-                profileStatus: 1,
-                kycStatus: 1,
-                magicLoginToken: 1,
-                totalEarnings: 1,
-                availableBalance: 1,
-                totalSessions: 1,
-                giftsReceivedCount: 1,
-                'userId._id': 1,
-                'userId.firstName': 1,
-                'userId.lastName': 1,
-                'userId.username': 1,
-                'userId.email': 1,
-                'userId.mobileNumber': 1,
-                'userId.profileImage': 1,
-                'userId.currentLevel': 1,
-                'userId.isBlocked': 1,
-                'country._id': 1,
-                'country.name': 1,
-                'country.code': 1,
-                'country.flagUrl': 1,
-                // Money columns (denormalized — see service for final mapping)
-                wallet: { $ifNull: ['$wallet.coinBalance', 0] },
-                recharge: { $ifNull: ['$wallet.totalRecharge', 0] },
-                earnings: { $ifNull: ['$totalEarnings', 0] },
-                revenue: { $ifNull: ['$totalEarnings', 0] },
-                gifts: { $ifNull: ['$giftsReceivedCount', 0] },
-                level: { $ifNull: ['$userId.currentLevel', 1] },
-              },
-            },
-          ],
+          data: dataStages,
         },
       },
     ];

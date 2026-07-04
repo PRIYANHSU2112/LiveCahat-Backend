@@ -324,32 +324,12 @@ class ListenerService extends BaseService {
   }
 
   /**
-   * AGENT PANEL — paginated listeners owned by the agent, with search + filters.
-   * Heavy aggregation is version-cached (30s); live presence is overlaid on every
-   * return so the Online column stays fresh without re-querying Mongo.
-   *
-   * @param {String} agentId  req.user._id of the AGENT
-   * @param {Object} queryParams  search, dateFrom/dateTo, country, kycStatus,
-   *   accountStatus, level, liveStatus, profileStatus, minRevenue/maxRevenue, page, limit, sort
+   * Shared filter builder for agent listener list + search endpoints.
+   * @returns {{ matchQuery: Object, userMatch: Object }}
    */
-  async getAgentListeners(agentId, queryParams = {}) {
-    const { page, limit, skip, sort } = getPaginationOptions(queryParams);
+  async _buildAgentListenerFilters(agentId, queryParams = {}) {
     const agentObjectId = new mongoose.Types.ObjectId(agentId);
 
-    // ── Version-scoped cache key (auto-invalidates on `listeners` version bumps) ──
-    const version = await getCacheVersion('listeners');
-    const cacheKey = `agent_listeners:v${version}:${agentId}:${JSON.stringify({
-      ...queryParams,
-      page,
-      limit,
-    })}`;
-
-    const cached = await getCache(cacheKey);
-    if (cached) {
-      return { ...cached, docs: await this._overlayPresence(cached.docs) };
-    }
-
-    // ── Resolve country filter (ObjectId / ISO code / name) ──
     let countryId;
     if (queryParams.country && queryParams.country !== 'All') {
       const c = queryParams.country.trim();
@@ -359,11 +339,10 @@ class ListenerService extends BaseService {
         const country =
           (await countryRepository.findByCode(c)) ||
           (await countryRepository.findOne({ name: { $regex: `^${c}$`, $options: 'i' } }));
-        countryId = country ? country._id : new mongoose.Types.ObjectId(); // unknown → empty
+        countryId = country ? country._id : new mongoose.Types.ObjectId();
       }
     }
 
-    // ── Profile-side match (indexed; createdByAgentId scopes to this agent) ──
     const matchQuery = { createdByAgentId: agentObjectId };
     if (queryParams.kycStatus) matchQuery.kycStatus = queryParams.kycStatus;
     if (queryParams.liveStatus) matchQuery.availability = queryParams.liveStatus;
@@ -376,37 +355,97 @@ class ListenerService extends BaseService {
       if (queryParams.dateTo) matchQuery.createdAt.$lte = new Date(queryParams.dateTo);
     }
 
-    // Revenue range filters the denormalized earnings field.
     if (queryParams.minRevenue !== undefined || queryParams.maxRevenue !== undefined) {
       matchQuery.totalEarnings = {};
       if (queryParams.minRevenue !== undefined) matchQuery.totalEarnings.$gte = Number(queryParams.minRevenue);
       if (queryParams.maxRevenue !== undefined) matchQuery.totalEarnings.$lte = Number(queryParams.maxRevenue);
     }
 
-    // accountStatus: active = APPROVED & !blocked, blocked = user blocked, pending = KYC PENDING
     if (queryParams.accountStatus === 'pending') matchQuery.kycStatus = 'PENDING';
     else if (queryParams.accountStatus === 'active') matchQuery.kycStatus = 'APPROVED';
 
-    // Level filter targets the listener's anchor level (on the profile), not the
-    // owning user's XP level.
     if (queryParams.level !== undefined && queryParams.level !== 'All') {
       matchQuery.anchorLevel = Number(queryParams.level);
     }
 
-    // ── User-side match (after $unwind 'userId') ──
     const userMatch = { 'userId.isDeleted': false };
     if (queryParams.accountStatus === 'active') userMatch['userId.isBlocked'] = false;
     else if (queryParams.accountStatus === 'blocked') userMatch['userId.isBlocked'] = true;
-    if (queryParams.search) {
-      const regex = { $regex: queryParams.search.trim(), $options: 'i' };
+
+    const searchTerm = (queryParams.search || queryParams.q || '').trim();
+    if (searchTerm) {
+      const regex = { $regex: searchTerm, $options: 'i' };
       userMatch.$or = [
         { 'userId.firstName': regex },
         { 'userId.lastName': regex },
         { 'userId.username': regex },
         { 'userId.email': regex },
         { 'userId.mobileNumber': regex },
+        {
+          $expr: {
+            $regexMatch: {
+              input: { $concat: ['$userId.firstName', ' ', '$userId.lastName'] },
+              regex: searchTerm,
+              options: 'i',
+            },
+          },
+        },
       ];
     }
+
+    return { matchQuery, userMatch };
+  }
+
+  _mapAgentSearchRow(doc) {
+    const user = doc.userId || {};
+    const accountStatus = user.isBlocked
+      ? 'blocked'
+      : doc.kycStatus === 'PENDING'
+        ? 'pending'
+        : 'active';
+
+    return {
+      id: doc._id?.toString(),
+      userId: user._id?.toString() ?? null,
+      name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || '—',
+      username: user.username ?? null,
+      mobileNumber: user.mobileNumber ?? null,
+      profileImage: user.profileImage ?? null,
+      country: doc.country
+        ? { name: doc.country.name, code: doc.country.code, flagUrl: doc.country.flagUrl }
+        : null,
+      accountStatus,
+      kycStatus: doc.kycStatus,
+      liveStatus: doc.availability,
+      anchorLevel: doc.anchorLevel ?? 0,
+    };
+  }
+
+  /**
+   * AGENT PANEL — paginated listeners owned by the agent, with search + filters.
+   * Heavy aggregation is version-cached (30s); live presence is overlaid on every
+   * return so the Online column stays fresh without re-querying Mongo.
+   *
+   * @param {String} agentId  req.user._id of the AGENT
+   * @param {Object} queryParams  search, dateFrom/dateTo, country, kycStatus,
+   *   accountStatus, level, liveStatus, profileStatus, minRevenue/maxRevenue, page, limit, sort
+   */
+  async getAgentListeners(agentId, queryParams = {}) {
+    const { page, limit, skip, sort } = getPaginationOptions(queryParams);
+
+    const version = await getCacheVersion('listeners');
+    const cacheKey = `agent_listeners:v${version}:${agentId}:${JSON.stringify({
+      ...queryParams,
+      page,
+      limit,
+    })}`;
+
+    const cached = await getCache(cacheKey);
+    if (cached) {
+      return { ...cached, docs: await this._overlayPresence(cached.docs) };
+    }
+
+    const { matchQuery, userMatch } = await this._buildAgentListenerFilters(agentId, queryParams);
 
     const { total, data } = await this.repository.getAgentListenersPaginated(
       matchQuery,
@@ -417,8 +456,75 @@ class ListenerService extends BaseService {
     );
 
     const response = formatPaginatedResponse(data, total, page, limit);
-    await setCache(cacheKey, response, 30); // 30s; presence overlaid fresh on read
+    await setCache(cacheKey, response, 30);
     return { ...response, docs: await this._overlayPresence(response.docs) };
+  }
+
+  /**
+   * AGENT PANEL — lightweight listener search for top-bar autocomplete.
+   * Compact payload, max 20 results per page, version-cached (30s).
+   *
+   * @param {String} agentId
+   * @param {Object} queryParams  q, country, accountStatus, kycStatus, liveStatus, page, limit
+   */
+  async searchAgentListeners(agentId, queryParams = {}) {
+    const normalized = {
+      ...queryParams,
+      search: (queryParams.q || queryParams.search || '').trim(),
+    };
+
+    const page = parseInt(queryParams.page, 10) || 1;
+    const limit = Math.min(parseInt(queryParams.limit, 10) || 10, 20);
+    const skip = (page - 1) * limit;
+    const sort = { createdAt: -1 };
+
+    const version = await getCacheVersion('listeners');
+    const cacheKey = `agent_search:v${version}:${agentId}:${JSON.stringify({
+      ...normalized,
+      page,
+      limit,
+    })}`;
+
+    const cached = await getCache(cacheKey);
+    if (cached) {
+      return { ...cached, docs: await this._overlaySearchLiveStatus(cached.docs) };
+    }
+
+    const { matchQuery, userMatch } = await this._buildAgentListenerFilters(agentId, normalized);
+
+    const { total, data } = await this.repository.getAgentListenersPaginated(
+      matchQuery,
+      userMatch,
+      sort,
+      skip,
+      limit,
+      { compact: true }
+    );
+
+    const withPresence = await this._overlayPresence(data);
+    const mapped = withPresence.map((doc) => {
+      const row = this._mapAgentSearchRow(doc);
+      return { ...row, liveStatus: doc.availability ?? row.liveStatus };
+    });
+
+    const response = formatPaginatedResponse(mapped, total, page, limit);
+    await setCache(cacheKey, response, 30);
+    return response;
+  }
+
+  /**
+   * Refresh liveStatus on cached compact search rows.
+   */
+  async _overlaySearchLiveStatus(docs) {
+    if (!docs.length) return docs;
+    const { default: presenceService } = await import('./presence.service.js');
+    return Promise.all(
+      docs.map(async (doc) => {
+        if (!doc.userId) return doc;
+        const status = await presenceService.getStatus(doc.userId);
+        return { ...doc, liveStatus: status };
+      })
+    );
   }
 
   /**
