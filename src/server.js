@@ -21,6 +21,7 @@ const DB_URI = process.env.DATABASE_URI || 'mongodb://localhost:27017/realtime_c
 
 import { initializeSockets } from './sockets/index.js';
 import { initializeBillingJob } from './jobs/billing.job.js';
+import { initializeSettlementJob } from './jobs/settlement.job.js';
 import dailyRewardService from './services/daily-reward.service.js';
 
 // Server & Socket Init
@@ -49,8 +50,9 @@ mongoose.connect(DB_URI)
     // Attempt Redis connection after DB
     await connectRedis();
 
-    // Start background billing cron job
+    // Start background cron jobs
     initializeBillingJob(io);
+    initializeSettlementJob();
 
     httpServer.listen(PORT, () => {
       logger.info(`Server running on port ${PORT}...`);

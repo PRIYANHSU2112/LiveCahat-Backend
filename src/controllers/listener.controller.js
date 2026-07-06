@@ -77,6 +77,20 @@ class ListenerController extends BaseController {
     const result = await listenerService.getAgentStats(req.user._id);
     this.sendResponse(res, 200, 'Agent stats fetched successfully', result);
   });
+  getAdminStats = catchAsync(async (req, res) => {
+    const stats = await listenerService.getAdminStats();
+    this.sendResponse(res, 200, 'Admin listener stats fetched successfully', stats);
+  });
+
+  getListenerById = catchAsync(async (req, res) => {
+    const listener = await listenerService.getListenerByIdForAdmin(req.params.id);
+    this.sendResponse(res, 200, 'Listener details fetched successfully', listener);
+  });
+
+  updateListenerByAdmin = catchAsync(async (req, res) => {
+    const listener = await listenerService.updateListenerByAdmin(req.params.id, req.body);
+    this.sendResponse(res, 200, 'Listener details updated successfully', listener);
+  });
 }
 
 export default new ListenerController();

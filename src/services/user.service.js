@@ -1,10 +1,12 @@
 import BaseService from './base.service.js';
 import userRepository from '../repositories/user.repository.js';
 import listenerRepository from '../repositories/listener.repository.js';
+import userActivityService from './user-activity.service.js';
 import { getPaginationOptions, formatPaginatedResponse } from '../utils/pagination.util.js';
 import ApiError from '../utils/ApiError.js';
 import { deleteFromS3 } from '../utils/aws.util.js';
 import { getCache, setCache, deleteCache, bumpCacheVersion, getCacheVersion } from '../utils/redis.util.js';
+import { getDateBoundaries, buildComparison } from '../utils/stats.util.js';
 
 class UserService extends BaseService {
   constructor() {
@@ -196,6 +198,36 @@ class UserService extends BaseService {
     }
     await bumpCacheVersion('users');
     return agent;
+  }
+
+  async getCustomerStats() {
+    const version = await getCacheVersion('users');
+    const cacheKey = `users:stats:customer:v${version}`;
+
+    const cached = await getCache(cacheKey);
+    if (cached) return cached;
+
+    const boundaries = getDateBoundaries();
+    const raw = await this.repository.getCustomerAdminStats(boundaries);
+
+    const stats = {
+      totalUsers: { count: raw.totalUsers },
+      activeToday: buildComparison(raw.activeToday, raw.activeTodayPrevious),
+      new7d: buildComparison(raw.new7d, raw.new7dPrevious),
+      blocked: buildComparison(raw.blocked, raw.blockedPrevious),
+    };
+
+    await setCache(cacheKey, stats, 30);
+    return stats;
+  }
+
+
+  async getCustomerActivityStats() {
+    return userActivityService.getCustomerActivityStats();
+  }
+
+  async getCustomerActivityFeed(queryParams) {
+    return userActivityService.getCustomerActivityFeed(queryParams);
   }
 }
 

@@ -24,6 +24,12 @@ class ConnectionHandler {
       socket.join(agentRoom);
       const snapshot = await agentDashboardService.getLiveSnapshot(userId);
       socket.emit(SERVER_EVENTS.AGENT_DASHBOARD_LIVE, snapshot);
+      
+      // Allow client to request fresh snapshot on demand (e.g. on component remount)
+      socket.on('agent:dashboard:live:request', async () => {
+        const freshSnapshot = await agentDashboardService.getLiveSnapshot(userId);
+        socket.emit(SERVER_EVENTS.AGENT_DASHBOARD_LIVE, freshSnapshot);
+      });
     }
 
     // Track presence online

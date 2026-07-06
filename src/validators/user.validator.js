@@ -70,3 +70,23 @@ export const createAgentSchema = Joi.object({
     commissionPercentage: Joi.number().min(0).max(100).default(0),
   })
 });
+
+export const paginationQuerySchema = Joi.object({
+  query: Joi.object({
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(20),
+    sortBy: Joi.string().default('createdAt'),
+    sortOrder: Joi.string().valid('asc', 'desc').default('desc'),
+  }),
+});
+
+export const verifyCustomerSchema = Joi.object({
+  body: Joi.object({
+    action: Joi.string().valid('approve', 'reject').required(),
+    reason: Joi.string().trim().max(500).when('action', {
+      is: 'reject',
+      then: Joi.optional(),
+      otherwise: Joi.forbidden(),
+    }),
+  }),
+});

@@ -72,6 +72,22 @@ class UserController extends BaseController {
     const agent = await userService.updateAgentCommission(req.params.id, req.body.commissionPercentage);
     this.sendResponse(res, 200, 'Agent commission updated successfully', agent);
   });
+
+  getCustomerStats = catchAsync(async (_req, res) => {
+    const stats = await userService.getCustomerStats();
+    this.sendResponse(res, 200, 'Customer stats fetched successfully', stats);
+  });
+
+
+  getCustomerActivityStats = catchAsync(async (_req, res) => {
+    const stats = await userService.getCustomerActivityStats();
+    this.sendResponse(res, 200, 'Customer activity stats fetched successfully', stats);
+  });
+
+  getCustomerActivityFeed = catchAsync(async (req, res) => {
+    const result = await userService.getCustomerActivityFeed(req.query);
+    this.sendResponse(res, 200, 'Customer activity feed fetched successfully', result);
+  });
 }
 
 export default new UserController();

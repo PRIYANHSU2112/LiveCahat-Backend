@@ -266,7 +266,15 @@ class ListenerService extends BaseService {
     const { page, limit, skip, sort } = getPaginationOptions(queryParams);
 
     const matchQuery = {};
-    if (queryParams.kycStatus) matchQuery.kycStatus = queryParams.kycStatus;
+    if (queryParams.kycStatus) {
+      if (queryParams.kycStatus.startsWith('!')) {
+        matchQuery.kycStatus = { $ne: queryParams.kycStatus.substring(1) };
+      } else if (queryParams.kycStatus.includes(',')) {
+        matchQuery.kycStatus = { $in: queryParams.kycStatus.split(',') };
+      } else {
+        matchQuery.kycStatus = queryParams.kycStatus;
+      }
+    }
     if (queryParams.availability) matchQuery.availability = queryParams.availability;
     if (queryParams.createdByAgentId) matchQuery.createdByAgentId = queryParams.createdByAgentId;
     if (queryParams.profileStatus) matchQuery.profileStatus = queryParams.profileStatus;
@@ -614,6 +622,72 @@ class ListenerService extends BaseService {
     return profile;
   }
 
+  async getAdminStats() {
+    const version = await getCacheVersion('listeners');
+    const cacheKey = `admin_listeners_stats:v${version}`;
+    const cached = await getCache(cacheKey);
+    if (cached) return cached;
+
+    const [approved, pending, rejected, totalListenersObj, avgRatingObj, totalEarningsObj] = await Promise.all([
+      this.repository.aggregate([{ $match: { kycStatus: 'APPROVED' } }, { $count: 'n' }]),
+      this.repository.aggregate([{ $match: { kycStatus: 'PENDING' } }, { $count: 'n' }]),
+      this.repository.aggregate([{ $match: { kycStatus: 'REJECTED' } }, { $count: 'n' }]),
+      this.repository.aggregate([{ $count: 'n' }]),
+      this.repository.aggregate([{ $match: { kycStatus: 'APPROVED' } }, { $group: { _id: null, avg: { $avg: '$avgRating' } } }]),
+      this.repository.aggregate([{ $match: { kycStatus: 'APPROVED' } }, { $group: { _id: null, total: { $sum: '$totalEarnings' } } }])
+    ]);
+    
+    const avgRating = avgRatingObj[0]?.avg || 0;
+    const totalEarnings = totalEarningsObj[0]?.total || 0;
+
+    const stats = {
+      verified: { count: approved[0]?.n || 0 },
+      pending: { count: pending[0]?.n || 0 },
+      rejected: { count: rejected[0]?.n || 0 },
+      total: { count: totalListenersObj[0]?.n || 0 },
+      avgRating: { count: Number(avgRating.toFixed(2)) },
+      totalEarnings: { count: totalEarnings }
+    };
+    await setCache(cacheKey, stats, 60);
+    return stats;
+  }
+
+  async getListenerByIdForAdmin(listenerId) {
+    const profile = await this.repository.findById(listenerId, '', [{ path: 'userId' }, { path: 'country' }]);
+    if (!profile) throw new ApiError(404, 'Listener not found');
+    return profile;
+  }
+
+  async updateListenerByAdmin(listenerId, data) {
+    const profile = await this.repository.findById(listenerId, '', '', false);
+    if (!profile) throw new ApiError(404, 'Listener not found');
+
+    const allowedUpdates = ['chatRate', 'voiceRate', 'videoRate', 'bio', 'kycStatus', 'availability'];
+    for (const key of allowedUpdates) {
+      if (data[key] !== undefined) {
+        profile[key] = data[key];
+      }
+    }
+    await profile.save();
+
+    if (data.mobileNumber !== undefined || data.email !== undefined || data.firstName !== undefined || data.lastName !== undefined) {
+       const userUpdate = {};
+       if (data.mobileNumber !== undefined) userUpdate.mobileNumber = data.mobileNumber;
+       if (data.email !== undefined) userUpdate.email = data.email;
+       if (data.firstName !== undefined) userUpdate.firstName = data.firstName;
+       if (data.lastName !== undefined) userUpdate.lastName = data.lastName;
+       await userRepository.updateById(profile.userId, userUpdate);
+       await deleteCache(`user:${profile.userId}`);
+    }
+
+    await Promise.all([
+      deleteCache(`listener:${profile.userId}`),
+      bumpCacheVersion('listeners')
+    ]);
+
+    return profile;
+  }
+
   // ─── Dashboard ───────────────────────────────────────────────────
 
   /**
@@ -771,6 +845,34 @@ class ListenerService extends BaseService {
       profile,
       magicLoginToken
     };
+  }
+
+  async getListenerByIdForAdmin(listenerId) {
+    const profile = await this.repository.findById(listenerId, '', [
+      { path: 'userId' },
+      { path: 'languages' },
+      { path: 'country' }
+    ]);
+      
+    if (!profile) throw new ApiError(404, 'Listener profile not found');
+    return profile;
+  }
+
+  async updateListenerByAdmin(listenerId, updateData) {
+    // Because repository.findById returns a lean object by default unless specified, 
+    // we use updateById for simplicity.
+    const updated = await this.repository.updateById(listenerId, {
+      $set: {
+        chatRate: updateData.chatRate,
+        voiceRate: updateData.voiceRate,
+        videoRate: updateData.videoRate
+      }
+    });
+
+    if (!updated) throw new ApiError(404, 'Listener profile not found');
+
+    await bumpCacheVersion('listeners');
+    return updated;
   }
 }
 

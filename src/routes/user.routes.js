@@ -3,7 +3,7 @@ import userController from '../controllers/user.controller.js';
 import { authenticate, restrictTo } from '../middlewares/auth.middleware.js';
 import { uploadUserPhoto, processAndUploadImage } from '../middlewares/upload.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
-import { updateUserProfileSchema, updateSettingsSchema, queryUserSchema, blockUserSchema, createAdminSchema, createListenerSchema, createAgentSchema } from '../validators/user.validator.js';
+import { updateUserProfileSchema, updateSettingsSchema, queryUserSchema, blockUserSchema, createAdminSchema, createListenerSchema, createAgentSchema, paginationQuerySchema } from '../validators/user.validator.js';
 
 const router = express.Router();
 
@@ -21,6 +21,10 @@ router.patch('/me/settings', validate(updateSettingsSchema), userController.upda
 
 // --- ADMIN ONLY ROUTES ---
 router.use(restrictTo('ADMIN'));
+
+router.get('/stats', userController.getCustomerStats);
+router.get('/activity/stats', userController.getCustomerActivityStats);
+router.get('/activity', validate(paginationQuerySchema), userController.getCustomerActivityFeed);
 
 router.get('/', validate(queryUserSchema), userController.getAllUsers);
 router.get('/:id', userController.getUserById);

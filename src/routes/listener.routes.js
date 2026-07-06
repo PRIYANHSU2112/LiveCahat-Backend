@@ -14,6 +14,13 @@ router.get('/agent', restrictTo('AGENT'), validate(agentListenersQuerySchema), l
 router.get('/agent/stats', restrictTo('AGENT'), listenerController.getAgentStats);
 router.post('/agent', restrictTo('AGENT'), validate(agentCreateListenerSchema), listenerController.createListener);
 
+// --- ADMIN ONLY ROUTES (must precede the LISTENER/CUSTOMER restriction below) ---
+router.get('/admin/stats', restrictTo('ADMIN'), listenerController.getAdminStats);
+router.get('/admin/:id', restrictTo('ADMIN'), listenerController.getListenerById);
+router.put('/admin/:id', restrictTo('ADMIN'), listenerController.updateListenerByAdmin);
+router.get('/', restrictTo('ADMIN', 'CUSTOMER'), listenerController.getAllListeners);
+router.post('/:id/kyc', restrictTo('ADMIN'), validate(updateKycStatusSchema), listenerController.approveOrRejectListener);
+
 // Listeners can access these
 router.use(restrictTo('LISTENER', 'CUSTOMER')); // Customer can become a listener by creating a profile
 
@@ -36,13 +43,5 @@ router.get('/dashboard', restrictTo('LISTENER'), listenerController.getDashboard
 router.get('/dashboard/overview', restrictTo('LISTENER'), validate(dashboardOverviewQuerySchema), listenerController.getDashboardOverview);
 
 router.get('/dashboard/sessions', restrictTo('LISTENER'), validate(dashboardSessionsQuerySchema), listenerController.getRecentSessions);
-// -- agent and listener can access --
-
-
-// --- ADMIN ONLY ROUTES ---
-
-router.get('/', restrictTo('ADMIN', 'CUSTOMER'), listenerController.getAllListeners);
-
-router.post('/:id/kyc', restrictTo('ADMIN'), validate(updateKycStatusSchema), listenerController.approveOrRejectListener);
 
 export default router;
