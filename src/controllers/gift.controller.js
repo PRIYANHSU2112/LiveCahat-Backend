@@ -2,14 +2,23 @@ import BaseController from './base.controller.js';
 import giftService from '../services/gift.service.js';
 import catchAsync from '../utils/catchAsync.util.js';
 
+function normalizeGiftBody(body) {
+  const data = { ...body };
+  if (data.iconUrl && !data.icon) {
+    data.icon = data.iconUrl;
+  }
+  delete data.iconUrl;
+  return data;
+}
+
 class GiftController extends BaseController {
   createGift = catchAsync(async (req, res) => {
-    const gift = await giftService.createGift(req.body);
+    const gift = await giftService.createGift(normalizeGiftBody(req.body));
     this.sendResponse(res, 201, 'Gift created successfully', gift);
   });
 
   updateGift = catchAsync(async (req, res) => {
-    const gift = await giftService.updateGift(req.params.id, req.body);
+    const gift = await giftService.updateGift(req.params.id, normalizeGiftBody(req.body));
     this.sendResponse(res, 200, 'Gift updated successfully', gift);
   });
 
@@ -50,6 +59,16 @@ class GiftController extends BaseController {
   getAdminGiftAnalytics = catchAsync(async (req, res) => {
     const analytics = await giftService.getAdminGiftAnalytics();
     this.sendResponse(res, 200, 'Admin gift analytics fetched successfully', analytics);
+  });
+
+  getAdminGifts = catchAsync(async (req, res) => {
+    const data = await giftService.getAdminGifts(req.query);
+    this.sendResponse(res, 200, 'Admin gifts fetched successfully', data);
+  });
+
+  getAdminGiftStats = catchAsync(async (req, res) => {
+    const stats = await giftService.getAdminGiftStats();
+    this.sendResponse(res, 200, 'Admin gift stats fetched successfully', stats);
   });
 }
 

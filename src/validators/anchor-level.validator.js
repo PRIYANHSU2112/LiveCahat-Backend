@@ -44,6 +44,13 @@ export const updateLevelSchema = {
   }).min(1),
 };
 
+export const adminLevelsQuerySchema = {
+  query: Joi.object().keys({
+    q: Joi.string().trim().allow(''),
+    isActive: Joi.boolean(),
+  }),
+};
+
 export const claimsQuerySchema = {
   query: Joi.object().keys({
     page: Joi.number().integer().min(1),

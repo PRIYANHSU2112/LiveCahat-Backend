@@ -556,6 +556,8 @@ function buildTests(ctx) {
   });
 
   // ─── STICKERS ───
+  add('sticker-categories', 'ADMIN', 'GET', '/sticker-categories/admin/stats', { token: A });
+  add('stickers', 'ADMIN', 'GET', '/stickers/admin/stats', { token: A });
   add('sticker-categories', 'CUSTOMER', 'GET', '/sticker-categories?page=1&limit=10', { token: c });
   add('stickers', 'CUSTOMER', 'GET', '/stickers?page=1&limit=10', { token: c });
   if (ids.stickerCategoryId) {
@@ -685,6 +687,8 @@ function buildTests(ctx) {
   // ─── REFERRALS ───
   add('referrals', 'CUSTOMER', 'GET', '/referrals/details', { token: c });
   add('referrals', 'ADMIN', 'GET', '/referrals/admin/config', { token: A });
+  add('referrals', 'ADMIN', 'GET', '/referrals/admin/stats', { token: A });
+  add('referrals', 'ADMIN', 'GET', '/referrals/admin/referrals?page=1&limit=5', { token: A });
   add('referrals', 'ADMIN', 'PUT', '/referrals/admin/config', {
     token: A,
     body: { referrerReward: 10, refereeReward: 5, isActive: true },
@@ -722,6 +726,7 @@ function buildTests(ctx) {
   add('anchor-levels', 'LISTENER', 'GET', '/anchor-levels/me/rewards?page=1&limit=5', { token: l });
   add('anchor-levels', 'CUSTOMER', 'GET', '/anchor-levels', { token: c });
   add('anchor-levels', 'ADMIN', 'GET', '/anchor-levels/admin', { token: A });
+  add('anchor-levels', 'ADMIN', 'GET', '/anchor-levels/admin/stats', { token: A });
   add('anchor-levels', 'ADMIN', 'GET', '/anchor-levels/admin/claims?page=1&limit=5', { token: A });
   add('anchor-levels', 'ADMIN', 'POST', '/anchor-levels/admin', {
     token: A,

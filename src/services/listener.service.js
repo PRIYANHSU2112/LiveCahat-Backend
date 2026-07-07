@@ -652,6 +652,311 @@ class ListenerService extends BaseService {
     return stats;
   }
 
+  async getAdminListenerPerformance(queryParams) {
+    const version = await getCacheVersion('listeners');
+    const statsCacheKey = `admin_listeners_performance_stats:v${version}`;
+    
+    // 1. Fetch cached Stats and Trends (expires in 30s)
+    let statsAndTrends = await getCache(statsCacheKey);
+    if (!statsAndTrends) {
+      const CommunicationSession = mongoose.model('CommunicationSession');
+      const ListenerProfile = mongoose.model('ListenerProfile');
+
+      // Calculate Stats
+      // Avg. Rating
+      const approvedCount = await ListenerProfile.countDocuments({ kycStatus: 'APPROVED' });
+      const avgRatingObj = await ListenerProfile.aggregate([
+        { $match: { kycStatus: 'APPROVED' } },
+        { $group: { _id: null, avg: { $avg: '$avgRating' } } }
+      ]);
+      const avgRating = avgRatingObj[0]?.avg || 0;
+
+      // Sessions / Day (total completed sessions in the last 7 days / 7)
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const sessionsLast7Days = await CommunicationSession.countDocuments({
+        status: 'COMPLETED',
+        createdAt: { $gte: sevenDaysAgo }
+      });
+      const sessionsPerDay = Math.round((sessionsLast7Days / 7) * 10) / 10;
+
+      // Completion Rate
+      const completedCount = await CommunicationSession.countDocuments({ status: 'COMPLETED' });
+      const endedCount = await CommunicationSession.countDocuments({
+        status: { $in: ['COMPLETED', 'MISSED', 'REJECTED', 'FAILED'] }
+      });
+      const completionRate = endedCount > 0 ? Math.round((completedCount / endedCount) * 100) : 100;
+
+      // Avg. Duration
+      const avgDurationRes = await CommunicationSession.aggregate([
+        { $match: { status: 'COMPLETED' } },
+        { $group: { _id: null, avg: { $avg: '$duration' } } }
+      ]);
+      const avgDurationSeconds = avgDurationRes[0]?.avg ?? 0;
+      const avgMinutes = Math.floor(avgDurationSeconds / 60);
+      const avgSeconds = Math.round(avgDurationSeconds % 60);
+      const avgDurationStr = `${avgMinutes}m ${avgSeconds}s`;
+
+      // Trends (Chart Data for last 7 days)
+      const trendRes = await CommunicationSession.aggregate([
+        {
+          $match: {
+            status: 'COMPLETED',
+            createdAt: { $gte: sevenDaysAgo }
+          }
+        },
+        {
+          $group: {
+            _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+            sessions: { $sum: 1 },
+            avgRating: { $avg: '$rating' }
+          }
+        },
+        { $sort: { _id: 1 } }
+      ]);
+
+      const days = [];
+      for (let i = 6; i >= 0; i--) {
+        const dateStr = new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        days.push({ name: dateStr, value: 0, value2: 0 }); // value = sessions, value2 = rating
+      }
+
+      trendRes.forEach(t => {
+        const day = days.find(d => d.name === t._id);
+        if (day) {
+          day.value = t.sessions;
+          day.value2 = t.avgRating ? Math.round(t.avgRating * 10) / 10 : 0;
+        }
+      });
+
+      statsAndTrends = {
+        stats: [
+          { label: "Avg. Rating", value: String(avgRating.toFixed(2)), tone: "text-success bg-success/10" },
+          { label: "Sessions / Day", value: String(sessionsPerDay), tone: "text-primary bg-accent" },
+          { label: "Completion Rate", value: `${completionRate}%`, tone: "text-success bg-success/10" },
+          { label: "Avg. Duration", value: avgDurationStr, tone: "text-foreground bg-muted" }
+        ],
+        chartData: days
+      };
+
+      await setCache(statsCacheKey, statsAndTrends, 30); // 30s cache
+    }
+
+    // 2. Fetch Paginated and Filtered Top Performers List (not cached globally due to parameters)
+    const { search = "", anchorLevel } = queryParams;
+    const skipOptions = getPaginationOptions(queryParams);
+
+    const matchQuery = { kycStatus: 'APPROVED' };
+    if (anchorLevel !== undefined && anchorLevel !== "") {
+      matchQuery.anchorLevel = Number(anchorLevel);
+    }
+
+    if (search) {
+      const User = mongoose.model('User');
+      const matchedUsers = await User.find({
+        type: 'LISTENER',
+        isDeleted: false,
+        $or: [
+          { firstName: { $regex: search, $options: 'i' } },
+          { lastName: { $regex: search, $options: 'i' } }
+        ]
+      }).select('_id').lean();
+      matchQuery.userId = { $in: matchedUsers.map(u => u._id) };
+    }
+
+    const ListenerProfile = mongoose.model('ListenerProfile');
+    const totalDocs = await ListenerProfile.countDocuments(matchQuery);
+    
+    // Sort by totalEarnings desc, totalSessions desc
+    const docsRaw = await ListenerProfile.find(matchQuery)
+      .sort({ totalEarnings: -1, totalSessions: -1 })
+      .skip(skipOptions.skip)
+      .limit(skipOptions.limit)
+      .populate('userId', 'firstName lastName email')
+      .lean();
+
+    const docs = await Promise.all(docsRaw.map(async (lp) => {
+      const name = lp.userId
+        ? `${lp.userId.firstName || ''} ${lp.userId.lastName || ''}`.trim()
+        : 'Listener';
+
+      // Specific avg call duration for this listener
+      const CommunicationSession = mongoose.model('CommunicationSession');
+      const avgDurationRes = await CommunicationSession.aggregate([
+        { $match: { listenerId: lp.userId?._id, status: 'COMPLETED' } },
+        { $group: { _id: null, avg: { $avg: '$duration' } } }
+      ]);
+      const avgDur = avgDurationRes[0]?.avg ?? 0;
+      const mins = Math.floor(avgDur / 60);
+      const secs = Math.round(avgDur % 60);
+
+      return {
+        id: String(lp._id),
+        listener: name,
+        email: lp.userId?.email || '—',
+        rating: lp.avgRating ? lp.avgRating.toFixed(2) : '0.00',
+        sessions: lp.totalSessions ?? 0,
+        avgDuration: `${mins}m ${secs}s`,
+        earnings: `${(lp.totalEarnings ?? 0).toLocaleString('en-IN')} coins`,
+        anchorLevel: lp.anchorLevel ?? 0
+      };
+    }));
+
+    const paginatedResponse = formatPaginatedResponse(docs, totalDocs, skipOptions.page, skipOptions.limit);
+
+    return {
+      stats: statsAndTrends.stats,
+      chartData: statsAndTrends.chartData,
+      performers: paginatedResponse
+    };
+  }
+
+  async getAdminAvailabilityMonitoring(queryParams) {
+    const { period = 'day', search = "", status } = queryParams;
+    const skipOptions = getPaginationOptions(queryParams);
+
+    const mongoose = (await import('mongoose')).default;
+    const CommunicationSession = mongoose.model('CommunicationSession');
+    const ListenerProfile = mongoose.model('ListenerProfile');
+    const User = mongoose.model('User');
+
+    // 1. Fetch Real-time Availability Counts (ONLINE, BUSY, OFFLINE)
+    const [onlineCount, busyCount, offlineCount] = await Promise.all([
+      ListenerProfile.countDocuments({ kycStatus: 'APPROVED', availability: 'ONLINE' }),
+      ListenerProfile.countDocuments({ kycStatus: 'APPROVED', availability: 'BUSY' }),
+      ListenerProfile.countDocuments({ kycStatus: 'APPROVED', availability: 'OFFLINE' })
+    ]);
+
+    // Live Average Wait Time (all time or today)
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const avgWaitRes = await CommunicationSession.aggregate([
+      { $match: { status: 'COMPLETED', startTime: { $ne: null }, createdAt: { $gte: today } } },
+      { $project: { waitTime: { $divide: [{ $subtract: ['$startTime', '$createdAt'] }, 1000] } } },
+      { $group: { _id: null, avg: { $avg: '$waitTime' } } }
+    ]);
+    const liveAvgWaitSec = avgWaitRes[0]?.avg ?? 85; // fallback to 1m 25s
+    const waitMins = Math.floor(liveAvgWaitSec / 60);
+    const waitSecs = Math.round(liveAvgWaitSec % 60);
+    const liveAvgWaitStr = `${waitMins}m ${waitSecs}s`;
+
+    // 2. Fetch Period-based Stats and Trends (Percentage Changes)
+    let currentStart, currentEnd, previousStart, previousEnd;
+    if (period === 'month') {
+      currentStart = new Date(today.getFullYear(), today.getMonth(), 1);
+      currentEnd = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+      previousStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      previousEnd = currentStart;
+    } else {
+      // Day
+      currentStart = today;
+      currentEnd = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+      previousStart = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+      previousEnd = currentStart;
+    }
+
+    // A. Active Listeners Count
+    const activeLCurrent = (await CommunicationSession.distinct('listenerId', {
+      status: 'COMPLETED',
+      createdAt: { $gte: currentStart, $lt: currentEnd }
+    })).length;
+    const activeLPrevious = (await CommunicationSession.distinct('listenerId', {
+      status: 'COMPLETED',
+      createdAt: { $gte: previousStart, $lt: previousEnd }
+    })).length;
+    const activeLDiff = activeLCurrent - activeLPrevious;
+    const activeLPct = activeLPrevious > 0 ? Math.round((activeLDiff / activeLPrevious) * 100) : (activeLCurrent > 0 ? 100 : 0);
+
+    // B. Total Sessions
+    const sessionsCurrent = await CommunicationSession.countDocuments({
+      status: 'COMPLETED',
+      createdAt: { $gte: currentStart, $lt: currentEnd }
+    });
+    const sessionsPrevious = await CommunicationSession.countDocuments({
+      status: 'COMPLETED',
+      createdAt: { $gte: previousStart, $lt: previousEnd }
+    });
+    const sessionsDiff = sessionsCurrent - sessionsPrevious;
+    const sessionsPct = sessionsPrevious > 0 ? Math.round((sessionsDiff / sessionsPrevious) * 100) : (sessionsCurrent > 0 ? 100 : 0);
+
+    // C. Avg Wait Time
+    const waitCurrentRes = await CommunicationSession.aggregate([
+      { $match: { status: 'COMPLETED', startTime: { $ne: null }, createdAt: { $gte: currentStart, $lt: currentEnd } } },
+      { $project: { waitTime: { $divide: [{ $subtract: ['$startTime', '$createdAt'] }, 1000] } } },
+      { $group: { _id: null, avg: { $avg: '$waitTime' } } }
+    ]);
+    const waitPreviousRes = await CommunicationSession.aggregate([
+      { $match: { status: 'COMPLETED', startTime: { $ne: null }, createdAt: { $gte: previousStart, $lt: previousEnd } } },
+      { $project: { waitTime: { $divide: [{ $subtract: ['$startTime', '$createdAt'] }, 1000] } } },
+      { $group: { _id: null, avg: { $avg: '$waitTime' } } }
+    ]);
+    const waitCurrent = waitCurrentRes[0]?.avg ?? 85;
+    const waitPrevious = waitPreviousRes[0]?.avg ?? 85;
+    const waitDiff = waitCurrent - waitPrevious;
+    const waitPct = waitPrevious > 0 ? Math.round((waitDiff / waitPrevious) * 100) : 0;
+
+    const waitCurrentMins = Math.floor(waitCurrent / 60);
+    const waitCurrentSecs = Math.round(waitCurrent % 60);
+
+    // 3. Paginated Listener availability board
+    const matchQuery = { kycStatus: 'APPROVED' };
+    if (status) {
+      matchQuery.availability = status;
+    }
+    if (search) {
+      const matchedUsers = await User.find({
+        type: 'LISTENER',
+        isDeleted: false,
+        $or: [
+          { firstName: { $regex: search, $options: 'i' } },
+          { lastName: { $regex: search, $options: 'i' } }
+        ]
+      }).select('_id').lean();
+      matchQuery.userId = { $in: matchedUsers.map(u => u._id) };
+    }
+
+    const totalDocs = await ListenerProfile.countDocuments(matchQuery);
+    const docsRaw = await ListenerProfile.find(matchQuery)
+      .skip(skipOptions.skip)
+      .limit(skipOptions.limit)
+      .populate('userId', 'firstName lastName email profileImage isOnline')
+      .populate({ path: 'languages', select: 'name' })
+      .lean();
+
+    const docs = docsRaw.map(lp => {
+      const name = lp.userId
+        ? `${lp.userId.firstName || ''} ${lp.userId.lastName || ''}`.trim()
+        : 'Listener';
+
+      return {
+        id: String(lp._id),
+        userId: String(lp.userId?._id),
+        listener: name,
+        email: lp.userId?.email || '—',
+        status: lp.availability || 'OFFLINE',
+        queue: lp.totalSessions ?? 0,
+        lastSeen: lp.userId?.isOnline ? 'Just now' : 'Offline',
+        languages: lp.languages?.map(l => l.name) ?? []
+      };
+    });
+
+    const paginatedResponse = formatPaginatedResponse(docs, totalDocs, skipOptions.page, skipOptions.limit);
+
+    return {
+      realtime: {
+        online: onlineCount,
+        busy: busyCount,
+        offline: offlineCount,
+        avgWait: liveAvgWaitStr
+      },
+      periodStats: [
+        { label: "Active Listeners", value: String(activeLCurrent), trend: Math.abs(activeLPct), positive: activeLPct >= 0 },
+        { label: "Total Sessions", value: String(sessionsCurrent), trend: Math.abs(sessionsPct), positive: sessionsPct >= 0 },
+        { label: "Avg. Wait Time", value: `${waitCurrentMins}m ${waitCurrentSecs}s`, trend: Math.abs(waitPct), positive: waitPct <= 0 }
+      ],
+      listeners: paginatedResponse
+    };
+  }
+
   async getListenerByIdForAdmin(listenerId) {
     const profile = await this.repository.findById(listenerId, '', [{ path: 'userId' }, { path: 'country' }]);
     if (!profile) throw new ApiError(404, 'Listener not found');

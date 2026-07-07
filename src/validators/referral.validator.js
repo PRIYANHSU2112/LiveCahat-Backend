@@ -13,3 +13,13 @@ export const updateReferralConfigSchema = {
     inviteLinkPrefix: Joi.string().trim(),
   }).min(1),
 };
+
+export const adminReferralsQuerySchema = {
+  query: Joi.object().keys({
+    page: Joi.number().integer().min(1),
+    limit: Joi.number().integer().min(1).max(100),
+    sortOrder: Joi.string().valid('asc', 'desc'),
+    status: Joi.string().valid('all', 'pending', 'rewarded'),
+    q: Joi.string().trim().allow(''),
+  }),
+};

@@ -3,11 +3,55 @@ import Avatar from '../modules/avatar.model.js';
 import User from '../modules/user.model.js';
 import Wallet from '../modules/wallet.model.js';
 import CoinTransaction from '../modules/coin-transaction.model.js';
+import avatarRepository from '../repositories/avatar.repository.js';
 import ApiError from '../utils/ApiError.js';
 import { getCache, setCache, deleteCache, bumpCacheVersion, getCacheVersion } from '../utils/redis.util.js';
 import { emitToUser } from '../utils/socket.util.js';
 
+function buildAdminAvatarFilter(query) {
+  const filter = {};
+  if (query.isActive !== undefined) filter.isActive = query.isActive;
+  if (query.category) filter.category = query.category;
+  if (query.priceType) filter.priceType = query.priceType;
+  if (query.q?.trim()) {
+    filter.name = { $regex: query.q.trim(), $options: 'i' };
+  }
+  return filter;
+}
+
 class AvatarService {
+  /**
+   * Admin: Paginated avatar catalog (includes inactive).
+   */
+  async getAdminAvatars(query) {
+    const page = parseInt(query.page, 10) || 1;
+    const limit = Math.min(parseInt(query.limit, 10) || 20, 100);
+    const skip = (page - 1) * limit;
+    const filter = buildAdminAvatarFilter(query);
+
+    const sortField = ['createdAt', 'name', 'price'].includes(query.sortBy) ? query.sortBy : 'createdAt';
+    const sortOrder = query.sortOrder === 'asc' ? 1 : -1;
+    const sort = { [sortField]: sortOrder };
+
+    const { docs, total } = await avatarRepository.findAdminPaginated(filter, sort, skip, limit);
+    return {
+      docs,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit) || 0,
+      },
+    };
+  }
+
+  /**
+   * Admin: KPI stats for avatar catalog.
+   */
+  async getAdminStats() {
+    return avatarRepository.getAdminStats();
+  }
+
   /**
    * Admin: Create a new avatar asset.
    */

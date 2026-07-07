@@ -15,6 +15,16 @@ class CoinPackController extends BaseController {
     this.sendResponse(res, 200, 'Coin packs fetched successfully', coinPacks);
   });
 
+  getAdminCoinPacks = catchAsync(async (req, res) => {
+    const data = await coinPackService.getAdminCoinPacks(req.query);
+    this.sendResponse(res, 200, 'Admin coin packs fetched successfully', data);
+  });
+
+  getAdminStats = catchAsync(async (req, res) => {
+    const data = await coinPackService.getAdminStats();
+    this.sendResponse(res, 200, 'Coin pack stats fetched successfully', data);
+  });
+
   getCoinPackById = catchAsync(async (req, res) => {
     const coinPack = await coinPackService.getCoinPackById(req.params.id);
     this.sendResponse(res, 200, 'Coin pack fetched successfully', coinPack);

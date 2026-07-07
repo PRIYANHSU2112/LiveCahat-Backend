@@ -44,12 +44,34 @@ export const listCategoryQuerySchema = {
 // Sticker Validators
 // ═══════════════════════════════════════════════════════════════════
 
+const imageField = Joi.string().trim().min(1).messages({
+  'string.min': 'image is required',
+});
+
+const tagsField = Joi.alternatives()
+  .try(
+    Joi.array().items(Joi.string().trim().lowercase()),
+    Joi.string().trim().lowercase(),
+  )
+  .custom((value) => {
+    if (typeof value === 'string') {
+      if (!value) return [];
+      return value
+        .split(',')
+        .map((tag) => tag.trim().toLowerCase())
+        .filter(Boolean);
+    }
+    return value;
+  })
+  .default([]);
+
 export const createStickerSchema = {
   body: Joi.object().keys({
     name: Joi.string().required().trim(),
-    image: Joi.string().required().trim(),
+    image: imageField,
+    imageUrl: imageField,
     categoryId: objectId.required(),
-    tags: Joi.array().items(Joi.string().trim().lowercase()).default([]),
+    tags: tagsField,
     unlockType: Joi.string().valid(...STICKER_UNLOCK_TYPES).default('FREE'),
     // price required (and > 0) only for PAID; forbidden otherwise
     price: Joi.when('unlockType', {
@@ -65,21 +87,22 @@ export const createStickerSchema = {
     }),
     sortOrder: Joi.number().integer().default(0),
     isActive: Joi.boolean().default(true),
-  }),
+  }).or('image', 'imageUrl'),
 };
 
 export const updateStickerSchema = {
   body: Joi.object().keys({
     name: Joi.string().trim(),
-    image: Joi.string().trim(),
+    image: imageField,
+    imageUrl: imageField,
     categoryId: objectId,
-    tags: Joi.array().items(Joi.string().trim().lowercase()),
+    tags: tagsField,
     unlockType: Joi.string().valid(...STICKER_UNLOCK_TYPES),
     price: Joi.number().min(0),
     requiredLevel: Joi.number().integer().min(1),
     sortOrder: Joi.number().integer(),
     isActive: Joi.boolean(),
-  }).min(1),
+  }).unknown(true).min(1),
 };
 
 export const listStickerQuerySchema = {

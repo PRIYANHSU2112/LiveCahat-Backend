@@ -51,6 +51,7 @@ const giftSchema = new mongoose.Schema(
 
 // Index to quickly search active/categorized gifts
 giftSchema.index({ isActive: 1, category: 1 });
+giftSchema.index({ name: 1 });
 
 const Gift = mongoose.model('Gift', giftSchema);
 export default Gift;

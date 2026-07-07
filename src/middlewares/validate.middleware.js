@@ -12,6 +12,7 @@ export const validate = (schema) => (req, res, next) => {
   const { value, error } = validSchema.validate(object, {
     abortEarly: false,
     stripUnknown: true,
+    convert: true,
   });
 
   if (error) {

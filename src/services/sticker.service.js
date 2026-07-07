@@ -55,6 +55,18 @@ class StickerService extends BaseService {
     return sticker;
   }
 
+  async getAdminStats() {
+    const [total, active, inactive, freeCount, paidCount, levelCount] = await Promise.all([
+      this.repository.countDocuments(),
+      this.repository.countDocuments({ isActive: true }),
+      this.repository.countDocuments({ isActive: false }),
+      this.repository.countDocuments({ unlockType: 'FREE' }),
+      this.repository.countDocuments({ unlockType: 'PAID' }),
+      this.repository.countDocuments({ unlockType: 'LEVEL' }),
+    ]);
+    return { total, active, inactive, freeCount, paidCount, levelCount };
+  }
+
   /**
    * Paginated + filterable sticker listing (filter by category, unlockType,
    * search by name/tags, isActive).

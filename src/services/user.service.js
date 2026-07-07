@@ -229,6 +229,26 @@ class UserService extends BaseService {
   async getCustomerActivityFeed(queryParams) {
     return userActivityService.getCustomerActivityFeed(queryParams);
   }
+
+  async getAgentAdminStats() {
+    const version = await getCacheVersion('users');
+    const cacheKey = `users:stats:agent:v${version}`;
+
+    const cached = await getCache(cacheKey);
+    if (cached) return cached;
+
+    const raw = await this.repository.getAgentAdminStats();
+
+    const stats = {
+      totalAgents: { count: raw.totalAgents },
+      totalListenersByAgents: { count: raw.totalListeners },
+      averageCommission: { count: Math.round(raw.averageCommission * 100) / 100 },
+      totalAgentEarnings: { count: raw.totalAgentEarnings }
+    };
+
+    await setCache(cacheKey, stats, 30);
+    return stats;
+  }
 }
 
 export default new UserService();

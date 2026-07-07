@@ -5,6 +5,9 @@ import ReferralConfig from '../modules/referral-config.model.js';
 import coinPackService from './coin-pack.service.js';
 import ApiError from '../utils/ApiError.js';
 import { deleteCache } from '../utils/redis.util.js';
+import { getPaginationOptions, formatPaginatedResponse } from '../utils/pagination.util.js';
+
+const NOT_DELETED = { isDeleted: false };
 
 class ReferralService {
   /**
@@ -29,6 +32,132 @@ class ReferralService {
       setDefaultsOnInsert: true,
     });
     return config;
+  }
+
+  /**
+   * Admin: referral program KPI aggregates.
+   */
+  async getAdminStats() {
+    const [
+      totalReferrers,
+      totalReferred,
+      pendingReferrals,
+      rewardedReferrals,
+      coinsAgg,
+    ] = await Promise.all([
+      User.countDocuments({ ...NOT_DELETED, referralCount: { $gt: 0 } }),
+      User.countDocuments({ ...NOT_DELETED, referredBy: { $ne: null } }),
+      User.countDocuments({
+        ...NOT_DELETED,
+        referredBy: { $ne: null },
+        referralRewardAwarded: false,
+      }),
+      User.countDocuments({ ...NOT_DELETED, referralRewardAwarded: true }),
+      User.aggregate([
+        { $match: { ...NOT_DELETED, referralEarnings: { $gt: 0 } } },
+        { $group: { _id: null, total: { $sum: '$referralEarnings' } } },
+      ]),
+    ]);
+
+    return {
+      totalReferrers,
+      totalReferred,
+      pendingReferrals,
+      rewardedReferrals,
+      totalCoinsPaid: coinsAgg[0]?.total ?? 0,
+    };
+  }
+
+  /**
+   * Admin: paginated referral relationships (referred customers + referrer).
+   */
+  async adminGetReferrals(query = {}) {
+    const { page, limit, skip, sort } = getPaginationOptions({
+      sortBy: 'createdAt',
+      sortOrder: query.sortOrder === 'asc' ? 'asc' : 'desc',
+      page: query.page,
+      limit: query.limit,
+    });
+
+    const match = { ...NOT_DELETED, referredBy: { $ne: null } };
+    if (query.status === 'pending') match.referralRewardAwarded = false;
+    if (query.status === 'rewarded') match.referralRewardAwarded = true;
+
+    const pipeline = [
+      { $match: match },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'referredBy',
+          foreignField: '_id',
+          as: 'referrer',
+        },
+      },
+      { $unwind: { path: '$referrer', preserveNullAndEmptyArrays: false } },
+      { $match: { 'referrer.isDeleted': { $ne: true } } },
+    ];
+
+    if (query.q) {
+      const term = String(query.q).trim();
+      if (term) {
+        const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(escaped, 'i');
+        pipeline.push({
+          $match: {
+            $or: [
+              { firstName: regex },
+              { lastName: regex },
+              { inviteCode: regex },
+              { 'referrer.firstName': regex },
+              { 'referrer.lastName': regex },
+              { 'referrer.inviteCode': regex },
+            ],
+          },
+        });
+      }
+    }
+
+    const [result] = await User.aggregate([
+      ...pipeline,
+      { $sort: sort },
+      {
+        $facet: {
+          docs: [
+            { $skip: skip },
+            { $limit: limit },
+            {
+              $project: {
+                _id: 1,
+                referralRewardAwarded: 1,
+                createdAt: 1,
+                referred: {
+                  _id: '$_id',
+                  firstName: '$firstName',
+                  lastName: '$lastName',
+                  inviteCode: '$inviteCode',
+                  referralRewardAwarded: '$referralRewardAwarded',
+                  createdAt: '$createdAt',
+                },
+                referrer: {
+                  _id: '$referrer._id',
+                  firstName: '$referrer.firstName',
+                  lastName: '$referrer.lastName',
+                  inviteCode: '$referrer.inviteCode',
+                },
+                status: {
+                  $cond: [{ $eq: ['$referralRewardAwarded', true] }, 'REWARDED', 'PENDING'],
+                },
+              },
+            },
+          ],
+          total: [{ $count: 'count' }],
+        },
+      },
+    ]);
+
+    const docs = result?.docs ?? [];
+    const total = result?.total?.[0]?.count ?? 0;
+    return formatPaginatedResponse(docs, total, page, limit);
   }
 
   /**

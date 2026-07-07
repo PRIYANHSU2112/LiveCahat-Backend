@@ -26,6 +26,16 @@ class ReferralController extends BaseController {
     const data = await referralService.updateReferralConfig(req.body);
     this.sendResponse(res, 200, 'Referral config updated successfully', data);
   });
+
+  getAdminStats = catchAsync(async (req, res) => {
+    const data = await referralService.getAdminStats();
+    this.sendResponse(res, 200, 'Referral stats fetched successfully', data);
+  });
+
+  getAdminReferrals = catchAsync(async (req, res) => {
+    const data = await referralService.adminGetReferrals(req.query);
+    this.sendResponse(res, 200, 'Referrals fetched successfully', data);
+  });
 }
 
 export default new ReferralController();

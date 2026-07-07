@@ -79,6 +79,80 @@ class GiftService {
   }
 
   /**
+   * Admin: Paginated gift catalog with total metadata.
+   */
+  async getAdminGifts(query) {
+    const page = parseInt(query.page, 10) || 1;
+    const limit = Math.min(parseInt(query.limit, 10) || 20, 100);
+    const skip = (page - 1) * limit;
+
+    const filter = {};
+    if (query.isActive !== undefined) filter.isActive = query.isActive;
+    if (query.category) filter.category = query.category;
+    if (query.q?.trim()) {
+      filter.name = { $regex: query.q.trim(), $options: 'i' };
+    }
+
+    const sortField = ['createdAt', 'name', 'coin'].includes(query.sortBy) ? query.sortBy : 'createdAt';
+    const sortOrder = query.sortOrder === 'asc' ? 1 : -1;
+    const sort = { [sortField]: sortOrder };
+
+    const [docs, total] = await Promise.all([
+      giftRepository.findMany(filter, '', '', sort, limit, skip),
+      giftRepository.countDocuments(filter),
+    ]);
+
+    return {
+      docs,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit) || 0,
+      },
+    };
+  }
+
+  /**
+   * Admin: Lightweight KPI stats for gift catalog header.
+   */
+  async getAdminGiftStats() {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const [total, active, inactive, last7DaysTxs] = await Promise.all([
+      giftRepository.countDocuments({}),
+      giftRepository.countDocuments({ isActive: true }),
+      giftRepository.countDocuments({ isActive: false }),
+      GiftTransaction.aggregate([
+        {
+          $match: {
+            createdAt: { $gte: sevenDaysAgo },
+            status: 'SUCCESS',
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            count: { $sum: 1 },
+            totalCoins: { $sum: '$coins' },
+          },
+        },
+      ]),
+    ]);
+
+    const stats7d = last7DaysTxs[0] || { count: 0, totalCoins: 0 };
+
+    return {
+      total,
+      active,
+      inactive,
+      sent7d: stats7d.count,
+      revenue7d: stats7d.totalCoins,
+    };
+  }
+
+  /**
    * Public: Get a single gift by ID.
    */
   async getGiftById(id) {

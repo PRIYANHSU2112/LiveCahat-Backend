@@ -16,6 +16,8 @@ router.post('/agent', restrictTo('AGENT'), validate(agentCreateListenerSchema), 
 
 // --- ADMIN ONLY ROUTES (must precede the LISTENER/CUSTOMER restriction below) ---
 router.get('/admin/stats', restrictTo('ADMIN'), listenerController.getAdminStats);
+router.get('/admin/performance', restrictTo('ADMIN'), listenerController.getAdminListenerPerformance);
+router.get('/admin/availability-monitoring', restrictTo('ADMIN'), listenerController.getAdminAvailabilityMonitoring);
 router.get('/admin/:id', restrictTo('ADMIN'), listenerController.getListenerById);
 router.put('/admin/:id', restrictTo('ADMIN'), listenerController.updateListenerByAdmin);
 router.get('/', restrictTo('ADMIN', 'CUSTOMER'), listenerController.getAllListeners);

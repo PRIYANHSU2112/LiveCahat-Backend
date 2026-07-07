@@ -40,8 +40,10 @@ const avatarSchema = new mongoose.Schema(
   }
 );
 
-// Index for active/pricing lookups
+// Index for active/pricing lookups and admin list queries
 avatarSchema.index({ isActive: 1, priceType: 1 });
+avatarSchema.index({ isActive: 1, category: 1, createdAt: -1 });
+avatarSchema.index({ name: 1 });
 
 const Avatar = mongoose.model('Avatar', avatarSchema);
 export default Avatar;

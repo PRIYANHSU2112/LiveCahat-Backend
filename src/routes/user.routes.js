@@ -23,6 +23,7 @@ router.patch('/me/settings', validate(updateSettingsSchema), userController.upda
 router.use(restrictTo('ADMIN'));
 
 router.get('/stats', userController.getCustomerStats);
+router.get('/agent-stats', userController.getAgentAdminStats);
 router.get('/activity/stats', userController.getCustomerActivityStats);
 router.get('/activity', validate(paginationQuerySchema), userController.getCustomerActivityFeed);
 

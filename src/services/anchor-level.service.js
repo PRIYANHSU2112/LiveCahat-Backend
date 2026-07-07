@@ -28,8 +28,32 @@ class AnchorLevelService {
   }
 
   // ─── Admin: level CRUD ──────────────────────────────────────────
-  async getAllLevels() {
-    return await AnchorLevel.find().sort({ level: 1 }).lean();
+  async getAllLevels(query = {}) {
+    const filter = {};
+    if (query.isActive === 'true' || query.isActive === true) filter.isActive = true;
+    if (query.isActive === 'false' || query.isActive === false) filter.isActive = false;
+    if (query.q) {
+      const term = String(query.q).trim();
+      if (term) {
+        filter.$or = [
+          { title: { $regex: term, $options: 'i' } },
+          { badge: { $regex: term, $options: 'i' } },
+        ];
+      }
+    }
+    return await AnchorLevel.find(filter).sort({ level: 1 }).lean();
+  }
+
+  async getAdminStats() {
+    const [total, active, inactive, totalClaims, unclaimedClaims, claimedClaims] = await Promise.all([
+      AnchorLevel.countDocuments(),
+      AnchorLevel.countDocuments({ isActive: true }),
+      AnchorLevel.countDocuments({ isActive: false }),
+      AnchorRewardClaim.countDocuments(),
+      AnchorRewardClaim.countDocuments({ status: 'UNCLAIMED' }),
+      AnchorRewardClaim.countDocuments({ status: 'CLAIMED' }),
+    ]);
+    return { total, active, inactive, totalClaims, unclaimedClaims, claimedClaims };
   }
 
   async createLevel(data) {

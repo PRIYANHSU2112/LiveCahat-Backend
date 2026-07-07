@@ -88,6 +88,11 @@ class UserController extends BaseController {
     const result = await userService.getCustomerActivityFeed(req.query);
     this.sendResponse(res, 200, 'Customer activity feed fetched successfully', result);
   });
+
+  getAgentAdminStats = catchAsync(async (_req, res) => {
+    const stats = await userService.getAgentAdminStats();
+    this.sendResponse(res, 200, 'Agent stats fetched successfully', stats);
+  });
 }
 
 export default new UserController();

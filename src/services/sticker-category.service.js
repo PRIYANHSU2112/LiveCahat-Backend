@@ -18,6 +18,47 @@ class StickerCategoryService extends BaseService {
     return category;
   }
 
+  async getAdminStats() {
+    const [total, active, inactive, totalStickers] = await Promise.all([
+      this.repository.countDocuments(),
+      this.repository.countDocuments({ isActive: true }),
+      this.repository.countDocuments({ isActive: false }),
+      stickerRepository.countDocuments(),
+    ]);
+    return { total, active, inactive, totalStickers };
+  }
+
+  async _getAdminCategoriesWithCounts(filter, sort, limit, skip) {
+    const sortKey = Object.keys(sort)[0] || 'sortOrder';
+    const sortDir = sort[sortKey] ?? 1;
+
+    const [result] = await this.repository.aggregate([
+      { $match: filter },
+      {
+        $lookup: {
+          from: 'stickers',
+          localField: '_id',
+          foreignField: 'categoryId',
+          as: '_stickers',
+        },
+      },
+      { $addFields: { stickerCount: { $size: '$_stickers' } } },
+      { $project: { _stickers: 0 } },
+      { $sort: { [sortKey]: sortDir } },
+      {
+        $facet: {
+          docs: [{ $skip: skip }, { $limit: limit }],
+          total: [{ $count: 'count' }],
+        },
+      },
+    ]);
+
+    return {
+      docs: result?.docs ?? [],
+      total: result?.total?.[0]?.count ?? 0,
+    };
+  }
+
   /**
    * Paginated + filterable category listing.
    * User side forces isActive=true and is cached (version-keyed).
@@ -37,10 +78,7 @@ class StickerCategoryService extends BaseService {
     if (forAdmin) {
       if (query.isActive !== undefined) filter.isActive = query.isActive;
 
-      const [docs, total] = await Promise.all([
-        this.repository.findMany(filter, '', '', sort, limit, skip),
-        this.repository.countDocuments(filter),
-      ]);
+      const { docs, total } = await this._getAdminCategoriesWithCounts(filter, sort, limit, skip);
       return formatPaginatedResponse(docs, total, page, limit);
     }
 

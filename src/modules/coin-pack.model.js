@@ -33,18 +33,21 @@ const coinPackSchema = new mongoose.Schema(
       default: true,
     },
     badge: {
-      type: String, // e.g., 'Best Value', 'Most Popular'
+      type: String,
       trim: true,
     },
     description: {
       type: String,
       trim: true,
-    }
+    },
   },
   {
     timestamps: true,
-  }
+  },
 );
+
+coinPackSchema.index({ isActive: 1, price: 1 });
+coinPackSchema.index({ name: 1 });
 
 // Pre-save hook to calculate rate per coin automatically
 coinPackSchema.pre('save', function (next) {

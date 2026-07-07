@@ -32,8 +32,13 @@ class AnchorLevelController extends BaseController {
 
   // ─── Admin ──────────────────────────────────────────────────────
   getAllLevels = catchAsync(async (req, res) => {
-    const data = await anchorLevelService.getAllLevels();
+    const data = await anchorLevelService.getAllLevels(req.query);
     this.sendResponse(res, 200, 'Anchor levels fetched successfully', data);
+  });
+
+  getAdminStats = catchAsync(async (req, res) => {
+    const data = await anchorLevelService.getAdminStats();
+    this.sendResponse(res, 200, 'Anchor level stats fetched successfully', data);
   });
 
   createLevel = catchAsync(async (req, res) => {

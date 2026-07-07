@@ -31,6 +31,7 @@ const upload = multer({
 export const uploadUserPhoto = upload.single('profileImage');
 export const uploadIntroVideo = upload.single('introVideo');
 export const uploadBannerImage = upload.single('image');
+export const uploadGiftIcon = upload.single('icon');
 
 export const uploadKYCDocuments = upload.fields([
   { name: 'documentFront', maxCount: 1 },
@@ -50,8 +51,14 @@ export const processAndUploadImage = catchAsync(async (req, res, next) => {
     const ext = isVideo ? path.extname(file.originalname) : '.webp';
     const fileName = `${process.env.BUCKET_FOLDER_PATH || ''}${uuidv4()}${ext}`;
     
-    const endpointUrl = new URL(process.env.LINODE_OBJECT_STORAGE_ENDPOINT);
-    const fileUrl = `https://${process.env.LINODE_OBJECT_BUCKET}.${endpointUrl.hostname}/${fileName}`;
+    const endpoint = process.env.LINODE_OBJECT_STORAGE_ENDPOINT;
+    const bucket = process.env.LINODE_OBJECT_BUCKET;
+    if (!endpoint || !bucket) {
+      throw new ApiError(500, 'File storage is not configured. Please provide an image URL instead.');
+    }
+
+    const endpointUrl = new URL(endpoint);
+    const fileUrl = `https://${bucket}.${endpointUrl.hostname}/${fileName}`;
 
     if (isVideo) {
       queueVideoCompression(file.buffer, fileName, file.mimetype);
@@ -67,7 +74,13 @@ export const processAndUploadImage = catchAsync(async (req, res, next) => {
     if (req.file.fieldname === 'introVideo') {
       req.body.introVideo = handleMedia(req.file);
     } else if (req.file.fieldname === 'image') {
-      req.body.imageUrl = handleMedia(req.file);
+      const fileUrl = handleMedia(req.file);
+      req.body.imageUrl = fileUrl;
+      req.body.image = fileUrl;
+    } else if (req.file.fieldname === 'icon') {
+      const fileUrl = handleMedia(req.file);
+      req.body.iconUrl = fileUrl;
+      req.body.icon = fileUrl;
     } else {
       req.body.profileImage = handleMedia(req.file);
     }

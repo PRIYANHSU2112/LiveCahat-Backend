@@ -38,6 +38,11 @@ class StickerCategoryController extends BaseController {
     await stickerCategoryService.deleteCategory(req.params.id);
     this.sendResponse(res, 200, 'Sticker category deleted successfully');
   });
+
+  getAdminStats = catchAsync(async (req, res) => {
+    const data = await stickerCategoryService.getAdminStats();
+    this.sendResponse(res, 200, 'Sticker category stats fetched successfully', data);
+  });
 }
 
 export default new StickerCategoryController();

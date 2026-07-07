@@ -1,4 +1,6 @@
 import User from '../modules/user.model.js';
+import mongoose from 'mongoose';
+
 
 const MS_DAY = 24 * 60 * 60 * 1000;
 
@@ -267,6 +269,45 @@ class UserRepository {
     const total = result[0].metadata[0]?.total ?? 0;
     const data = result[0].data ?? [];
     return { total, data };
+  }
+
+  async getAgentAdminStats() {
+    const totalAgents = await User.countDocuments({ type: 'AGENT', isDeleted: false });
+    
+    const ListenerProfile = mongoose.model('ListenerProfile');
+    const totalListeners = await ListenerProfile.countDocuments({ createdByAgentId: { $ne: null } });
+
+    const avgCommissionRes = await User.aggregate([
+      { $match: { type: 'AGENT', isDeleted: false } },
+      { $group: { _id: null, avgCommission: { $avg: '$commissionPercentage' } } }
+    ]);
+    const averageCommission = avgCommissionRes[0]?.avgCommission ?? 0;
+
+    const walletBalanceRes = await User.aggregate([
+      { $match: { type: 'AGENT', isDeleted: false } },
+      {
+        $lookup: {
+          from: 'wallets',
+          localField: '_id',
+          foreignField: 'userId',
+          as: 'walletDoc',
+        },
+      },
+      {
+        $addFields: {
+          wallet: { $arrayElemAt: ['$walletDoc', 0] }
+        }
+      },
+      { $group: { _id: null, totalBalance: { $sum: '$wallet.coinBalance' } } }
+    ]);
+    const totalAgentEarnings = walletBalanceRes[0]?.totalBalance ?? 0;
+
+    return {
+      totalAgents,
+      totalListeners,
+      averageCommission,
+      totalAgentEarnings
+    };
   }
 }
 
