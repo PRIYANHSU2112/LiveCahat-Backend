@@ -10,6 +10,11 @@ class BannerController extends BaseController {
     this.sendResponse(res, 200, 'Active banners fetched successfully', banners);
   });
 
+  getAdminStats = catchAsync(async (req, res) => {
+    const data = await bannerService.getAdminStats();
+    this.sendResponse(res, 200, 'Banner stats fetched successfully', data);
+  });
+
   // Admin CRUD APIs
   createBanner = catchAsync(async (req, res) => {
     const banner = await bannerService.createBanner(req.body);
@@ -17,26 +22,8 @@ class BannerController extends BaseController {
   });
 
   getAllBanners = catchAsync(async (req, res) => {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
-
-    const sort = req.query.sort === 'createdAt' ? { createdAt: -1 } : { position: 1 };
-
-    const [banners, total] = await Promise.all([
-      bannerService.repository.findMany({}, '', '', sort, limit, skip),
-      bannerService.repository.countDocuments({})
-    ]);
-
-    this.sendResponse(res, 200, 'All banners fetched successfully', {
-      banners,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      }
-    });
+    const data = await bannerService.getAllBanners(req.query);
+    this.sendResponse(res, 200, 'All banners fetched successfully', data);
   });
 
   getBannerById = catchAsync(async (req, res) => {

@@ -3,6 +3,12 @@ import { WITHDRAWAL_STATUSES } from '../constants/enum.constant.js';
 
 const objectId = Joi.string().hex().length(24);
 
+const dateFilterFields = {
+  year: Joi.number().integer().min(2020).max(2100),
+  month: Joi.number().integer().min(1).max(12),
+  day: Joi.number().integer().min(1).max(31),
+};
+
 export const quoteQuerySchema = {
   query: Joi.object().keys({
     coins: Joi.number().integer().min(1).required(),
@@ -25,7 +31,12 @@ export const listWithdrawalQuerySchema = {
     userId: objectId,
     userType: Joi.string().valid('AGENT', 'LISTENER'),
     search: Joi.string().trim().allow(''),
+    ...dateFilterFields,
   }),
+};
+
+export const adminStatsQuerySchema = {
+  query: Joi.object().keys(dateFilterFields),
 };
 
 export const withdrawalStatsQuerySchema = {

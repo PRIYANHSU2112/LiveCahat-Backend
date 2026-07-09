@@ -2,6 +2,7 @@ import express from 'express';
 import xpController from '../controllers/xp.controller.js';
 import { authenticate, restrictTo } from '../middlewares/auth.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
+import { requireObjectId } from '../middlewares/object-id.middleware.js';
 import {
   createLevelConfigSchema,
   updateLevelConfigSchema,
@@ -9,6 +10,8 @@ import {
   updateRewardSchema,
   updateXpActionSchema,
   adminGrantXpSchema,
+  adminTransactionsQuerySchema,
+  adminRewardClaimsQuerySchema,
   rewardInventoryQuerySchema,
   claimRewardSchema,
 } from '../validators/xp.validator.js';
@@ -31,17 +34,22 @@ router.post('/rewards/:inventoryId/claim', validate(claimRewardSchema), xpContro
 // ─── Admin Endpoints (ADMIN only) ───────────────────────────────
 router.use(restrictTo('ADMIN'));
 
+// Admin stats & audit (register before parameterized routes)
+router.get('/admin/stats', xpController.getAdminStats);
+router.get('/admin/transactions', validate(adminTransactionsQuerySchema), xpController.listAdminTransactions);
+router.get('/admin/reward-claims', validate(adminRewardClaimsQuerySchema), xpController.listAdminRewardClaims);
+
 // Level Configs
 router.get('/admin/level-configs', xpController.listLevelConfigs);
 router.post('/admin/level-configs', validate(createLevelConfigSchema), xpController.createLevelConfig);
-router.put('/admin/level-configs/:id', validate(updateLevelConfigSchema), xpController.updateLevelConfig);
-router.delete('/admin/level-configs/:id', xpController.deleteLevelConfig);
+router.put('/admin/level-configs/:id', requireObjectId('id'), validate(updateLevelConfigSchema), xpController.updateLevelConfig);
+router.delete('/admin/level-configs/:id', requireObjectId('id'), xpController.deleteLevelConfig);
 
 // Level Rewards
 router.get('/admin/rewards', xpController.listRewards);
 router.post('/admin/rewards', validate(createRewardSchema), xpController.createReward);
-router.put('/admin/rewards/:id', validate(updateRewardSchema), xpController.updateReward);
-router.delete('/admin/rewards/:id', xpController.deleteReward);
+router.put('/admin/rewards/:id', requireObjectId('id'), validate(updateRewardSchema), xpController.updateReward);
+router.delete('/admin/rewards/:id', requireObjectId('id'), xpController.deleteReward);
 
 // XP Action Configs
 router.get('/admin/xp-actions', xpController.listXpActions);

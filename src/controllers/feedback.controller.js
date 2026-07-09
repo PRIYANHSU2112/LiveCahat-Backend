@@ -35,13 +35,19 @@ class FeedbackController extends BaseController {
 
   // ─── Admin ──────────────────────────────────────────────────────
 
-  // GET /feedback — list all (filters + pagination)
+  // GET /feedback/admin/stats — admin KPIs
+  getAdminStats = catchAsync(async (req, res) => {
+    const data = await feedbackService.getAdminStats(req.query);
+    this.sendResponse(res, 200, 'Feedback stats fetched successfully', data);
+  });
+
+  // GET /feedback/admin — list all (filters + pagination)
   getAllFeedback = catchAsync(async (req, res) => {
     const data = await feedbackService.getAllFeedback(req.query);
     this.sendResponse(res, 200, 'Feedback list fetched successfully', data);
   });
 
-  // PATCH /feedback/:id/moderate — set status / respond
+  // PATCH /feedback/admin/:id/moderate — set status / respond
   moderateFeedback = catchAsync(async (req, res) => {
     const data = await feedbackService.moderateFeedback(req.params.id, req.user, req.body);
     this.sendResponse(res, 200, 'Feedback moderated successfully', data);

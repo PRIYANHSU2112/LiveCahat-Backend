@@ -3,6 +3,12 @@ import { REPORT_STATUSES } from '../constants/enum.constant.js';
 
 const objectId = Joi.string().hex().length(24);
 
+const dateFilterFields = {
+  year: Joi.number().integer().min(2020).max(2100),
+  month: Joi.number().integer().min(1).max(12),
+  day: Joi.number().integer().min(1).max(31),
+};
+
 export const createReportReasonSchema = {
   body: Joi.object({
     label: Joi.string().trim().min(2).max(120).required(),
@@ -56,7 +62,12 @@ export const listReportsQuerySchema = {
     reporterType: Joi.string().valid('CUSTOMER', 'LISTENER'),
     targetType: Joi.string().valid('CUSTOMER', 'LISTENER'),
     search: Joi.string().trim().allow(''),
+    ...dateFilterFields,
   }),
+};
+
+export const reportStatsQuerySchema = {
+  query: Joi.object(dateFilterFields),
 };
 
 export const moderateReportSchema = {

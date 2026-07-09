@@ -54,8 +54,8 @@ class ReportController extends BaseController {
     this.sendResponse(res, 200, 'Reports fetched successfully', data);
   });
 
-  getStats = catchAsync(async (_req, res) => {
-    const data = await userReportService.getStats();
+  getStats = catchAsync(async (req, res) => {
+    const data = await userReportService.getStats(req.query);
     this.sendResponse(res, 200, 'Report stats fetched successfully', data);
   });
 

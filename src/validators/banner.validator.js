@@ -7,7 +7,7 @@ export const createBannerSchema = {
     linkUrl: Joi.string().uri().trim().allow(null, '').optional(),
     position: Joi.number().integer().min(0).default(0).optional(),
     isActive: Joi.boolean().default(true).optional(),
-  })
+  }),
 };
 
 export const updateBannerSchema = {
@@ -17,11 +17,11 @@ export const updateBannerSchema = {
     linkUrl: Joi.string().uri().trim().allow(null, '').optional(),
     position: Joi.number().integer().min(0).optional(),
     isActive: Joi.boolean().optional(),
-  })
+  }),
 };
 
 export const toggleActiveSchema = {
   body: Joi.object({
     isActive: Joi.boolean().required(),
-  })
+  }),
 };

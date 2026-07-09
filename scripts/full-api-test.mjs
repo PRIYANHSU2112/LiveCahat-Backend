@@ -390,7 +390,10 @@ function buildTests(ctx) {
   add('agent', 'AGENT', 'GET', '/agent/settlements/stats', { token: AGENT_TOKEN });
   add('agent', 'AGENT', 'GET', '/agent/settlements?page=1&limit=25', { token: AGENT_TOKEN });
   add('withdrawals', 'ADMIN', 'GET', '/withdrawals/admin/stats', { token: ADMIN_TOKEN });
+  add('withdrawals', 'ADMIN', 'GET', '/withdrawals/admin/stats?year=2026&month=1', { token: ADMIN_TOKEN });
   add('withdrawals', 'ADMIN', 'GET', '/withdrawals/admin?page=1&limit=25&status=PENDING', { token: ADMIN_TOKEN });
+  add('withdrawals', 'ADMIN', 'GET', '/withdrawals/admin?page=1&limit=5&year=2026&month=1', { token: ADMIN_TOKEN });
+  add('withdrawals', 'ADMIN', 'GET', '/withdrawals/admin/settlements?page=1&limit=10', { token: ADMIN_TOKEN });
   add('withdrawals', 'ADMIN', 'POST', '/withdrawals/admin/settlements/run', { token: ADMIN_TOKEN, body: {} });
   add('agent', 'AGENT', 'GET', '/agent/revenue/history?page=1&limit=20&source=gift&status=pending', {
     token: AGENT_TOKEN,
@@ -401,6 +404,8 @@ function buildTests(ctx) {
   add('agent', 'LISTENER', 'GET', '/agent/revenue/history/stats', { token: l, expectedStatus: [403] });
 
   // ─── LANGUAGES ───
+  add('languages', 'ADMIN', 'GET', '/languages/admin/stats', { token: A });
+  add('languages', 'CUSTOMER', 'GET', '/languages?page=1&limit=20', { token: c });
   add('languages', 'CUSTOMER', 'GET', '/languages', { token: c });
   if (ids.languageId) add('languages', 'CUSTOMER', 'GET', `/languages/${ids.languageId}`, { token: c });
   add('languages', 'ADMIN', 'POST', '/languages', {
@@ -434,19 +439,23 @@ function buildTests(ctx) {
     expectedStatus: [200, 201, 400, 404],
     remark: 'Razorpay dependency – may fail with test keys',
   });
-  add('wallets', 'ADMIN', 'GET', '/wallets?page=1&limit=5', { token: A });
-  add('wallets', 'ADMIN', 'GET', '/wallets/coin-transactions?page=1&limit=5', { token: A });
-  add('wallets', 'ADMIN', 'GET', '/wallets/payment-transactions?page=1&limit=5', { token: A });
+  add('wallets', 'ADMIN', 'GET', '/wallets/admin/stats', { token: A });
+  add('wallets', 'ADMIN', 'GET', '/wallets/admin?page=1&limit=5', { token: A });
+  add('wallets', 'ADMIN', 'GET', '/wallets/admin/coin-transactions?page=1&limit=5', { token: A });
+  add('wallets', 'ADMIN', 'GET', '/wallets/admin/payment-transactions?page=1&limit=5', { token: A });
   if (ids.customerId) {
-    add('wallets', 'ADMIN', 'POST', `/wallets/user/${ids.customerId}/credit-debit`, {
+    add('wallets', 'ADMIN', 'GET', `/wallets/admin/user/${ids.customerId}`, { token: A });
+  }
+  if (ids.customerId) {
+    add('wallets', 'ADMIN', 'POST', `/wallets/admin/user/${ids.customerId}/credit-debit`, {
       token: A,
       body: { amount: 10, type: 'CREDIT', referenceType: 'BONUS', description: 'API test credit' },
       expectedStatus: [200, 201],
     });
   }
   if (ids.walletId) {
-    add('wallets', 'ADMIN', 'GET', `/wallets/${ids.walletId}`, { token: A });
-    add('wallets', 'ADMIN', 'PUT', `/wallets/${ids.walletId}/status`, {
+    add('wallets', 'ADMIN', 'GET', `/wallets/admin/${ids.walletId}`, { token: A });
+    add('wallets', 'ADMIN', 'PUT', `/wallets/admin/${ids.walletId}/status`, {
       token: A,
       body: { status: 'ACTIVE' },
     });
@@ -524,7 +533,9 @@ function buildTests(ctx) {
   }
 
   // ─── BANNERS ───
+  add('banners', 'ADMIN', 'GET', '/banners/admin/stats', { token: A });
   add('banners', 'CUSTOMER', 'GET', '/banners', { token: c });
+  add('banners', 'ADMIN', 'GET', '/banners/all?page=1&limit=20&isActive=true', { token: A });
   add('banners', 'ADMIN', 'GET', '/banners/all?page=1&limit=5', { token: A });
   if (ids.bannerId) {
     add('banners', 'ADMIN', 'GET', `/banners/${ids.bannerId}`, { token: A });
@@ -538,9 +549,25 @@ function buildTests(ctx) {
   add('daily-rewards', 'CUSTOMER', 'GET', '/daily-rewards/state', { token: c });
   add('daily-rewards', 'CUSTOMER', 'POST', '/daily-rewards/claim', { token: c, expectedStatus: [200, 400] });
   add('daily-rewards', 'CUSTOMER', 'GET', '/daily-rewards/inventory', { token: c });
+  add('daily-rewards', 'ADMIN', 'GET', '/daily-rewards/admin/config', { token: A });
+  add('daily-rewards', 'ADMIN', 'GET', '/daily-rewards/admin/stats', { token: A });
+  add('daily-rewards', 'ADMIN', 'GET', '/daily-rewards/admin/stats?year=2026&month=7', { token: A });
+  add('daily-rewards', 'ADMIN', 'GET', '/daily-rewards/admin/claims?page=1&limit=10', { token: A });
+  add('daily-rewards', 'ADMIN', 'GET', '/daily-rewards/admin/claims?year=2026&month=7&day=1', { token: A });
+  add('daily-rewards', 'CUSTOMER', 'GET', '/daily-rewards/admin/config', { token: c, expectedStatus: [403] });
   add('daily-rewards', 'ADMIN', 'PUT', '/daily-rewards/admin/config/days', {
     token: A,
-    body: { days: [{ day: 1, rewardType: 'COINS', rewardValue: 5 }] },
+    body: {
+      configs: [
+        { day: 1, rewardType: 'COINS', rewardValue: 100 },
+        { day: 2, rewardType: 'COINS', rewardValue: 110 },
+        { day: 3, rewardType: 'COINS', rewardValue: 120 },
+        { day: 4, rewardType: 'COINS', rewardValue: 130 },
+        { day: 5, rewardType: 'COINS', rewardValue: 140 },
+        { day: 6, rewardType: 'COINS', rewardValue: 150 },
+        { day: 7, rewardType: 'WEEKLY_SPECIAL_GIFT', rewardValue: 0 },
+      ],
+    },
     expectedStatus: [200, 400],
   });
 
@@ -601,7 +628,10 @@ function buildTests(ctx) {
     expectedStatus: [200, 201],
   });
   add('feedback', 'CUSTOMER', 'GET', '/feedback/me?page=1&limit=5', { token: c });
-  add('feedback', 'ADMIN', 'GET', '/feedback?page=1&limit=5', { token: A });
+  add('feedback', 'ADMIN', 'GET', '/feedback/admin?page=1&limit=5', { token: A });
+  add('feedback', 'ADMIN', 'GET', '/feedback/admin/stats', { token: A });
+  add('feedback', 'ADMIN', 'GET', '/feedback/admin/stats?year=2026&month=1', { token: A });
+  add('feedback', 'ADMIN', 'GET', '/feedback/admin?page=1&limit=5&year=2026', { token: A });
 
   // ─── USER REPORTS ───
   add('reports', 'ADMIN', 'POST', '/reports/reasons', {
@@ -667,6 +697,8 @@ function buildTests(ctx) {
   });
   add('reports', 'ADMIN', 'GET', '/reports?page=1&limit=5', { token: A });
   add('reports', 'ADMIN', 'GET', '/reports/stats', { token: A });
+  add('reports', 'ADMIN', 'GET', '/reports/stats?year=2026&month=1', { token: A });
+  add('reports', 'ADMIN', 'GET', '/reports?page=1&limit=5&year=2026', { token: A });
   add('reports', 'AGENT', 'GET', '/agent/reports?page=1&limit=5', { token: AGENT_TOKEN });
   if (ids.userReportId) {
     add('reports', 'ADMIN', 'GET', `/reports/${ids.userReportId}`, { token: A });
@@ -715,9 +747,14 @@ function buildTests(ctx) {
   add('withdrawals', 'LISTENER', 'GET', '/withdrawals/me/stats?status=APPROVED', { token: l });
   add('withdrawals', 'LISTENER', 'GET', '/withdrawals/me/stats?status=REJECTED', { token: l });
   add('withdrawals', 'ADMIN', 'GET', '/withdrawals/admin?page=1&limit=5', { token: A });
+  add('withdrawals', 'ADMIN', 'GET', '/withdrawals/admin/507f1f77bcf86cd799439011', {
+    token: A,
+    expectedStatus: [200, 404],
+    remark: 'May 404 if withdrawal not found',
+  });
   add('withdrawals', 'ADMIN', 'PUT', '/withdrawals/admin/config', {
     token: A,
-    body: { coinToInrRate: 1, minWithdrawalCoins: 100, isActive: true },
+    body: { conversionCoins: 100, conversionInr: 1, feePercentage: 5, minWithdrawalCoins: 100 },
     expectedStatus: [200, 400],
   });
 
@@ -765,6 +802,10 @@ function buildTests(ctx) {
   add('xp', 'ADMIN', 'GET', '/xp/admin/level-configs', { token: A });
   add('xp', 'ADMIN', 'GET', '/xp/admin/rewards', { token: A });
   add('xp', 'ADMIN', 'GET', '/xp/admin/xp-actions', { token: A });
+  add('xp', 'ADMIN', 'GET', '/xp/admin/stats', { token: A });
+  add('xp', 'ADMIN', 'GET', '/xp/admin/transactions?page=1&limit=10', { token: A });
+  add('xp', 'ADMIN', 'GET', '/xp/admin/reward-claims?page=1&limit=10', { token: A });
+  add('xp', 'CUSTOMER', 'GET', '/xp/admin/stats', { token: c, expectedStatus: [403] });
   if (ids.customerId) {
     add('xp', 'ADMIN', 'POST', '/xp/admin/grant', {
       token: A,
@@ -812,6 +853,7 @@ function buildTests(ctx) {
       token: A,
       body: { name: 'Updated Lang' },
     });
+    add('languages', 'ADMIN', 'PATCH', `/languages/${ids.languageId}/toggle`, { token: A });
   }
 
   // ─── COIN PACKS admin ───
@@ -870,9 +912,17 @@ function buildTests(ctx) {
   // ─── DAILY REWARDS admin weeks ───
   add('daily-rewards', 'ADMIN', 'PUT', '/daily-rewards/admin/config/weeks', {
     token: A,
-    body: { weeks: [{ week: 1, rewardType: 'COINS', rewardValue: 20 }] },
-    expectedStatus: [200, 400],
+    body: {
+      configs: [
+        { week: 1, giftId: ids.giftId || '507f1f77bcf86cd799439011' },
+        { week: 2, giftId: ids.giftId || '507f1f77bcf86cd799439011' },
+        { week: 3, giftId: ids.giftId || '507f1f77bcf86cd799439011' },
+        { week: 4, giftId: ids.giftId || '507f1f77bcf86cd799439011' },
+      ],
+    },
+    expectedStatus: [200, 400, 404],
   });
+  add('daily-rewards', 'ADMIN', 'POST', '/daily-rewards/admin/cache/clear', { token: A });
 
   // ─── REFERRALS apply ───
   add('referrals', 'CUSTOMER', 'POST', '/referrals/apply', {
@@ -890,7 +940,7 @@ function buildTests(ctx) {
       token: c,
       body: { subject: 'Updated', message: 'Updated msg', category: 'GENERAL' },
     });
-    add('feedback', 'ADMIN', 'PATCH', `/feedback/${ids.feedbackId}/moderate`, {
+    add('feedback', 'ADMIN', 'PATCH', `/feedback/admin/${ids.feedbackId}/moderate`, {
       token: A,
       body: { status: 'APPROVED' },
       expectedStatus: [200, 400],
@@ -979,7 +1029,7 @@ function buildTests(ctx) {
       token: c,
       body: { message: 'Updated feedback message', rating: 5 },
     });
-    add('feedback', 'ADMIN', 'PATCH', `/feedback/${ids.feedbackId}/moderate`, {
+    add('feedback', 'ADMIN', 'PATCH', `/feedback/admin/${ids.feedbackId}/moderate`, {
       token: A,
       body: { status: 'RESOLVED' },
       expectedStatus: [200, 400],

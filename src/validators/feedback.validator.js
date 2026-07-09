@@ -3,6 +3,12 @@ import { USER_TYPES, FEEDBACK_CATEGORIES, FEEDBACK_STATUSES } from '../constants
 
 const objectId = Joi.string().hex().length(24);
 
+const dateFilterFields = {
+  year: Joi.number().integer().min(2020).max(2100),
+  month: Joi.number().integer().min(1).max(12),
+  day: Joi.number().integer().min(1).max(31),
+};
+
 export const createFeedbackSchema = {
   body: Joi.object().keys({
     category: Joi.string().valid(...FEEDBACK_CATEGORIES).default('OTHER'),
@@ -35,7 +41,12 @@ export const listFeedbackQuerySchema = {
     status: Joi.string().valid(...FEEDBACK_STATUSES),
     userType: Joi.string().valid(...USER_TYPES),
     search: Joi.string().trim().allow(''),
+    ...dateFilterFields,
   }),
+};
+
+export const adminFeedbackStatsQuerySchema = {
+  query: Joi.object().keys(dateFilterFields),
 };
 
 export const idParamSchema = {

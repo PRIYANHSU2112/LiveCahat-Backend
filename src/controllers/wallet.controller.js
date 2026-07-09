@@ -5,33 +5,21 @@ import crypto from 'crypto';
 
 class WalletController extends BaseController {
 
-  /**
-   * Get current user's wallet
-   */
   getWallet = catchAsync(async (req, res) => {
     const wallet = await walletService.getOrCreateWallet(req.user._id);
     this.sendResponse(res, 200, 'Wallet details fetched successfully', wallet);
   });
 
-  /**
-   * Get current user's coin transactions
-   */
   getCoinTransactions = catchAsync(async (req, res) => {
     const transactions = await walletService.getUserCoinTransactions(req.user._id, req.query);
     this.sendResponse(res, 200, 'Coin transactions fetched successfully', transactions);
   });
 
-  /**
-   * Get current user's payment transactions
-   */
   getPaymentTransactions = catchAsync(async (req, res) => {
     const transactions = await walletService.getUserPaymentTransactions(req.user._id, req.query);
     this.sendResponse(res, 200, 'Payment transactions fetched successfully', transactions);
   });
 
-  /**
-   * Create Razorpay payment order (replaces paymentController.createOrder)
-   */
   createOrder = catchAsync(async (req, res) => {
     const userId = req.user._id;
     const { coinPackId } = req.body;
@@ -44,9 +32,6 @@ class WalletController extends BaseController {
     this.sendResponse(res, 201, 'Payment order created successfully', orderData);
   });
 
-  /**
-   * Handle Razorpay webhook callback (replaces paymentController.handleWebhook)
-   */
   handleWebhook = catchAsync(async (req, res) => {
     const signature = req.headers['x-razorpay-signature'];
     const secret = process.env.RAZORPAY_WEBHOOK_SECRET || 'mock_webhook_secret';
@@ -56,9 +41,6 @@ class WalletController extends BaseController {
     return res.status(200).json(result);
   });
 
-  /**
-   * Mock endpoint for local testing (replaces paymentController.mockWebhook)
-   */
   mockWebhook = catchAsync(async (req, res) => {
     const { orderId } = req.body;
     if (!orderId) {
@@ -93,52 +75,45 @@ class WalletController extends BaseController {
 
   // --- ADMIN CONTROLLERS ---
 
-  /**
-   * Admin: List all wallets
-   */
+  getAdminStats = catchAsync(async (req, res) => {
+    const result = await walletService.adminGetAdminStats(req.query);
+    this.sendResponse(res, 200, 'Wallet stats fetched successfully', result);
+  });
+
   getAllWallets = catchAsync(async (req, res) => {
     const result = await walletService.adminGetAllWallets(req.query);
     this.sendResponse(res, 200, 'All wallets fetched successfully', result);
   });
 
-  /**
-   * Admin: Get specific wallet details
-   */
   getWalletById = catchAsync(async (req, res) => {
-    const wallet = await walletService.getItemById(req.params.id);
-    if (!wallet) {
-      return this.sendError(res, 404, 'Wallet not found');
-    }
+    const wallet = await walletService.adminGetWalletById(req.params.id);
     this.sendResponse(res, 200, 'Wallet details fetched successfully', wallet);
   });
 
-  /**
-   * Admin: Update wallet status
-   */
+  getWalletByUserId = catchAsync(async (req, res) => {
+    const wallet = await walletService.adminGetWalletByUserId(req.params.userId);
+    this.sendResponse(res, 200, 'Wallet details fetched successfully', wallet);
+  });
+
   updateWalletStatus = catchAsync(async (req, res) => {
     const wallet = await walletService.adminUpdateWalletStatus(req.params.id, req.body.status);
     this.sendResponse(res, 200, `Wallet status updated to ${req.body.status} successfully`, wallet);
   });
 
-  /**
-   * Admin: Manual credit/debit adjustment
-   */
   creditDebitCoins = catchAsync(async (req, res) => {
-    const result = await walletService.adminCreditDebitCoins(req.params.userId, req.body);
+    const result = await walletService.adminCreditDebitCoins(
+      req.params.userId,
+      req.body,
+      req.user._id
+    );
     this.sendResponse(res, 200, 'Wallet balance adjusted successfully', result);
   });
 
-  /**
-   * Admin: List all coin transactions
-   */
   getAllCoinTransactions = catchAsync(async (req, res) => {
     const result = await walletService.adminGetAllCoinTransactions(req.query);
     this.sendResponse(res, 200, 'All coin transactions fetched successfully', result);
   });
 
-  /**
-   * Admin: List all payment transactions
-   */
   getAllPaymentTransactions = catchAsync(async (req, res) => {
     const result = await walletService.adminGetAllPaymentTransactions(req.query);
     this.sendResponse(res, 200, 'All payment transactions fetched successfully', result);
@@ -146,4 +121,4 @@ class WalletController extends BaseController {
 }
 
 export default new WalletController();
-export const walletController = new WalletController(); // Export both default and named for flexibility
+export const walletController = new WalletController();

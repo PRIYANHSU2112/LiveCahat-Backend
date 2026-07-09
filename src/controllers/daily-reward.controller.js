@@ -39,6 +39,24 @@ class DailyRewardController extends BaseController {
     this.sendResponse(res, 200, result.message);
   });
 
+  // Admin: Get full configuration
+  getAdminConfig = catchAsync(async (req, res) => {
+    const data = await dailyRewardService.getAdminConfig();
+    this.sendResponse(res, 200, 'Daily reward configuration fetched successfully', data);
+  });
+
+  // Admin: Platform KPIs
+  getAdminStats = catchAsync(async (req, res) => {
+    const data = await dailyRewardService.getAdminStats(req.query);
+    this.sendResponse(res, 200, 'Daily reward stats fetched successfully', data);
+  });
+
+  // Admin: Paginated claim audit
+  listAdminClaims = catchAsync(async (req, res) => {
+    const data = await dailyRewardService.getAdminClaims(req.query);
+    this.sendResponse(res, 200, 'Daily reward claims fetched successfully', data);
+  });
+
   // Admin: Clear daily reward configurations cache
   clearCache = catchAsync(async (req, res) => {
     await dailyRewardService.clearCache();

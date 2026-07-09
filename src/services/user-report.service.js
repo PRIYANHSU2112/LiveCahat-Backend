@@ -10,6 +10,7 @@ import userService from './user.service.js';
 import ApiError from '../utils/ApiError.js';
 import { getPaginationOptions, formatPaginatedResponse } from '../utils/pagination.util.js';
 import { bumpCacheVersion } from '../utils/redis.util.js';
+import { buildUtcCreatedAtFilter } from '../utils/date-filter.util.js';
 import { emitToUser } from '../utils/socket.util.js';
 
 const CACHE_NS = 'user:reports';
@@ -119,22 +120,36 @@ class UserReportService {
     return formatPaginatedResponse(docs, total, page, limit);
   }
 
-  async getStats() {
+  async getStats(query = {}) {
+    const dateFilter = buildUtcCreatedAtFilter(query);
+    const matchStage = Object.keys(dateFilter).length ? [{ $match: dateFilter }] : [];
+
     const [statusCounts, highRiskProxy] = await Promise.all([
-      userReportRepository.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
+      userReportRepository.aggregate([
+        ...matchStage,
+        { $group: { _id: '$status', count: { $sum: 1 } } },
+      ]),
       userReportRepository.countDocuments({
+        ...dateFilter,
         status: 'OPEN',
         $expr: { $gte: [{ $size: '$reasonIds' }, 2] },
       }),
     ]);
 
     const counts = Object.fromEntries(statusCounts.map((s) => [s._id, s.count]));
+    const { year, month, day } = query;
     return {
       open: counts.OPEN ?? 0,
       inReview: counts.IN_REVIEW ?? 0,
       resolved: counts.RESOLVED ?? 0,
       dismissed: counts.DISMISSED ?? 0,
       highRiskProxy,
+      total: Object.values(counts).reduce((sum, n) => sum + n, 0),
+      dateScope: {
+        year: year ? parseInt(year, 10) : null,
+        month: month ? parseInt(month, 10) : null,
+        day: day ? parseInt(day, 10) : null,
+      },
     };
   }
 
@@ -239,7 +254,7 @@ class UserReportService {
   }
 
   _buildListFilter(query = {}) {
-    const filter = {};
+    const filter = { ...buildUtcCreatedAtFilter(query) };
     if (query.status) filter.status = query.status;
     if (query.reasonId && mongoose.Types.ObjectId.isValid(query.reasonId)) {
       filter.reasonIds = query.reasonId;

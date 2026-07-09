@@ -7,23 +7,38 @@ import {
   updateFeedbackSchema,
   moderateFeedbackSchema,
   listFeedbackQuerySchema,
+  adminFeedbackStatsQuerySchema,
   idParamSchema,
 } from '../validators/feedback.validator.js';
 
 const router = express.Router();
+const adminOnly = restrictTo('ADMIN');
 
 router.use(authenticate);
 
-// ─── Any authenticated user (CUSTOMER / LISTENER / ADMIN) ────────
+// ─── User endpoints (CUSTOMER / LISTENER / ADMIN) ───────────────
 router.post('/', validate(createFeedbackSchema), feedbackController.createFeedback);
 router.get('/me', validate(listFeedbackQuerySchema), feedbackController.getMyFeedback);
+
+// ─── Admin panel (User Feedback) — before /:id so /admin is not treated as id
+router.get(
+  '/admin/stats',
+  adminOnly,
+  validate(adminFeedbackStatsQuerySchema),
+  feedbackController.getAdminStats
+);
+router.get('/admin', adminOnly, validate(listFeedbackQuerySchema), feedbackController.getAllFeedback);
+router.patch(
+  '/admin/:id/moderate',
+  adminOnly,
+  validate(idParamSchema),
+  validate(moderateFeedbackSchema),
+  feedbackController.moderateFeedback
+);
+router.get('/admin/:id', adminOnly, validate(idParamSchema), feedbackController.getFeedbackById);
+
 router.get('/:id', validate(idParamSchema), feedbackController.getFeedbackById);
 router.put('/:id', validate(idParamSchema), validate(updateFeedbackSchema), feedbackController.updateFeedback);
 router.delete('/:id', validate(idParamSchema), feedbackController.deleteFeedback);
-
-// ─── Admin only ─────────────────────────────────────────────────
-router.use(restrictTo('ADMIN'));
-router.get('/', validate(listFeedbackQuerySchema), feedbackController.getAllFeedback);
-router.patch('/:id/moderate', validate(idParamSchema), validate(moderateFeedbackSchema), feedbackController.moderateFeedback);
 
 export default router;

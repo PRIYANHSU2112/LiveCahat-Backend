@@ -10,6 +10,7 @@ import ListenerProfile from '../modules/listener-profile.model.js';
 import ApiError from '../utils/ApiError.js';
 import { formatPaginatedResponse, getPaginationOptions } from '../utils/pagination.util.js';
 import { getCache, setCache, getCacheVersion, bumpCacheVersion } from '../utils/redis.util.js';
+import { buildUtcCreatedAtFilter } from '../utils/date-filter.util.js';
 
 const CACHE_TTL = 60;
 const CACHE_NS = 'agent:settlements';
@@ -151,6 +152,70 @@ class AgentSettlementService {
     ]);
 
     return formatPaginatedResponse(docs.map(mapSettlementRow), total, page, limit);
+  }
+
+  async adminListSettlements(query = {}) {
+    const { page, limit, skip, sort } = getPaginationOptions({
+      sortBy: 'cycleEnd',
+      sortOrder: 'desc',
+      ...query,
+    });
+
+    const filter = { ...buildUtcCreatedAtFilter(query) };
+    if (query.agentId) filter.agentId = query.agentId;
+    if (query.status && query.status !== 'all') {
+      const statusMap = {
+        completed: 'COMPLETED',
+        pending: 'PENDING',
+        failed: 'FAILED',
+      };
+      filter.status = statusMap[query.status] ?? query.status.toUpperCase();
+    }
+
+    const pipeline = [
+      { $match: filter },
+      { $sort: sort },
+      {
+        $facet: {
+          metadata: [{ $count: 'total' }],
+          data: [
+            { $skip: skip },
+            { $limit: limit },
+            {
+              $lookup: {
+                from: 'users',
+                localField: 'agentId',
+                foreignField: '_id',
+                as: 'agent',
+              },
+            },
+            { $unwind: { path: '$agent', preserveNullAndEmptyArrays: true } },
+            {
+              $project: {
+                'agent.password': 0,
+                'agent.refreshToken': 0,
+              },
+            },
+          ],
+        },
+      },
+    ];
+
+    const [result] = await AgentSettlement.aggregate(pipeline);
+    const total = result.metadata[0]?.total ?? 0;
+    const docs = (result.data ?? []).map((doc) => ({
+      ...mapSettlementRow(doc),
+      agent: doc.agent
+        ? {
+            id: doc.agent._id.toString(),
+            firstName: doc.agent.firstName,
+            lastName: doc.agent.lastName,
+            email: doc.agent.email,
+          }
+        : null,
+    }));
+
+    return formatPaginatedResponse(docs, total, page, limit);
   }
 
   async getById(agentId, id) {

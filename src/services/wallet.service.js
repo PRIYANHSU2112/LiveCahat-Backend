@@ -7,6 +7,7 @@ import userRepository from '../repositories/user.repository.js';
 import { razorpayInstance, verifyWebhookSignature } from '../config/razorpay.config.js';
 import { getPaginationOptions, formatPaginatedResponse } from '../utils/pagination.util.js';
 import { getCache, setCache, deleteCache, bumpCacheVersion, getCacheVersion } from '../utils/redis.util.js';
+import { buildUtcCreatedAtFilter } from '../utils/date-filter.util.js';
 import ApiError from '../utils/ApiError.js';
 import mongoose from 'mongoose';
 import CoinTransaction from '../modules/coin-transaction.model.js';
@@ -245,6 +246,133 @@ class WalletService extends BaseService {
   // --- ADMIN SERVICES ---
 
   /**
+   * Admin: platform wallet KPIs with optional date scope on transaction metrics.
+   */
+  async adminGetAdminStats(query = {}) {
+    const { year, month, day } = query;
+    const cacheKey = `wallet:admin:stats:${year || 'all'}:${month || 'all'}:${day || 'all'}`;
+    const cached = await getCache(cacheKey);
+    if (cached) return cached;
+
+    const txDateFilter = buildUtcCreatedAtFilter(query);
+    const txMatch = Object.keys(txDateFilter).length ? [txDateFilter] : [];
+    const now = new Date();
+    const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    const [
+      walletAgg,
+      statusAgg,
+      coinCredit24h,
+      coinDebit24h,
+      payment24h,
+      scopedCoinCredits,
+      scopedCoinDebits,
+      scopedTopUps,
+    ] = await Promise.all([
+      Wallet.aggregate([
+        {
+          $group: {
+            _id: null,
+            totalWallets: { $sum: 1 },
+            coinsInCirculation: { $sum: '$coinBalance' },
+            totalRecharge: { $sum: '$totalRecharge' },
+            totalSpent: { $sum: '$totalSpent' },
+            totalEarned: { $sum: '$totalEarned' },
+            totalWithdrawn: { $sum: '$totalWithdrawn' },
+          },
+        },
+      ]),
+      Wallet.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
+      CoinTransaction.aggregate([
+        { $match: { type: 'CREDIT', createdAt: { $gte: last24h } } },
+        { $group: { _id: null, count: { $sum: 1 }, volume: { $sum: '$amount' } } },
+      ]),
+      CoinTransaction.aggregate([
+        { $match: { type: 'DEBIT', createdAt: { $gte: last24h } } },
+        { $group: { _id: null, count: { $sum: 1 }, volume: { $sum: '$amount' } } },
+      ]),
+      PaymentTransaction.aggregate([
+        { $match: { status: 'SUCCESS', createdAt: { $gte: last24h } } },
+        { $group: { _id: null, count: { $sum: 1 }, amount: { $sum: '$amount' } } },
+      ]),
+      CoinTransaction.aggregate([
+        { $match: { type: 'CREDIT', ...txMatch } },
+        { $group: { _id: null, count: { $sum: 1 }, volume: { $sum: '$amount' } } },
+      ]),
+      CoinTransaction.aggregate([
+        { $match: { type: 'DEBIT', ...txMatch } },
+        { $group: { _id: null, count: { $sum: 1 }, volume: { $sum: '$amount' } } },
+      ]),
+      PaymentTransaction.aggregate([
+        { $match: { status: 'SUCCESS', ...txMatch } },
+        { $group: { _id: null, count: { $sum: 1 }, amount: { $sum: '$amount' } } },
+      ]),
+    ]);
+
+    const walletTotals = walletAgg[0] ?? {};
+    const statusCounts = Object.fromEntries(statusAgg.map((s) => [s._id, s.count]));
+
+    const stats = {
+      totalWallets: walletTotals.totalWallets ?? 0,
+      activeWallets: statusCounts.ACTIVE ?? 0,
+      frozenWallets: statusCounts.FROZEN ?? 0,
+      blockedWallets: statusCounts.BLOCKED ?? 0,
+      coinsInCirculation: walletTotals.coinsInCirculation ?? 0,
+      totalRecharge: walletTotals.totalRecharge ?? 0,
+      totalSpent: walletTotals.totalSpent ?? 0,
+      totalEarned: walletTotals.totalEarned ?? 0,
+      totalWithdrawn: walletTotals.totalWithdrawn ?? 0,
+      coinCredits24h: coinCredit24h[0]?.volume ?? 0,
+      coinDebits24h: coinDebit24h[0]?.volume ?? 0,
+      topUps24h: {
+        count: payment24h[0]?.count ?? 0,
+        amount: payment24h[0]?.amount ?? 0,
+      },
+      scopedCoinCredits: scopedCoinCredits[0]?.volume ?? 0,
+      scopedCoinDebits: scopedCoinDebits[0]?.volume ?? 0,
+      scopedTopUps: {
+        count: scopedTopUps[0]?.count ?? 0,
+        amount: scopedTopUps[0]?.amount ?? 0,
+      },
+      dateScope: {
+        year: year ? parseInt(year, 10) : null,
+        month: month ? parseInt(month, 10) : null,
+        day: day ? parseInt(day, 10) : null,
+      },
+    };
+
+    await setCache(cacheKey, stats, 30);
+    return stats;
+  }
+
+  /**
+   * Admin: get wallet by user id with user summary.
+   */
+  async adminGetWalletByUserId(userId) {
+    const wallet = await this.repository.findByUserId(userId, false);
+    if (!wallet) {
+      throw new ApiError(404, 'Wallet not found for this user');
+    }
+    const populated = await Wallet.findById(wallet._id)
+      .populate('userId', 'firstName lastName email mobileNumber profileImage type')
+      .lean();
+    return populated;
+  }
+
+  /**
+   * Admin: get wallet by wallet id with user summary.
+   */
+  async adminGetWalletById(walletId) {
+    const wallet = await Wallet.findById(walletId)
+      .populate('userId', 'firstName lastName email mobileNumber profileImage type')
+      .lean();
+    if (!wallet) {
+      throw new ApiError(404, 'Wallet not found');
+    }
+    return wallet;
+  }
+
+  /**
    * Admin: List all wallets with pagination & search filtering
    */
   async adminGetAllWallets(queryParams) {
@@ -255,7 +383,7 @@ class WalletService extends BaseService {
     if (cachedData) return cachedData;
 
     const { page, limit, skip, sort } = getPaginationOptions(queryParams);
-    const matchQuery = {};
+    const matchQuery = { ...buildUtcCreatedAtFilter(queryParams) };
 
     if (queryParams.status) {
       matchQuery.status = queryParams.status;
@@ -292,7 +420,7 @@ class WalletService extends BaseService {
     if (cachedData) return cachedData;
 
     const { page, limit, skip, sort } = getPaginationOptions(queryParams);
-    const matchQuery = {};
+    const matchQuery = { ...buildUtcCreatedAtFilter(queryParams) };
 
     if (queryParams.userId) {
       matchQuery.userId = new mongoose.Types.ObjectId(queryParams.userId);
@@ -322,7 +450,7 @@ class WalletService extends BaseService {
     if (cachedData) return cachedData;
 
     const { page, limit, skip, sort } = getPaginationOptions(queryParams);
-    const matchQuery = {};
+    const matchQuery = { ...buildUtcCreatedAtFilter(queryParams) };
 
     if (queryParams.userId) {
       matchQuery.userId = new mongoose.Types.ObjectId(queryParams.userId);
@@ -341,8 +469,11 @@ class WalletService extends BaseService {
   /**
    * Admin: Manual credit/debit coins
    */
-  async adminCreditDebitCoins(userId, data) {
+  async adminCreditDebitCoins(userId, data, adminId = null) {
     const { amount, type, referenceType, description } = data;
+    const adminNote = adminId
+      ? `Admin ${adminId}: ${description || `${type} of ${amount} coins`}`
+      : (description || `Admin adjustment: ${type} of ${amount} coins`);
 
     const session = await mongoose.startSession();
     session.startTransaction();
@@ -379,7 +510,7 @@ class WalletService extends BaseService {
         amount,
         balanceAfter: wallet.coinBalance,
         referenceType,
-        description: description || `Admin adjustment: ${type} of ${amount} coins`
+        description: adminNote
       }], { session });
 
       await session.commitTransaction();

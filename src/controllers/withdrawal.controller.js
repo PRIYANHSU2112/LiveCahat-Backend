@@ -52,8 +52,18 @@ class WithdrawalController extends BaseController {
   });
 
   getAdminWithdrawalStats = catchAsync(async (req, res) => {
-    const data = await withdrawalService.getAdminStats();
+    const data = await withdrawalService.getAdminStats(req.query);
     this.sendResponse(res, 200, 'Withdrawal stats fetched successfully', data);
+  });
+
+  adminGetWithdrawalById = catchAsync(async (req, res) => {
+    const data = await withdrawalService.adminGetWithdrawalById(req.params.id);
+    this.sendResponse(res, 200, 'Withdrawal fetched successfully', data);
+  });
+
+  adminListSettlements = catchAsync(async (req, res) => {
+    const data = await agentSettlementService.adminListSettlements(req.query);
+    this.sendResponse(res, 200, 'Settlements fetched successfully', data);
   });
 
   runSettlements = catchAsync(async (req, res) => {

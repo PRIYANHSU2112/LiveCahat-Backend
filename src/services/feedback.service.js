@@ -3,6 +3,8 @@ import feedbackRepository from '../repositories/feedback.repository.js';
 import ApiError from '../utils/ApiError.js';
 import { getPaginationOptions, formatPaginatedResponse } from '../utils/pagination.util.js';
 import { getCache, setCache, bumpCacheVersion, getCacheVersion } from '../utils/redis.util.js';
+import { buildUtcCreatedAtFilter, getUtcTodayRange } from '../utils/date-filter.util.js';
+import { FEEDBACK_CATEGORIES } from '../constants/enum.constant.js';
 
 const CACHE_NS = 'feedback';
 const SUBMITTER_POPULATE = { path: 'userId', select: 'firstName lastName profileImage' };
@@ -65,11 +67,10 @@ class FeedbackService extends BaseService {
       ...query,
     });
 
-    const filter = {};
-    if (query.category) filter.category = query.category;
-    if (query.status) filter.status = query.status;
-    if (query.userType) filter.userType = query.userType;
-    if (query.search) filter.message = { $regex: query.search.trim(), $options: 'i' };
+    const filter = {
+      ...this._buildListFilter(query),
+      ...buildUtcCreatedAtFilter(query),
+    };
 
     const [docs, total] = await Promise.all([
       this.repository.findMany(filter, '', SUBMITTER_POPULATE, sort, limit, skip),
@@ -77,6 +78,77 @@ class FeedbackService extends BaseService {
     ]);
 
     return formatPaginatedResponse(docs, total, page, limit);
+  }
+
+  /**
+   * Admin: platform KPIs with optional year/month/day scope on createdAt.
+   */
+  async getAdminStats(query = {}) {
+    const { year, month, day } = query;
+    const cacheKey = `feedback:admin:stats:${year || 'all'}:${month || 'all'}:${day || 'all'}`;
+    const cached = await getCache(cacheKey);
+    if (cached) return cached;
+
+    const dateFilter = buildUtcCreatedAtFilter(query);
+    const matchStage = Object.keys(dateFilter).length ? [{ $match: dateFilter }] : [];
+    const { start: todayStart, end: todayEnd } = getUtcTodayRange();
+
+    const [statusAgg, categoryAgg, ratingAgg, submittedToday] = await Promise.all([
+      feedbackRepository.aggregate([
+        ...matchStage,
+        { $group: { _id: '$status', count: { $sum: 1 } } },
+      ]),
+      feedbackRepository.aggregate([
+        ...matchStage,
+        { $group: { _id: '$category', count: { $sum: 1 } } },
+      ]),
+      feedbackRepository.aggregate([
+        ...matchStage,
+        { $match: { rating: { $ne: null } } },
+        { $group: { _id: null, avgRating: { $avg: '$rating' }, count: { $sum: 1 } } },
+      ]),
+      feedbackRepository.countDocuments({
+        createdAt: { $gte: todayStart, $lt: todayEnd },
+      }),
+    ]);
+
+    const statusCounts = Object.fromEntries(statusAgg.map((s) => [s._id, s.count]));
+    const byCategory = Object.fromEntries(
+      FEEDBACK_CATEGORIES.map((cat) => [cat, 0]),
+    );
+    categoryAgg.forEach((c) => {
+      if (c._id) byCategory[c._id] = c.count;
+    });
+
+    const total = Object.values(statusCounts).reduce((sum, n) => sum + n, 0);
+    const stats = {
+      total,
+      open: statusCounts.OPEN ?? 0,
+      inReview: statusCounts.IN_REVIEW ?? 0,
+      resolved: statusCounts.RESOLVED ?? 0,
+      byCategory,
+      avgRating: ratingAgg[0]?.count ? Math.round(ratingAgg[0].avgRating * 10) / 10 : null,
+      submittedToday,
+      dateScope: {
+        year: year ? parseInt(year, 10) : null,
+        month: month ? parseInt(month, 10) : null,
+        day: day ? parseInt(day, 10) : null,
+      },
+    };
+
+    await setCache(cacheKey, stats, 30);
+    return stats;
+  }
+
+  _buildListFilter(query = {}) {
+    const filter = {};
+    if (query.category) filter.category = query.category;
+    if (query.status) filter.status = query.status;
+    if (query.userType) filter.userType = query.userType;
+    if (query.search?.trim()) {
+      filter.message = { $regex: query.search.trim(), $options: 'i' };
+    }
+    return filter;
   }
 
   /**

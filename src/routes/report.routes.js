@@ -9,6 +9,7 @@ import {
   listReportReasonsQuerySchema,
   createReportSchema,
   listReportsQuerySchema,
+  reportStatsQuerySchema,
   moderateReportSchema,
   idParamSchema,
 } from '../validators/report.validator.js';
@@ -61,7 +62,7 @@ router.get(
 );
 
 router.use(restrictTo('ADMIN'));
-router.get('/stats', reportController.getStats);
+router.get('/stats', validate(reportStatsQuerySchema), reportController.getStats);
 router.get('/', validate(listReportsQuerySchema), reportController.getAllReports);
 router.get('/:id', validate(idParamSchema), reportController.getReportById);
 router.patch(

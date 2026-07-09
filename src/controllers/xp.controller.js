@@ -58,6 +58,32 @@ class XpController extends BaseController {
     this.sendResponse(res, 200, 'Rewards claimed successfully', data);
   });
 
+  // ─── Admin: Stats & Audit ───────────────────────────────────────
+
+  /**
+   * GET /xp/admin/stats — Platform XP KPIs
+   */
+  getAdminStats = catchAsync(async (req, res) => {
+    const data = await xpService.getAdminStats();
+    this.sendResponse(res, 200, 'XP admin stats fetched successfully', data);
+  });
+
+  /**
+   * GET /xp/admin/transactions — Paginated global XP ledger
+   */
+  listAdminTransactions = catchAsync(async (req, res) => {
+    const data = await xpService.getAdminTransactions(req.query);
+    this.sendResponse(res, 200, 'XP transactions fetched successfully', data);
+  });
+
+  /**
+   * GET /xp/admin/reward-claims — Paginated reward claim audit
+   */
+  listAdminRewardClaims = catchAsync(async (req, res) => {
+    const data = await xpService.getAdminRewardClaims(req.query);
+    this.sendResponse(res, 200, 'XP reward claims fetched successfully', data);
+  });
+
   // ─── Admin: Level Config Endpoints ──────────────────────────────
 
   /**

@@ -13,6 +13,7 @@ router.get('/', authenticate, bannerController.getActiveBanners);
 // Admin side: CRUD operations
 router.use(authenticate, restrictTo('ADMIN'));
 
+router.get('/admin/stats', bannerController.getAdminStats);
 router.post('/', uploadBannerImage, processAndUploadImage, validate(createBannerSchema), bannerController.createBanner);
 router.get('/all', bannerController.getAllBanners);
 router.get('/:id', bannerController.getBannerById);

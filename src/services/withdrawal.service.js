@@ -11,6 +11,7 @@ import Notification from '../modules/notification.model.js';
 import ApiError from '../utils/ApiError.js';
 import { getPaginationOptions, formatPaginatedResponse } from '../utils/pagination.util.js';
 import { getCache, setCache, deleteCache, bumpCacheVersion, getCacheVersion } from '../utils/redis.util.js';
+import { buildUtcCreatedAtFilter } from '../utils/date-filter.util.js';
 import logger from '../utils/logger.util.js';
 
 const CONFIG_CACHE_KEY = 'withdrawal:config';
@@ -335,9 +336,19 @@ class WithdrawalService {
   }
 
   // ─── Admin ──────────────────────────────────────────────────────
-  async getAdminStats() {
+  async getAdminStats(query = {}) {
     const now = new Date();
     const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000);
+    const dateFilter = buildUtcCreatedAtFilter(query);
+    const hasDateFilter = Object.keys(dateFilter).length > 0;
+
+    const processedMatch = hasDateFilter
+      ? { status: 'APPROVED', ...dateFilter }
+      : { status: 'APPROVED', processedAt: { $gte: sevenDaysAgo } };
+
+    const rejectedMatch = hasDateFilter
+      ? { status: 'REJECTED', ...dateFilter }
+      : { status: 'REJECTED', processedAt: { $gte: sevenDaysAgo } };
 
     const [pendingRow, processedRow, rejectedRow] = await Promise.all([
       Withdrawal.aggregate([
@@ -345,12 +356,7 @@ class WithdrawalService {
         { $group: { _id: null, count: { $sum: 1 }, totalNetInr: { $sum: '$netInr' } } },
       ]),
       Withdrawal.aggregate([
-        {
-          $match: {
-            status: 'APPROVED',
-            processedAt: { $gte: sevenDaysAgo },
-          },
-        },
+        { $match: processedMatch },
         {
           $group: {
             _id: null,
@@ -368,11 +374,12 @@ class WithdrawalService {
           },
         },
       ]),
-      Withdrawal.countDocuments({ status: 'REJECTED', processedAt: { $gte: sevenDaysAgo } }),
+      Withdrawal.countDocuments(rejectedMatch),
     ]);
 
     const pending = pendingRow[0] ?? {};
     const processed = processedRow[0] ?? {};
+    const { year, month, day } = query;
 
     return {
       pending: {
@@ -387,13 +394,61 @@ class WithdrawalService {
       avgProcessingHours: processed.avgProcessingMs
         ? Math.round(processed.avgProcessingMs / (1000 * 60 * 60))
         : null,
+      dateScope: {
+        year: year ? parseInt(year, 10) : null,
+        month: month ? parseInt(month, 10) : null,
+        day: day ? parseInt(day, 10) : null,
+      },
+    };
+  }
+
+  async adminGetWithdrawalById(id) {
+    const withdrawal = await Withdrawal.findById(id)
+      .populate('userId', 'firstName lastName email mobileNumber profileImage type')
+      .populate('processedBy', 'firstName lastName email type')
+      .lean();
+    if (!withdrawal) throw new ApiError(404, 'Withdrawal not found');
+
+    const user = withdrawal.userId;
+    return {
+      id: withdrawal._id.toString(),
+      user: user
+        ? {
+            id: user._id.toString(),
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            type: user.type,
+          }
+        : null,
+      listener:
+        user?.type === 'LISTENER'
+          ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email
+          : `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Agent',
+      amountCoins: withdrawal.coinsRequested,
+      grossInr: withdrawal.grossInr,
+      feeInr: withdrawal.feeInr,
+      feePercentage: withdrawal.feePercentage,
+      netInr: withdrawal.netInr,
+      conversionCoins: withdrawal.conversionCoins,
+      conversionInr: withdrawal.conversionInr,
+      method: withdrawal.bankAccountSnapshot?.methodType
+        ? `${withdrawal.bankAccountSnapshot.methodType}${withdrawal.bankAccountSnapshot.maskedAccount ? ` · ${withdrawal.bankAccountSnapshot.maskedAccount}` : ''}`
+        : '—',
+      bankAccountSnapshot: withdrawal.bankAccountSnapshot,
+      status: withdrawal.status,
+      rejectionReason: withdrawal.rejectionReason,
+      processedBy: withdrawal.processedBy,
+      requestedAt: withdrawal.createdAt,
+      processedAt: withdrawal.processedAt,
+      createdAt: withdrawal.createdAt,
     };
   }
 
   async adminListWithdrawals(query = {}) {
     const { page, limit, skip, sort } = getPaginationOptions({ sortBy: 'createdAt', sortOrder: 'desc', ...query });
 
-    const match = {};
+    const match = { ...buildUtcCreatedAtFilter(query) };
     if (query.status) match.status = query.status;
     if (query.userId) match.userId = new mongoose.Types.ObjectId(query.userId);
 

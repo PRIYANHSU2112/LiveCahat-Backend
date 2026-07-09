@@ -10,9 +10,14 @@ import CoinTransaction from '../modules/coin-transaction.model.js';
 import GiftTransaction from '../modules/gift-transaction.model.js';
 import ApiError from '../utils/ApiError.js';
 import { getCache, setCache, deleteCache, bumpCacheVersion, getCacheVersion } from '../utils/redis.util.js';
+import { getPaginationOptions, formatPaginatedResponse } from '../utils/pagination.util.js';
 import { emitToUser } from '../utils/socket.util.js';
 import logger from '../utils/logger.util.js';
 import xpService from './xp.service.js';
+
+const CONFIG_CACHE_KEY = 'daily_rewards:config';
+const GIFT_POPULATE = { path: 'giftId', select: 'name icon coin isActive category' };
+const USER_POPULATE = { path: 'userId', select: 'firstName lastName profileImage' };
 
 // ========================================================
 // Helper Utilities for UTC Date Calculations
@@ -97,10 +102,162 @@ class DailyRewardService {
         }
       }
 
-      await deleteCache('daily_rewards:config');
+      await deleteCache(CONFIG_CACHE_KEY);
     } catch (err) {
       logger.error(`[DailyRewardService Seed Error] ${err.message}`);
     }
+  }
+
+  /**
+   * Build MongoDB filter for claimDate string field (YYYY-MM-DD) from year/month/day params.
+   */
+  _buildClaimDateFilter({ year, month, day } = {}) {
+    if (!year) return {};
+
+    const y = parseInt(year, 10);
+    if (month && day) {
+      const m = String(parseInt(month, 10)).padStart(2, '0');
+      const d = String(parseInt(day, 10)).padStart(2, '0');
+      return { claimDate: `${y}-${m}-${d}` };
+    }
+    if (month) {
+      const m = parseInt(month, 10);
+      const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate();
+      const mm = String(m).padStart(2, '0');
+      return {
+        claimDate: {
+          $gte: `${y}-${mm}-01`,
+          $lte: `${y}-${mm}-${String(lastDay).padStart(2, '0')}`,
+        },
+      };
+    }
+    return {
+      claimDate: {
+        $gte: `${y}-01-01`,
+        $lte: `${y}-12-31`,
+      },
+    };
+  }
+
+  async _loadConfigFromDb() {
+    const [dayConfigs, weekConfigs] = await Promise.all([
+      DailyRewardConfig.find().sort({ day: 1 }).populate(GIFT_POPULATE).lean(),
+      WeeklySpecialGiftConfig.find().sort({ week: 1 }).populate(GIFT_POPULATE).lean(),
+    ]);
+    return { dayConfigs, weekConfigs };
+  }
+
+  /**
+   * Admin: Get full day + week reward configuration (cached).
+   */
+  async getAdminConfig() {
+    let configs = await getCache(CONFIG_CACHE_KEY);
+    if (!configs) {
+      configs = await this._loadConfigFromDb();
+      await setCache(CONFIG_CACHE_KEY, configs, 3600);
+    }
+    return configs;
+  }
+
+  /**
+   * Admin: Platform KPIs with optional year/month/day scope on claim metrics.
+   */
+  async getAdminStats(query = {}) {
+    const { year, month, day } = query;
+    const cacheKey = `daily_rewards:admin:stats:${year || 'all'}:${month || 'all'}:${day || 'all'}`;
+    const cached = await getCache(cacheKey);
+    if (cached) return cached;
+
+    const dateFilter = this._buildClaimDateFilter(query);
+    const hasDateFilter = Object.keys(dateFilter).length > 0;
+
+    const now = new Date();
+    const todayString = getUTCDateString(now);
+    const startOfToday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const startOfWeek = new Date(startOfToday);
+    startOfWeek.setUTCDate(startOfWeek.getUTCDate() - startOfWeek.getUTCDay());
+    const yesterday = new Date(startOfToday);
+    yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+
+    const [
+      totalClaims,
+      claimsToday,
+      claimsThisWeek,
+      activeStreaks,
+      totalUsersWithState,
+      coinsAgg,
+      giftsInPeriod,
+    ] = await Promise.all([
+      DailyRewardClaimLog.countDocuments(dateFilter),
+      DailyRewardClaimLog.countDocuments({ claimDate: todayString }),
+      hasDateFilter
+        ? Promise.resolve(null)
+        : DailyRewardClaimLog.countDocuments({ claimedAt: { $gte: startOfWeek } }),
+      DailyRewardState.countDocuments({ lastClaimedAt: { $gte: yesterday } }),
+      DailyRewardState.countDocuments(),
+      DailyRewardClaimLog.aggregate([
+        { $match: { ...dateFilter, rewardType: 'COINS' } },
+        { $group: { _id: null, total: { $sum: { $toDouble: '$rewardValue' } } } },
+      ]),
+      DailyRewardClaimLog.countDocuments({ ...dateFilter, rewardType: 'GIFT' }),
+    ]);
+
+    const stats = {
+      totalClaims,
+      claimsToday,
+      claimsThisWeek: hasDateFilter ? undefined : claimsThisWeek,
+      claimsInPeriod: hasDateFilter ? totalClaims : undefined,
+      activeStreaks,
+      totalUsersWithState,
+      coinsGrantedInPeriod: coinsAgg[0]?.total ?? 0,
+      giftsClaimedInPeriod: giftsInPeriod,
+      filter: hasDateFilter
+        ? {
+            year: parseInt(year, 10),
+            month: month ? parseInt(month, 10) : null,
+            day: day ? parseInt(day, 10) : null,
+          }
+        : null,
+    };
+
+    await setCache(cacheKey, stats, 60);
+    return stats;
+  }
+
+  /**
+   * Admin: Paginated claim audit log.
+   */
+  async getAdminClaims(query = {}) {
+    const { page, limit, skip, sort } = getPaginationOptions({
+      sortBy: 'claimedAt',
+      sortOrder: query.sortOrder || 'desc',
+      ...query,
+    });
+
+    const filter = this._buildClaimDateFilter(query);
+    if (query.userId) filter.userId = query.userId;
+    if (query.rewardType) filter.rewardType = query.rewardType;
+
+    const [docs, total] = await Promise.all([
+      DailyRewardClaimLog.find(filter)
+        .populate(USER_POPULATE)
+        .sort(sort)
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      DailyRewardClaimLog.countDocuments(filter),
+    ]);
+
+    return formatPaginatedResponse(docs, total, page, limit);
+  }
+
+  /**
+   * Admin: Clear configuration cache.
+   */
+  async clearCache() {
+    await deleteCache(CONFIG_CACHE_KEY);
+    await bumpCacheVersion('daily_rewards');
+    return { success: true };
   }
 
   /**
@@ -139,7 +296,7 @@ class DailyRewardService {
     }
 
     // 2. Fetch full configurations (with populated gifts) for preview
-    const cacheKey = 'daily_rewards:config';
+    const cacheKey = CONFIG_CACHE_KEY;
     let configs = await getCache(cacheKey);
     if (!configs) {
       const dayConfigs = await DailyRewardConfig.find().sort({ day: 1 }).populate('giftId').lean();
@@ -407,19 +564,27 @@ class DailyRewardService {
     session.startTransaction();
     try {
       for (const item of configs) {
+        const update = { rewardType: item.rewardType };
+        if (item.rewardType === 'COINS') {
+          update.rewardValue = item.rewardValue ?? 0;
+          update.giftId = null;
+        } else if (item.rewardType === 'GIFT') {
+          update.rewardValue = 0;
+          update.giftId = item.giftId || null;
+        } else if (item.rewardType === 'WEEKLY_SPECIAL_GIFT') {
+          update.rewardValue = 0;
+          update.giftId = null;
+        }
         await DailyRewardConfig.findOneAndUpdate(
           { day: item.day },
-          {
-            rewardType: item.rewardType,
-            rewardValue: item.rewardType === 'COINS' ? item.rewardValue : 0,
-            giftId: item.rewardType === 'GIFT' ? item.giftId : null
-          },
+          update,
           { session, new: true, runValidators: true }
         );
       }
       await session.commitTransaction();
       session.endSession();
 
+      await deleteCache(CONFIG_CACHE_KEY);
       await bumpCacheVersion('daily_rewards');
       return { success: true, message: '7 days reward configuration updated successfully.' };
     } catch (err) {
@@ -446,6 +611,7 @@ class DailyRewardService {
       await session.commitTransaction();
       session.endSession();
 
+      await deleteCache(CONFIG_CACHE_KEY);
       await bumpCacheVersion('daily_rewards');
       return { success: true, message: '4 weeks special gift configurations updated successfully.' };
     } catch (err) {

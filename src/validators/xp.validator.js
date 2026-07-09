@@ -92,3 +92,25 @@ export const adminGrantXpSchema = {
     reason: Joi.string().trim().default('Admin manual grant'),
   }),
 };
+
+export const adminTransactionsQuerySchema = {
+  query: Joi.object().keys({
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(20),
+    userId: Joi.string().hex().length(24),
+    action: Joi.string().valid(...XP_ACTIONS),
+    adminGrant: Joi.boolean(),
+    sortOrder: Joi.string().valid('asc', 'desc').default('desc'),
+  }),
+};
+
+export const adminRewardClaimsQuerySchema = {
+  query: Joi.object().keys({
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(20),
+    userId: Joi.string().hex().length(24),
+    status: Joi.string().valid('UNCLAIMED', 'CLAIMED'),
+    level: Joi.number().integer().min(1),
+    sortOrder: Joi.string().valid('asc', 'desc').default('desc'),
+  }),
+};

@@ -12,6 +12,7 @@ import RewardHistory from '../modules/reward-history.model.js';
 import { ONE_TIME_XP_ACTIONS } from '../constants/enum.constant.js';
 import ApiError from '../utils/ApiError.js';
 import { getCache, setCache, deleteCache, bumpCacheVersion } from '../utils/redis.util.js';
+import { getPaginationOptions, formatPaginatedResponse } from '../utils/pagination.util.js';
 import { emitToUser } from '../utils/socket.util.js';
 import logger from '../utils/logger.util.js';
 
@@ -20,6 +21,8 @@ const ONE_TIME_FLAG_MAP = {
   PROFILE_COMPLETE: 'profileXpAwarded',
   FIRST_CALL: 'firstCallDone',
 };
+
+const USER_POPULATE = { path: 'userId', select: 'firstName lastName profileImage email' };
 
 class XpService {
   // ═══════════════════════════════════════════════════════════════════
@@ -199,6 +202,124 @@ class XpService {
   }
 
   // ═══════════════════════════════════════════════════════════════════
+  // ADMIN: Stats & audit lists
+  // ═══════════════════════════════════════════════════════════════════
+  async getAdminStats() {
+    const cacheKey = 'xp:admin:stats';
+    const cached = await getCache(cacheKey);
+    if (cached) return cached;
+
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfWeek = new Date(startOfToday);
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+
+    const [
+      totalLevelConfigs,
+      activeLevelConfigs,
+      totalRewards,
+      activeRewards,
+      totalXpActions,
+      activeXpActions,
+      usersWithXp,
+      unclaimedRewards,
+      claimedRewards,
+      totalTransactions,
+      xpAgg,
+      xpTodayAgg,
+      xpWeekAgg,
+    ] = await Promise.all([
+      LevelConfig.countDocuments(),
+      LevelConfig.countDocuments({ isActive: true }),
+      Reward.countDocuments(),
+      Reward.countDocuments({ isActive: true }),
+      XpConfig.countDocuments(),
+      XpConfig.countDocuments({ isActive: true }),
+      User.countDocuments({ totalXp: { $gt: 0 } }),
+      RewardHistory.countDocuments({ status: 'UNCLAIMED' }),
+      RewardHistory.countDocuments({ status: 'CLAIMED' }),
+      XpTransaction.countDocuments(),
+      XpTransaction.aggregate([{ $group: { _id: null, total: { $sum: '$xpAwarded' } } }]),
+      XpTransaction.aggregate([
+        { $match: { createdAt: { $gte: startOfToday } } },
+        { $group: { _id: null, total: { $sum: '$xpAwarded' } } },
+      ]),
+      XpTransaction.aggregate([
+        { $match: { createdAt: { $gte: startOfWeek } } },
+        { $group: { _id: null, total: { $sum: '$xpAwarded' } } },
+      ]),
+    ]);
+
+    const stats = {
+      levelConfigs: { total: totalLevelConfigs, active: activeLevelConfigs },
+      rewards: { total: totalRewards, active: activeRewards },
+      xpActions: { total: totalXpActions, active: activeXpActions },
+      usersWithXp,
+      totalXpGranted: xpAgg[0]?.total ?? 0,
+      xpGrantedToday: xpTodayAgg[0]?.total ?? 0,
+      xpGrantedThisWeek: xpWeekAgg[0]?.total ?? 0,
+      unclaimedRewards,
+      claimedRewards,
+      totalTransactions,
+    };
+
+    await setCache(cacheKey, stats, 60);
+    return stats;
+  }
+
+  async getAdminTransactions(query = {}) {
+    const { page, limit, skip, sort } = getPaginationOptions({
+      sortBy: 'createdAt',
+      sortOrder: query.sortOrder || 'desc',
+      ...query,
+    });
+
+    const filter = {};
+    if (query.userId) filter.userId = query.userId;
+    if (query.action) filter.action = query.action;
+    if (query.adminGrant === 'true' || query.adminGrant === true) {
+      filter.action = 'ADMIN_GRANT';
+    }
+
+    const [docs, total] = await Promise.all([
+      XpTransaction.find(filter)
+        .populate(USER_POPULATE)
+        .sort(sort)
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      XpTransaction.countDocuments(filter),
+    ]);
+
+    return formatPaginatedResponse(docs, total, page, limit);
+  }
+
+  async getAdminRewardClaims(query = {}) {
+    const { page, limit, skip, sort } = getPaginationOptions({
+      sortBy: 'createdAt',
+      sortOrder: query.sortOrder || 'desc',
+      ...query,
+    });
+
+    const filter = {};
+    if (query.userId) filter.userId = query.userId;
+    if (query.status) filter.status = query.status;
+    if (query.level) filter.level = parseInt(query.level, 10);
+
+    const [docs, total] = await Promise.all([
+      RewardHistory.find(filter)
+        .populate(USER_POPULATE)
+        .sort(sort)
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      RewardHistory.countDocuments(filter),
+    ]);
+
+    return formatPaginatedResponse(docs, total, page, limit);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
   // ADMIN: Level Config CRUD
   // ═══════════════════════════════════════════════════════════════════
   async getAllLevelConfigs() {
@@ -311,7 +432,7 @@ class XpService {
 
     await XpTransaction.create({
       userId,
-      action: 'DAILY_LOGIN', // Using DAILY_LOGIN as placeholder for admin grants
+      action: 'ADMIN_GRANT',
       xpAwarded: xpAmount,
       xpBefore,
       xpAfter: newXp,
