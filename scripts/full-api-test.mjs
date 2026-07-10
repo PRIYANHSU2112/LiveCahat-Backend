@@ -190,7 +190,7 @@ async function authOtp(type, mobile) {
       type,
       mobileNumber: mobile,
       countryCode: '+91',
-      dateOfBirth: '2000-06-18',
+      age: 25,
       gender: type === 'LISTENER' ? 'FEMALE' : 'MALE',
     },
     expectedStatus: [200],
@@ -231,11 +231,11 @@ function buildTests(ctx) {
 
   // ─── AUTH (public) ───
   add('auth', 'PUBLIC', 'POST', '/auth/request-otp', {
-    body: { type: 'CUSTOMER', mobileNumber: `7${Date.now().toString().slice(-9)}`, countryCode: '+91', dateOfBirth: '2000-01-15', gender: 'MALE' },
+    body: { type: 'CUSTOMER', mobileNumber: `7${Date.now().toString().slice(-9)}`, countryCode: '+91', age: 25, gender: 'MALE' },
     label: 'POST /auth/request-otp (new customer)',
   });
   add('auth', 'PUBLIC', 'POST', '/auth/guest-login', {
-    body: { deviceId: `dev-${Date.now()}`, dateOfBirth: '2000-06-18' },
+    body: { deviceId: `dev-${Date.now()}`, age: 25 },
     label: 'POST /auth/guest-login',
   });
   add('auth', 'PUBLIC', 'POST', '/auth/direct-login', {
@@ -253,11 +253,72 @@ function buildTests(ctx) {
 
   // ─── COUNTRIES ───
   add('countries', 'PUBLIC', 'GET', '/countries', { label: 'GET /countries' });
+  add('countries', 'ADMIN', 'GET', '/countries/admin/stats', { token: A });
+  add('countries', 'ADMIN', 'GET', '/countries/admin?page=1&limit=20', { token: A });
+  add('countries', 'CUSTOMER', 'POST', '/countries', {
+    token: c,
+    body: { name: 'Test', code: 'ZZ', dialCode: '+99' },
+    expectedStatus: [403],
+  });
+  add('countries', 'ADMIN', 'POST', '/countries', {
+    token: A,
+    body: {
+      name: `TestCountry${Date.now().toString().slice(-4)}`,
+      code: `Z${Date.now().toString().slice(-1)}`,
+      dialCode: `+${9000 + (Date.now() % 999)}`,
+      flagUrl: 'https://flagcdn.com/zz.svg',
+      isActive: true,
+    },
+    expectedStatus: [200, 201],
+  });
 
   // ─── COMPANY ───
   add('company', 'PUBLIC', 'GET', '/company/profile');
-  add('company', 'CUSTOMER', 'GET', '/company', { token: c });
-  if (ids.companyId) add('company', 'CUSTOMER', 'GET', `/company/${ids.companyId}`, { token: c });
+  add('company', 'ADMIN', 'GET', '/company/admin/profile', { token: A });
+  add('company', 'ADMIN', 'GET', '/company/admin/stats', { token: A });
+
+  // ─── PLATFORM ANALYTICS ───
+  add('analytics', 'ADMIN', 'GET', '/analytics/admin/revenue', { token: A });
+  add('analytics', 'ADMIN', 'GET', '/analytics/admin/users', { token: A });
+  add('analytics', 'ADMIN', 'GET', '/analytics/admin/listeners', { token: A });
+  add('analytics', 'ADMIN', 'GET', '/analytics/admin/sessions', { token: A });
+  add('analytics', 'ADMIN', 'GET', '/analytics/admin/revenue/summary', { token: A });
+  add('analytics', 'ADMIN', 'GET', '/analytics/admin/revenue/charts', { token: A });
+  add('analytics', 'ADMIN', 'GET', '/analytics/admin/users/summary', { token: A });
+  add('analytics', 'ADMIN', 'GET', '/analytics/admin/users/charts', { token: A });
+  add('analytics', 'ADMIN', 'GET', '/analytics/admin/listeners/summary', { token: A });
+  add('analytics', 'ADMIN', 'GET', '/analytics/admin/listeners/charts', { token: A });
+  add('analytics', 'ADMIN', 'GET', '/analytics/admin/sessions/summary', { token: A });
+  add('analytics', 'ADMIN', 'GET', '/analytics/admin/sessions/charts', { token: A });
+  add('analytics', 'ADMIN', 'GET', '/analytics/admin/revenue/summary?year=2026&month=3', { token: A });
+  add('analytics', 'ADMIN', 'GET', '/analytics/admin/users/summary?dateFrom=2026-01-01&dateTo=2026-01-31', { token: A });
+  add('analytics', 'CUSTOMER', 'GET', '/analytics/admin/revenue/summary', { token: c, expectedStatus: [403] });
+
+  add('communications', 'ADMIN', 'GET', '/communications/admin/sessions/stats', { token: A });
+  add('communications', 'ADMIN', 'GET', '/communications/admin/sessions/live', { token: A });
+  add('communications', 'ADMIN', 'GET', '/communications/admin/sessions?page=1&limit=5', { token: A });
+  add('communications', 'ADMIN', 'GET', '/communications/admin/config', { token: A });
+  add('communications', 'ADMIN', 'PUT', '/communications/admin/config', {
+    token: A,
+    body: { maxSessionDurationMinutes: 60, messageRetentionDays: 90 },
+    expectedStatus: [200],
+  });
+  add('communications', 'CUSTOMER', 'GET', '/communications/admin/sessions/stats', { token: c, expectedStatus: [403] });
+  if (ids.sessionId) {
+    add('communications', 'ADMIN', 'GET', `/communications/admin/sessions/${ids.sessionId}`, { token: A });
+    add('communications', 'ADMIN', 'POST', `/communications/admin/sessions/${ids.sessionId}/force-end`, {
+      token: A,
+      expectedStatus: [200, 400, 404],
+    });
+  }
+
+  add('company', 'ADMIN', 'PUT', '/company/admin/profile', {
+    token: A,
+    body: { name: 'API Test Company', supportEmail: 'support@test.com' },
+    expectedStatus: [200, 201],
+  });
+  add('company', 'ADMIN', 'GET', '/company', { token: A });
+  if (ids.companyId) add('company', 'ADMIN', 'GET', `/company/${ids.companyId}`, { token: A });
   add('company', 'ADMIN', 'POST', '/company', {
     token: A,
     body: { name: `TestCo ${Date.now()}`, email: `co${Date.now()}@test.com`, phone: '9999999999', address: 'Test' },
@@ -778,6 +839,7 @@ function buildTests(ctx) {
   add('notifications', 'AGENT', 'GET', '/notifications/stats', { token: AGENT_TOKEN });
   add('notifications', 'ADMIN', 'GET', '/notifications/stats', { token: A });
   add('notifications', 'ADMIN', 'GET', '/notifications/admin/stats', { token: A });
+  add('notifications', 'ADMIN', 'GET', '/notifications/admin?page=1&limit=10', { token: A });
   add('notifications', 'CUSTOMER', 'GET', '/notifications/admin/stats', { token: c, expectedStatus: [403] });
   add('notifications', 'AGENT', 'GET', '/notifications/admin/stats', { token: AGENT_TOKEN, expectedStatus: [403] });
   add('notifications', 'CUSTOMER', 'PATCH', '/notifications/read-all', { token: c });
@@ -841,7 +903,7 @@ function buildTests(ctx) {
       lastName: 'Listener',
       mobileNumber: `1${Date.now().toString().slice(-9)}`,
       countryCode: '+91',
-      dateOfBirth: '1995-03-10',
+      age: 30,
       gender: 'FEMALE',
     },
     expectedStatus: [200, 201],
@@ -854,6 +916,16 @@ function buildTests(ctx) {
       body: { name: 'Updated Lang' },
     });
     add('languages', 'ADMIN', 'PATCH', `/languages/${ids.languageId}/toggle`, { token: A });
+  }
+
+  // ─── COUNTRIES admin CRUD ───
+  if (ids.countryId) {
+    add('countries', 'ADMIN', 'GET', `/countries/${ids.countryId}`, { token: A });
+    add('countries', 'ADMIN', 'PUT', `/countries/${ids.countryId}`, {
+      token: A,
+      body: { name: 'Updated Country' },
+    });
+    add('countries', 'ADMIN', 'PATCH', `/countries/${ids.countryId}/toggle`, { token: A });
   }
 
   // ─── COIN PACKS admin ───
@@ -1018,6 +1090,7 @@ function buildTests(ctx) {
 
   // ─── DELETE admin resources (cleanup test) ───
   if (ids.languageId) add('languages', 'ADMIN', 'DELETE', `/languages/${ids.languageId}`, { token: A, expectedStatus: [200, 204, 404] });
+  if (ids.countryId) add('countries', 'ADMIN', 'DELETE', `/countries/${ids.countryId}`, { token: A, expectedStatus: [200, 204, 404] });
   if (ids.coinPackId) add('coin-packs', 'ADMIN', 'DELETE', `/coin-packs/${ids.coinPackId}`, { token: A, expectedStatus: [200, 204, 404] });
   if (ids.giftId) add('gifts', 'ADMIN', 'DELETE', `/gifts/${ids.giftId}`, { token: A, expectedStatus: [200, 204, 404] });
   if (ids.stickerId) add('stickers', 'ADMIN', 'DELETE', `/stickers/${ids.stickerId}`, { token: A, expectedStatus: [200, 204, 404] });
@@ -1084,6 +1157,20 @@ async function setupFixtures(ctx) {
   });
   ids.languageId = pickId(lang) || ids.languageId;
 
+  const country = await req('POST', '/countries', {
+    token: A,
+    module: 'setup',
+    body: {
+      name: `SetupCountry${Date.now()}`,
+      code: `S${Date.now().toString().slice(-1)}`,
+      dialCode: `+${8000 + (Date.now() % 999)}`,
+      flagUrl: 'https://flagcdn.com/xx.svg',
+      isActive: true,
+    },
+    expectedStatus: [200, 201],
+  });
+  ids.countryId = pickId(country) || ids.countryId;
+
   const pack = await req('POST', '/coin-packs', {
     token: A,
     module: 'setup',
@@ -1139,9 +1226,9 @@ async function setupFixtures(ctx) {
   const avList = avatars.returnedData?.data || [];
   if (Array.isArray(avList) && avList.length) ids.avatarId = avList[0]._id;
 
-  const companies = await req('GET', '/company', { token: ctx.customerToken, module: 'setup' });
+  const companies = await req('GET', '/company', { token: A, module: 'setup' });
   const coList = companies.returnedData?.data || [];
-  if (Array.isArray(coList) && coList.length) ids.companyId = coList[0]._id;
+  if (Array.isArray(coList) && coList.length) ids.companyId = coList[0].id ?? coList[0]._id;
 
   const feedback = await req('POST', '/feedback', {
     token: ctx.customerToken,
@@ -1211,6 +1298,7 @@ async function cleanupFixtures(ids) {
   const A = ADMIN_TOKEN;
   const dels = [];
   if (ids.languageId) dels.push(req('DELETE', `/languages/${ids.languageId}`, { token: A, module: 'cleanup', expectedStatus: [200, 204, 404] }));
+  if (ids.countryId) dels.push(req('DELETE', `/countries/${ids.countryId}`, { token: A, module: 'cleanup', expectedStatus: [200, 204, 404] }));
   if (ids.coinPackId) dels.push(req('DELETE', `/coin-packs/${ids.coinPackId}`, { token: A, module: 'cleanup', expectedStatus: [200, 204, 404] }));
   if (ids.giftId) dels.push(req('DELETE', `/gifts/${ids.giftId}`, { token: A, module: 'cleanup', expectedStatus: [200, 204, 404] }));
   if (ids.stickerCategoryId) dels.push(req('DELETE', `/sticker-categories/${ids.stickerCategoryId}`, { token: A, module: 'cleanup', expectedStatus: [200, 204, 404] }));

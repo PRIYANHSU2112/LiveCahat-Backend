@@ -2,25 +2,27 @@ import express from 'express';
 import companyController from '../controllers/company.controller.js';
 import { authenticate, restrictTo } from '../middlewares/auth.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
+import { requireObjectId } from '../middlewares/object-id.middleware.js';
 import { createCompanySchema, updateCompanySchema } from '../validators/company.validator.js';
 
 const router = express.Router();
+const adminOnly = restrictTo('ADMIN');
 
-// Publicly fetch the primary company profile (logos, social links, website, policies etc.)
 router.get('/profile', companyController.getCompanyProfile);
 
-// Authenticated routes
 router.use(authenticate);
 
-// List/Retrieve company records by ID
-router.get('/', companyController.getAllCompanies);
-router.get('/:id', companyController.getCompanyById);
+router.get('/admin/profile', adminOnly, companyController.getAdminProfile);
+router.get('/admin/stats', adminOnly, companyController.getAdminStats);
+router.put('/admin/profile', adminOnly, validate(updateCompanySchema), companyController.upsertAdminProfile);
 
-// Admin-only management routes
-router.use(restrictTo('ADMIN'));
+router.get('/', adminOnly, companyController.getAllCompanies);
+router.get('/:id', adminOnly, requireObjectId('id'), companyController.getCompanyById);
+
+router.use(adminOnly);
 
 router.post('/', validate(createCompanySchema), companyController.createCompany);
-router.put('/:id', validate(updateCompanySchema), companyController.updateCompany);
-router.delete('/:id', companyController.deleteCompany);
+router.put('/:id', requireObjectId('id'), validate(updateCompanySchema), companyController.updateCompany);
+router.delete('/:id', requireObjectId('id'), companyController.deleteCompany);
 
 export default router;

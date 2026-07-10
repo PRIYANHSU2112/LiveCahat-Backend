@@ -223,7 +223,7 @@ class WalletService extends BaseService {
         bumpCacheVersion(`payment_transactions:user:${userIdStr}`),
         bumpCacheVersion('admin:wallets'),
         bumpCacheVersion('admin:coin_transactions'),
-        bumpCacheVersion('admin:payment_transactions')
+        bumpCacheVersion('admin:payment_transactions'),
       ]);
 
       // If a referral bonus was paid, bust the referrer's caches too

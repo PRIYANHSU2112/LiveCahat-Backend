@@ -1,0 +1,29 @@
+{
+  "project": "LiveChat API",
+  "totalApisFound": 305,
+  "swaggerCoverage": "100%",
+  "newlyDocumentedPreviously": 60,
+  "updatedSwaggerEndpoints": 9,
+  "totalPostmanRequests": 305,
+  "folders": 37,
+  "outputs": {
+    "swaggerJson": "src/docs/swagger.json",
+    "swaggerYaml": "src/docs/swagger.yaml",
+    "postmanCollection": "postman_collection.json",
+    "postmanEnvironment": "postman_environment.json",
+    "alsoIn": "docs/postman/"
+  },
+  "authFlow": [
+    "POST /auth/login with {{adminEmail}} / {{adminPassword}}",
+    "Test script saves data.token -> {{accessToken}}",
+    "Collection bearer auth reuses {{accessToken}}",
+    "OTP: POST /auth/request-otp then POST /auth/verify-otp (also saves token)"
+  ],
+  "manualDataRequired": [
+    "Replace ObjectId placeholders (userId, sessionId, etc.) with real Mongo IDs from your DB",
+    "Admin login credentials must exist (seeded super-admin or your .env admin)",
+    "OTP flows need a valid mobile + OTP from your OTP provider / test mode",
+    "Multipart chat media: attach a real file in Postman before sending",
+    "Some agent/listener endpoints require role-specific tokens (login as AGENT/LISTENER)"
+  ]
+}

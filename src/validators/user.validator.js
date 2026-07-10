@@ -7,7 +7,9 @@ export const updateUserProfileSchema = Joi.object({
     lastName: Joi.string().trim().min(2).max(50),
     email: Joi.string().email().allow(null, ''),
     gender: Joi.string().valid(...GENDERS),
-    dateOfBirth: Joi.date().iso().max(new Date(Date.now() - 18 * 365.25 * 24 * 60 * 60 * 1000)).message('You must be at least 18 years old'),
+    age: Joi.number().integer().min(18).max(120).messages({
+      'number.min': 'You must be at least 18 years old',
+    }),
   })
 });
 
@@ -55,7 +57,9 @@ export const createListenerSchema = Joi.object({
     firstName: Joi.string().required().trim(),
     lastName: Joi.string().required().trim(),
     mobileNumber: Joi.string().required().trim(),
-    dateOfBirth: Joi.date().iso().max(new Date(Date.now() - 18 * 365.25 * 24 * 60 * 60 * 1000)).message('Listener must be at least 18 years old').required(),
+    age: Joi.number().integer().min(18).max(120).required().messages({
+      'number.min': 'Listener must be at least 18 years old',
+    }),
     gender: Joi.string().valid(...GENDERS).required(),
   })
 });

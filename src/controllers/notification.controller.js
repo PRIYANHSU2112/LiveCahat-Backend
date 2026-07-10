@@ -60,6 +60,12 @@ class NotificationController extends BaseController {
     const data = await notificationService.getAdminStats();
     this.sendResponse(res, 200, 'Admin notification stats fetched successfully', data);
   });
+
+  // GET /notifications/admin — paginated platform log
+  adminListNotifications = catchAsync(async (req, res) => {
+    const data = await notificationService.adminListNotifications(req.query);
+    this.sendResponse(res, 200, 'Notifications fetched successfully', data);
+  });
 }
 
 export default new NotificationController();

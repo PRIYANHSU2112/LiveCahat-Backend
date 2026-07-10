@@ -45,7 +45,7 @@ async function auth(type, mobile) {
       type,
       mobileNumber: mobile,
       countryCode: '+91',
-      dateOfBirth: '2000-06-18',
+      age: 25,
       gender: type === 'LISTENER' ? 'FEMALE' : 'MALE',
     },
   });
@@ -84,15 +84,15 @@ function buildTests(ctx) {
 
   // ─── AUTH (public) ───
   add('CUSTOMER', 'POST', '/auth/request-otp', {
-    body: { type: 'CUSTOMER', mobileNumber: `7${String(Date.now()).slice(-9)}`, countryCode: '+91', dateOfBirth: '2000-01-15', gender: 'MALE' },
+    body: { type: 'CUSTOMER', mobileNumber: `7${String(Date.now()).slice(-9)}`, countryCode: '+91', age: 25, gender: 'MALE' },
     label: 'POST /auth/request-otp (CUSTOMER)',
   });
   add('LISTENER', 'POST', '/auth/request-otp', {
-    body: { type: 'LISTENER', mobileNumber: `6${String(Date.now()).slice(-9)}`, countryCode: '+91', dateOfBirth: '1998-03-15', gender: 'FEMALE' },
+    body: { type: 'LISTENER', mobileNumber: `6${String(Date.now()).slice(-9)}`, countryCode: '+91', age: 27, gender: 'FEMALE' },
     label: 'POST /auth/request-otp (LISTENER)',
   });
   add('CUSTOMER', 'POST', '/auth/guest-login', {
-    body: { deviceId: `device-${Date.now()}`, dateOfBirth: '2000-06-18' },
+    body: { deviceId: `device-${Date.now()}`, age: 25 },
     label: 'POST /auth/guest-login',
   });
 

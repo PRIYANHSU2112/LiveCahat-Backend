@@ -67,6 +67,12 @@ const userSchema = new mongoose.Schema(
     dateOfBirth: {
       type: Date,
     },
+    // Declared age at signup/login (years). Preferred over dateOfBirth for auth flows.
+    age: {
+      type: Number,
+      min: 18,
+      max: 120,
+    },
     roleId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Role',
@@ -255,6 +261,10 @@ userSchema.pre('save', async function (next) {
 
 // Indexes
 userSchema.index({ type: 1 });
+userSchema.index({ type: 1, createdAt: -1 });
+userSchema.index({ type: 1, isDeleted: 1, createdAt: -1 });
+userSchema.index({ type: 1, lastSeen: -1 });
+userSchema.index({ type: 1, isDeleted: 1, lastSeen: -1 });
 userSchema.index({ isDeleted: 1 });
 userSchema.index({ deviceId: 1 }, { sparse: true });
 userSchema.index({ currentLevel: 1 });

@@ -6,19 +6,6 @@ import { generateToken } from '../utils/jwt.util.js';
 import { storeOtpSession, verifyAndConsumeOtpSession, deleteCache } from '../utils/redis.util.js';
 import ApiError from '../utils/ApiError.js';
 
-const toDateKey = (value) => {
-  if (!value) return '';
-  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value.trim())) {
-    return value.trim();
-  }
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) return String(value);
-  const year = date.getUTCFullYear();
-  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(date.getUTCDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
-
 class AuthService {
   /**
    * Create a new user. If a valid inviteCode is supplied, create + reward
@@ -48,7 +35,15 @@ class AuthService {
     }
   }
 
-  _resolveLoginProfile(session, { type, gender, dateOfBirth }) {
+  _assertAdultAge(age) {
+    const n = Number(age);
+    if (!Number.isInteger(n) || n < 18) {
+      throw new ApiError(403, 'You must be 18 or older to use this app.');
+    }
+    return n;
+  }
+
+  _resolveLoginProfile(session, { type, gender, age }) {
     if (type && type !== session.type) {
       throw new ApiError(400, 'Login details do not match the OTP request. Please request a new OTP.');
     }
@@ -57,36 +52,36 @@ class AuthService {
       throw new ApiError(400, 'Login details do not match the OTP request. Please request a new OTP.');
     }
 
-    if (dateOfBirth && toDateKey(dateOfBirth) !== toDateKey(session.dateOfBirth)) {
+    if (age !== undefined && Number(age) !== Number(session.age)) {
       throw new ApiError(400, 'Login details do not match the OTP request. Please request a new OTP.');
     }
 
     return {
       type: session.type,
       gender: gender ?? session.gender,
-      dateOfBirth: dateOfBirth ?? session.dateOfBirth,
+      age: age ?? session.age,
     };
   }
 
-  _profileFieldsFromLogin({ gender, dateOfBirth }) {
+  _profileFieldsFromLogin({ gender, age }) {
     return {
       gender,
-      dateOfBirth: new Date(dateOfBirth),
+      age: Number(age),
       ageVerified: true,
     };
   }
 
   async requestOtp(data) {
-    const { mobileNumber, type, dateOfBirth, gender, countryCode } = data;
+    const { mobileNumber, type, age, gender, countryCode } = data;
 
     this._assertListenerGender(type, gender);
+    const verifiedAge = this._assertAdultAge(age);
 
     const otp = '123456';
-    const dateKey = toDateKey(dateOfBirth);
 
     await storeOtpSession(mobileNumber, {
       otp,
-      dateOfBirth: dateKey,
+      age: verifiedAge,
       gender,
       type,
       countryCode: countryCode || '+91',
@@ -99,10 +94,10 @@ class AuthService {
   }
 
   async verifyOtp(data) {
-    const { mobileNumber, otp, type, countryCode, inviteCode, dateOfBirth, gender } = data;
+    const { mobileNumber, otp, type, countryCode, inviteCode, age, gender } = data;
 
     const session = await verifyAndConsumeOtpSession(mobileNumber, otp);
-    const profile = this._resolveLoginProfile(session, { type, gender, dateOfBirth });
+    const profile = this._resolveLoginProfile(session, { type, gender, age });
     const profileFields = this._profileFieldsFromLogin(profile);
 
     let user = await userRepository.findByMobile(mobileNumber);
@@ -133,25 +128,29 @@ class AuthService {
     return { token, user, isNewUser };
   }
 
-  async guestLogin({ deviceId, dateOfBirth, inviteCode }) {
-    const dob = new Date(dateOfBirth);
-    const now = new Date();
-    let age = now.getFullYear() - dob.getFullYear();
-    const m = now.getMonth() - dob.getMonth();
-    if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) age--;
-    if (age < 18) throw new ApiError(403, 'You must be 18 or older to use this app.');
+  async guestLogin({ deviceId, age, inviteCode }) {
+    const verifiedAge = this._assertAdultAge(age);
 
     let user = await userRepository.findByDeviceId(deviceId);
     let isNewUser = false;
 
     if (!user) {
       user = await this._createUser(
-        { type: 'CUSTOMER', isGuest: true, deviceId, ageVerified: true },
+        {
+          type: 'CUSTOMER',
+          isGuest: true,
+          deviceId,
+          age: verifiedAge,
+          ageVerified: true,
+        },
         inviteCode
       );
       isNewUser = true;
     } else {
       if (user.isBlocked) throw new ApiError(403, 'Your account has been blocked.');
+      // Refresh declared age on returning guest
+      user = await userRepository.updateById(user._id, { age: verifiedAge, ageVerified: true });
+      await deleteCache(`auth:user:${user._id}`);
     }
 
     const token = generateToken({ id: user._id, type: user.type });
@@ -170,7 +169,7 @@ class AuthService {
       mobileNumber,
       isGuest: false,
       gender: session.gender,
-      dateOfBirth: new Date(session.dateOfBirth),
+      age: Number(session.age),
       ageVerified: true,
     };
 
@@ -208,7 +207,6 @@ class AuthService {
 
     return { token, user };
   }
-
 
   async directLogin({ token }) {
     if (!token) throw new ApiError(400, 'Token is required');

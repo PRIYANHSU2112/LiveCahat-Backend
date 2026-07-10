@@ -152,16 +152,14 @@ class UserService extends BaseService {
       throw new ApiError(400, 'Mobile number already in use');
     }
 
-    if (data.dateOfBirth) {
-      const diff = Date.now() - new Date(data.dateOfBirth).getTime();
-      const ageDate = new Date(diff);
-      const exactAge = Math.abs(ageDate.getUTCFullYear() - 1970);
-      if (exactAge < 18) throw new ApiError(400, 'Listener must be at least 18 years old');
+    if (data.age !== undefined && Number(data.age) < 18) {
+      throw new ApiError(400, 'Listener must be at least 18 years old');
     }
 
     const listenerUser = await this.repository.create({
       ...data,
-      type: 'LISTENER'
+      type: 'LISTENER',
+      ageVerified: true,
     });
 
     await listenerRepository.create({ userId: listenerUser._id });

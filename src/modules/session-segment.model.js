@@ -49,6 +49,8 @@ const sessionSegmentSchema = new mongoose.Schema(
 
 // Indexes
 sessionSegmentSchema.index({ sessionId: 1, startTime: 1 });
+sessionSegmentSchema.index({ status: 1, createdAt: -1 });
+sessionSegmentSchema.index({ mode: 1, createdAt: -1 });
 
 const SessionSegment = mongoose.model('SessionSegment', sessionSegmentSchema);
 export default SessionSegment;

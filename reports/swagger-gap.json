@@ -1,0 +1,176 @@
+{
+  "totalRoutes": 301,
+  "swaggerOps": 301,
+  "documented": 301,
+  "missingCount": 0,
+  "extraCount": 0,
+  "missing": [],
+  "extra": [],
+  "mounts": [
+    {
+      "prefix": "/auth",
+      "varName": "authRoutes",
+      "file": "auth.routes.js"
+    },
+    {
+      "prefix": "/countries",
+      "varName": "countryRoutes",
+      "file": "country.routes.js"
+    },
+    {
+      "prefix": "/home",
+      "varName": "homeRoutes",
+      "file": "home.routes.js"
+    },
+    {
+      "prefix": "/match",
+      "varName": "matchRoutes",
+      "file": "match.routes.js"
+    },
+    {
+      "prefix": "/agent",
+      "varName": "agentRoutes",
+      "file": "agent.routes.js"
+    },
+    {
+      "prefix": "/analytics",
+      "varName": "analyticsRoutes",
+      "file": "analytics.routes.js"
+    },
+    {
+      "prefix": "/communications",
+      "varName": "communicationRoutes",
+      "file": "communication.routes.js"
+    },
+    {
+      "prefix": "/users",
+      "varName": "userRoutes",
+      "file": "user.routes.js"
+    },
+    {
+      "prefix": "/listeners",
+      "varName": "listenerRoutes",
+      "file": "listener.routes.js"
+    },
+    {
+      "prefix": "/languages",
+      "varName": "languageRoutes",
+      "file": "language.routes.js"
+    },
+    {
+      "prefix": "/coin-packs",
+      "varName": "coinPackRoutes",
+      "file": "coin-pack.routes.js"
+    },
+    {
+      "prefix": "/wallets",
+      "varName": "walletRoutes",
+      "file": "wallet.routes.js"
+    },
+    {
+      "prefix": "/follows",
+      "varName": "followRoutes",
+      "file": "follow.routes.js"
+    },
+    {
+      "prefix": "/company",
+      "varName": "companyRoutes",
+      "file": "company.routes.js"
+    },
+    {
+      "prefix": "/gifts",
+      "varName": "giftRoutes",
+      "file": "gift.routes.js"
+    },
+    {
+      "prefix": "/chats",
+      "varName": "chatRoutes",
+      "file": "chat.routes.js"
+    },
+    {
+      "prefix": "/banners",
+      "varName": "bannerRoutes",
+      "file": "banner.routes.js"
+    },
+    {
+      "prefix": "/wishlist",
+      "varName": "wishlistRoutes",
+      "file": "wishlist.routes.js"
+    },
+    {
+      "prefix": "/daily-rewards",
+      "varName": "dailyRewardRoutes",
+      "file": "daily-reward.routes.js"
+    },
+    {
+      "prefix": "/avatars",
+      "varName": "avatarRoutes",
+      "file": "avatar.routes.js"
+    },
+    {
+      "prefix": "/calls",
+      "varName": "callRoutes",
+      "file": "call.routes.js"
+    },
+    {
+      "prefix": "/live-rooms",
+      "varName": "liveRoomRoutes",
+      "file": "live-room.routes.js"
+    },
+    {
+      "prefix": "/sticker-categories",
+      "varName": "stickerCategoryRoutes",
+      "file": "sticker-category.routes.js"
+    },
+    {
+      "prefix": "/stickers",
+      "varName": "stickerRoutes",
+      "file": "sticker.routes.js"
+    },
+    {
+      "prefix": "/reviews",
+      "varName": "reviewRoutes",
+      "file": "review.routes.js"
+    },
+    {
+      "prefix": "/feedback",
+      "varName": "feedbackRoutes",
+      "file": "feedback.routes.js"
+    },
+    {
+      "prefix": "/reports",
+      "varName": "reportRoutes",
+      "file": "report.routes.js"
+    },
+    {
+      "prefix": "/referrals",
+      "varName": "referralRoutes",
+      "file": "referral.routes.js"
+    },
+    {
+      "prefix": "/withdrawals",
+      "varName": "withdrawalRoutes",
+      "file": "withdrawal.routes.js"
+    },
+    {
+      "prefix": "/anchor-levels",
+      "varName": "anchorLevelRoutes",
+      "file": "anchor-level.routes.js"
+    },
+    {
+      "prefix": "/notifications",
+      "varName": "notificationRoutes",
+      "file": "notification.routes.js"
+    },
+    {
+      "prefix": "/xp",
+      "varName": "xpRoutes",
+      "file": "xp.routes.js"
+    },
+    {
+      "prefix": "/search",
+      "varName": "searchRoutes",
+      "file": "search.routes.js"
+    }
+  ]
+}

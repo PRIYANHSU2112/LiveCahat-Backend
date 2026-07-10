@@ -1,0 +1,1507 @@
+[
+  {
+    "method": "GET",
+    "path": "/agent/analytics/listeners/charts",
+    "file": "agent.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/agent/analytics/listeners/summary",
+    "file": "agent.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/agent/analytics/period-reports",
+    "file": "agent.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/agent/analytics/retention/charts",
+    "file": "agent.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/agent/analytics/retention/summary",
+    "file": "agent.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/agent/analytics/revenue/charts",
+    "file": "agent.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/agent/analytics/revenue/summary",
+    "file": "agent.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/agent/dashboard/activity",
+    "file": "agent.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/agent/dashboard/charts",
+    "file": "agent.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/agent/dashboard/summary",
+    "file": "agent.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/agent/reports",
+    "file": "agent.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/agent/reports/:id",
+    "file": "agent.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/agent/revenue/graphs",
+    "file": "agent.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/agent/revenue/history",
+    "file": "agent.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/agent/revenue/history/stats",
+    "file": "agent.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/agent/revenue/summary",
+    "file": "agent.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/agent/settlements",
+    "file": "agent.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/agent/settlements/:id",
+    "file": "agent.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/agent/settlements/stats",
+    "file": "agent.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/analytics/admin/listeners",
+    "file": "analytics.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/analytics/admin/listeners/charts",
+    "file": "analytics.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/analytics/admin/listeners/summary",
+    "file": "analytics.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/analytics/admin/revenue",
+    "file": "analytics.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/analytics/admin/revenue/charts",
+    "file": "analytics.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/analytics/admin/revenue/summary",
+    "file": "analytics.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/analytics/admin/sessions",
+    "file": "analytics.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/analytics/admin/sessions/charts",
+    "file": "analytics.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/analytics/admin/sessions/summary",
+    "file": "analytics.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/analytics/admin/users",
+    "file": "analytics.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/analytics/admin/users/charts",
+    "file": "analytics.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/analytics/admin/users/summary",
+    "file": "analytics.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/anchor-levels",
+    "file": "anchor-level.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/anchor-levels/admin",
+    "file": "anchor-level.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/anchor-levels/admin",
+    "file": "anchor-level.routes.js"
+  },
+  {
+    "method": "DELETE",
+    "path": "/anchor-levels/admin/:id",
+    "file": "anchor-level.routes.js"
+  },
+  {
+    "method": "PUT",
+    "path": "/anchor-levels/admin/:id",
+    "file": "anchor-level.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/anchor-levels/admin/claims",
+    "file": "anchor-level.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/anchor-levels/admin/stats",
+    "file": "anchor-level.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/anchor-levels/me/rewards",
+    "file": "anchor-level.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/anchor-levels/me/rewards/:id/claim",
+    "file": "anchor-level.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/anchor-levels/me/rewards/claim-all",
+    "file": "anchor-level.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/anchor-levels/me/status",
+    "file": "anchor-level.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/auth/direct-login",
+    "file": "auth.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/auth/guest-login",
+    "file": "auth.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/auth/link-account",
+    "file": "auth.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/auth/login",
+    "file": "auth.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/auth/request-otp",
+    "file": "auth.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/auth/verify-otp",
+    "file": "auth.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/avatars",
+    "file": "avatar.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/avatars/:avatarId/set-profile",
+    "file": "avatar.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/avatars/:avatarId/unlock",
+    "file": "avatar.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/avatars/admin",
+    "file": "avatar.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/avatars/admin",
+    "file": "avatar.routes.js"
+  },
+  {
+    "method": "DELETE",
+    "path": "/avatars/admin/:id",
+    "file": "avatar.routes.js"
+  },
+  {
+    "method": "PUT",
+    "path": "/avatars/admin/:id",
+    "file": "avatar.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/avatars/admin/stats",
+    "file": "avatar.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/banners",
+    "file": "banner.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/banners",
+    "file": "banner.routes.js"
+  },
+  {
+    "method": "DELETE",
+    "path": "/banners/:id",
+    "file": "banner.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/banners/:id",
+    "file": "banner.routes.js"
+  },
+  {
+    "method": "PUT",
+    "path": "/banners/:id",
+    "file": "banner.routes.js"
+  },
+  {
+    "method": "PATCH",
+    "path": "/banners/:id/toggle-active",
+    "file": "banner.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/banners/admin/stats",
+    "file": "banner.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/banners/all",
+    "file": "banner.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/calls/end",
+    "file": "call.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/calls/initiate",
+    "file": "call.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/calls/token/:sessionId",
+    "file": "call.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/chats/conversations",
+    "file": "chat.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/chats/sessions",
+    "file": "chat.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/chats/sessions/:sessionId/media",
+    "file": "chat.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/chats/sessions/:sessionId/messages",
+    "file": "chat.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/coin-packs",
+    "file": "coin-pack.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/coin-packs",
+    "file": "coin-pack.routes.js"
+  },
+  {
+    "method": "DELETE",
+    "path": "/coin-packs/:id",
+    "file": "coin-pack.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/coin-packs/:id",
+    "file": "coin-pack.routes.js"
+  },
+  {
+    "method": "PUT",
+    "path": "/coin-packs/:id",
+    "file": "coin-pack.routes.js"
+  },
+  {
+    "method": "PATCH",
+    "path": "/coin-packs/:id/toggle",
+    "file": "coin-pack.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/coin-packs/admin",
+    "file": "coin-pack.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/coin-packs/admin/stats",
+    "file": "coin-pack.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/communications/admin/config",
+    "file": "communication.routes.js"
+  },
+  {
+    "method": "PUT",
+    "path": "/communications/admin/config",
+    "file": "communication.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/communications/admin/sessions",
+    "file": "communication.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/communications/admin/sessions/:sessionId",
+    "file": "communication.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/communications/admin/sessions/:sessionId/force-end",
+    "file": "communication.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/communications/admin/sessions/live",
+    "file": "communication.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/communications/admin/sessions/stats",
+    "file": "communication.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/company",
+    "file": "company.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/company",
+    "file": "company.routes.js"
+  },
+  {
+    "method": "DELETE",
+    "path": "/company/:id",
+    "file": "company.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/company/:id",
+    "file": "company.routes.js"
+  },
+  {
+    "method": "PUT",
+    "path": "/company/:id",
+    "file": "company.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/company/admin/profile",
+    "file": "company.routes.js"
+  },
+  {
+    "method": "PUT",
+    "path": "/company/admin/profile",
+    "file": "company.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/company/admin/stats",
+    "file": "company.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/company/profile",
+    "file": "company.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/countries",
+    "file": "country.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/countries",
+    "file": "country.routes.js"
+  },
+  {
+    "method": "DELETE",
+    "path": "/countries/:id",
+    "file": "country.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/countries/:id",
+    "file": "country.routes.js"
+  },
+  {
+    "method": "PUT",
+    "path": "/countries/:id",
+    "file": "country.routes.js"
+  },
+  {
+    "method": "PATCH",
+    "path": "/countries/:id/toggle",
+    "file": "country.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/countries/admin",
+    "file": "country.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/countries/admin/stats",
+    "file": "country.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/daily-rewards/admin/cache/clear",
+    "file": "daily-reward.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/daily-rewards/admin/claims",
+    "file": "daily-reward.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/daily-rewards/admin/config",
+    "file": "daily-reward.routes.js"
+  },
+  {
+    "method": "PUT",
+    "path": "/daily-rewards/admin/config/days",
+    "file": "daily-reward.routes.js"
+  },
+  {
+    "method": "PUT",
+    "path": "/daily-rewards/admin/config/weeks",
+    "file": "daily-reward.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/daily-rewards/admin/stats",
+    "file": "daily-reward.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/daily-rewards/claim",
+    "file": "daily-reward.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/daily-rewards/inventory",
+    "file": "daily-reward.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/daily-rewards/inventory/:inventoryId/open",
+    "file": "daily-reward.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/daily-rewards/state",
+    "file": "daily-reward.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/feedback",
+    "file": "feedback.routes.js"
+  },
+  {
+    "method": "DELETE",
+    "path": "/feedback/:id",
+    "file": "feedback.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/feedback/:id",
+    "file": "feedback.routes.js"
+  },
+  {
+    "method": "PUT",
+    "path": "/feedback/:id",
+    "file": "feedback.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/feedback/admin",
+    "file": "feedback.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/feedback/admin/:id",
+    "file": "feedback.routes.js"
+  },
+  {
+    "method": "PATCH",
+    "path": "/feedback/admin/:id/moderate",
+    "file": "feedback.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/feedback/admin/stats",
+    "file": "feedback.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/feedback/me",
+    "file": "feedback.routes.js"
+  },
+  {
+    "method": "DELETE",
+    "path": "/follows/:listenerId",
+    "file": "follow.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/follows/:listenerId",
+    "file": "follow.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/follows/counts/:userId",
+    "file": "follow.routes.js"
+  },
+  {
+    "method": "PATCH",
+    "path": "/follows/favorite/:listenerId",
+    "file": "follow.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/follows/favorites",
+    "file": "follow.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/follows/followers/:listenerId",
+    "file": "follow.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/follows/following",
+    "file": "follow.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/follows/status/:listenerId",
+    "file": "follow.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/follows/top",
+    "file": "follow.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/gifts",
+    "file": "gift.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/gifts",
+    "file": "gift.routes.js"
+  },
+  {
+    "method": "DELETE",
+    "path": "/gifts/:id",
+    "file": "gift.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/gifts/:id",
+    "file": "gift.routes.js"
+  },
+  {
+    "method": "PUT",
+    "path": "/gifts/:id",
+    "file": "gift.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/gifts/admin",
+    "file": "gift.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/gifts/admin/analytics",
+    "file": "gift.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/gifts/admin/stats",
+    "file": "gift.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/gifts/history/received",
+    "file": "gift.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/gifts/history/sent",
+    "file": "gift.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/gifts/send",
+    "file": "gift.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/home/listener-home",
+    "file": "home.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/home/user-home",
+    "file": "home.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/languages",
+    "file": "language.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/languages",
+    "file": "language.routes.js"
+  },
+  {
+    "method": "DELETE",
+    "path": "/languages/:id",
+    "file": "language.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/languages/:id",
+    "file": "language.routes.js"
+  },
+  {
+    "method": "PUT",
+    "path": "/languages/:id",
+    "file": "language.routes.js"
+  },
+  {
+    "method": "PATCH",
+    "path": "/languages/:id/toggle",
+    "file": "language.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/languages/admin/stats",
+    "file": "language.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/listeners",
+    "file": "listener.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/listeners/:id/kyc",
+    "file": "listener.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/listeners/admin/:id",
+    "file": "listener.routes.js"
+  },
+  {
+    "method": "PUT",
+    "path": "/listeners/admin/:id",
+    "file": "listener.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/listeners/admin/availability-monitoring",
+    "file": "listener.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/listeners/admin/performance",
+    "file": "listener.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/listeners/admin/stats",
+    "file": "listener.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/listeners/agent",
+    "file": "listener.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/listeners/agent",
+    "file": "listener.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/listeners/agent/stats",
+    "file": "listener.routes.js"
+  },
+  {
+    "method": "PUT",
+    "path": "/listeners/availability",
+    "file": "listener.routes.js"
+  },
+  {
+    "method": "PATCH",
+    "path": "/listeners/availability/toggle",
+    "file": "listener.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/listeners/dashboard",
+    "file": "listener.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/listeners/dashboard/overview",
+    "file": "listener.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/listeners/dashboard/sessions",
+    "file": "listener.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/listeners/kyc",
+    "file": "listener.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/listeners/profile",
+    "file": "listener.routes.js"
+  },
+  {
+    "method": "PUT",
+    "path": "/listeners/profile",
+    "file": "listener.routes.js"
+  },
+  {
+    "method": "PUT",
+    "path": "/listeners/rates",
+    "file": "listener.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/live-rooms",
+    "file": "live-room.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/live-rooms/:id",
+    "file": "live-room.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/live-rooms/:id/agora-token",
+    "file": "live-room.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/match/admin/config",
+    "file": "match.routes.js"
+  },
+  {
+    "method": "PUT",
+    "path": "/match/admin/config",
+    "file": "match.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/match/discover",
+    "file": "match.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/match/fee",
+    "file": "match.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/match/instant",
+    "file": "match.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/match/status",
+    "file": "match.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/notifications",
+    "file": "notification.routes.js"
+  },
+  {
+    "method": "DELETE",
+    "path": "/notifications/:id",
+    "file": "notification.routes.js"
+  },
+  {
+    "method": "PATCH",
+    "path": "/notifications/:id/read",
+    "file": "notification.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/notifications/admin",
+    "file": "notification.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/notifications/admin/broadcast",
+    "file": "notification.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/notifications/admin/send",
+    "file": "notification.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/notifications/admin/stats",
+    "file": "notification.routes.js"
+  },
+  {
+    "method": "PATCH",
+    "path": "/notifications/read-all",
+    "file": "notification.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/notifications/stats",
+    "file": "notification.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/notifications/unread-count",
+    "file": "notification.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/referrals/admin/config",
+    "file": "referral.routes.js"
+  },
+  {
+    "method": "PUT",
+    "path": "/referrals/admin/config",
+    "file": "referral.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/referrals/admin/referrals",
+    "file": "referral.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/referrals/admin/stats",
+    "file": "referral.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/referrals/apply",
+    "file": "referral.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/referrals/details",
+    "file": "referral.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/reports",
+    "file": "report.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/reports",
+    "file": "report.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/reports/:id",
+    "file": "report.routes.js"
+  },
+  {
+    "method": "PATCH",
+    "path": "/reports/:id/moderate",
+    "file": "report.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/reports/me",
+    "file": "report.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/reports/me/:id",
+    "file": "report.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/reports/reasons",
+    "file": "report.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/reports/reasons",
+    "file": "report.routes.js"
+  },
+  {
+    "method": "DELETE",
+    "path": "/reports/reasons/:id",
+    "file": "report.routes.js"
+  },
+  {
+    "method": "PATCH",
+    "path": "/reports/reasons/:id",
+    "file": "report.routes.js"
+  },
+  {
+    "method": "PATCH",
+    "path": "/reports/reasons/:id/toggle",
+    "file": "report.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/reports/reasons/admin",
+    "file": "report.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/reports/stats",
+    "file": "report.routes.js"
+  },
+  {
+    "method": "DELETE",
+    "path": "/reviews/:id",
+    "file": "review.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/reviews/listeners/:listenerId",
+    "file": "review.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/reviews/listeners/:listenerId",
+    "file": "review.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/search/admin",
+    "file": "search.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/search/agent/listeners",
+    "file": "search.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/search/listeners",
+    "file": "search.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/sticker-categories",
+    "file": "sticker-category.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/sticker-categories",
+    "file": "sticker-category.routes.js"
+  },
+  {
+    "method": "DELETE",
+    "path": "/sticker-categories/:id",
+    "file": "sticker-category.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/sticker-categories/:id",
+    "file": "sticker-category.routes.js"
+  },
+  {
+    "method": "PUT",
+    "path": "/sticker-categories/:id",
+    "file": "sticker-category.routes.js"
+  },
+  {
+    "method": "PATCH",
+    "path": "/sticker-categories/:id/toggle",
+    "file": "sticker-category.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/sticker-categories/admin/stats",
+    "file": "sticker-category.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/stickers",
+    "file": "sticker.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/stickers",
+    "file": "sticker.routes.js"
+  },
+  {
+    "method": "DELETE",
+    "path": "/stickers/:id",
+    "file": "sticker.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/stickers/:id",
+    "file": "sticker.routes.js"
+  },
+  {
+    "method": "PUT",
+    "path": "/stickers/:id",
+    "file": "sticker.routes.js"
+  },
+  {
+    "method": "PATCH",
+    "path": "/stickers/:id/toggle",
+    "file": "sticker.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/stickers/:id/unlock",
+    "file": "sticker.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/stickers/admin/stats",
+    "file": "sticker.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/users",
+    "file": "user.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/users/:id",
+    "file": "user.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/users/:id/block",
+    "file": "user.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/users/activity",
+    "file": "user.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/users/activity/stats",
+    "file": "user.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/users/admin",
+    "file": "user.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/users/agent",
+    "file": "user.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/users/agent-stats",
+    "file": "user.routes.js"
+  },
+  {
+    "method": "PATCH",
+    "path": "/users/agent/:id/commission",
+    "file": "user.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/users/listener",
+    "file": "user.routes.js"
+  },
+  {
+    "method": "DELETE",
+    "path": "/users/me",
+    "file": "user.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/users/me",
+    "file": "user.routes.js"
+  },
+  {
+    "method": "PUT",
+    "path": "/users/me",
+    "file": "user.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/users/me/settings",
+    "file": "user.routes.js"
+  },
+  {
+    "method": "PATCH",
+    "path": "/users/me/settings",
+    "file": "user.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/users/stats",
+    "file": "user.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/wallets/admin",
+    "file": "wallet.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/wallets/admin/:id",
+    "file": "wallet.routes.js"
+  },
+  {
+    "method": "PUT",
+    "path": "/wallets/admin/:id/status",
+    "file": "wallet.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/wallets/admin/coin-transactions",
+    "file": "wallet.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/wallets/admin/payment-transactions",
+    "file": "wallet.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/wallets/admin/stats",
+    "file": "wallet.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/wallets/admin/user/:userId",
+    "file": "wallet.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/wallets/admin/user/:userId/credit-debit",
+    "file": "wallet.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/wallets/me",
+    "file": "wallet.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/wallets/me/coin-transactions",
+    "file": "wallet.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/wallets/me/payment-transactions",
+    "file": "wallet.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/wallets/payments/create-order",
+    "file": "wallet.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/wallets/payments/webhook",
+    "file": "wallet.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/wallets/payments/webhook-mock",
+    "file": "wallet.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/wishlist",
+    "file": "wishlist.routes.js"
+  },
+  {
+    "method": "DELETE",
+    "path": "/wishlist/:listenerId",
+    "file": "wishlist.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/wishlist/:listenerId",
+    "file": "wishlist.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/wishlist/status/:listenerId",
+    "file": "wishlist.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/withdrawals",
+    "file": "withdrawal.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/withdrawals/:id",
+    "file": "withdrawal.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/withdrawals/:id/cancel",
+    "file": "withdrawal.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/withdrawals/admin",
+    "file": "withdrawal.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/withdrawals/admin/:id",
+    "file": "withdrawal.routes.js"
+  },
+  {
+    "method": "PATCH",
+    "path": "/withdrawals/admin/:id/approve",
+    "file": "withdrawal.routes.js"
+  },
+  {
+    "method": "PATCH",
+    "path": "/withdrawals/admin/:id/reject",
+    "file": "withdrawal.routes.js"
+  },
+  {
+    "method": "PUT",
+    "path": "/withdrawals/admin/config",
+    "file": "withdrawal.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/withdrawals/admin/settlements",
+    "file": "withdrawal.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/withdrawals/admin/settlements/run",
+    "file": "withdrawal.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/withdrawals/admin/stats",
+    "file": "withdrawal.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/withdrawals/bank-accounts",
+    "file": "withdrawal.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/withdrawals/bank-accounts",
+    "file": "withdrawal.routes.js"
+  },
+  {
+    "method": "DELETE",
+    "path": "/withdrawals/bank-accounts/:id",
+    "file": "withdrawal.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/withdrawals/config",
+    "file": "withdrawal.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/withdrawals/me",
+    "file": "withdrawal.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/withdrawals/me/stats",
+    "file": "withdrawal.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/withdrawals/quote",
+    "file": "withdrawal.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/xp/admin/grant",
+    "file": "xp.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/xp/admin/level-configs",
+    "file": "xp.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/xp/admin/level-configs",
+    "file": "xp.routes.js"
+  },
+  {
+    "method": "DELETE",
+    "path": "/xp/admin/level-configs/:id",
+    "file": "xp.routes.js"
+  },
+  {
+    "method": "PUT",
+    "path": "/xp/admin/level-configs/:id",
+    "file": "xp.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/xp/admin/reward-claims",
+    "file": "xp.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/xp/admin/rewards",
+    "file": "xp.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/xp/admin/rewards",
+    "file": "xp.routes.js"
+  },
+  {
+    "method": "DELETE",
+    "path": "/xp/admin/rewards/:id",
+    "file": "xp.routes.js"
+  },
+  {
+    "method": "PUT",
+    "path": "/xp/admin/rewards/:id",
+    "file": "xp.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/xp/admin/stats",
+    "file": "xp.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/xp/admin/transactions",
+    "file": "xp.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/xp/admin/xp-actions",
+    "file": "xp.routes.js"
+  },
+  {
+    "method": "PUT",
+    "path": "/xp/admin/xp-actions/:action",
+    "file": "xp.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/xp/history",
+    "file": "xp.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/xp/leaderboard",
+    "file": "xp.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/xp/profile",
+    "file": "xp.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/xp/rewards/:inventoryId/claim",
+    "file": "xp.routes.js"
+  },
+  {
+    "method": "POST",
+    "path": "/xp/rewards/claim-all",
+    "file": "xp.routes.js"
+  },
+  {
+    "method": "GET",
+    "path": "/xp/rewards/inventory",
+    "file": "xp.routes.js"
+  }
+]

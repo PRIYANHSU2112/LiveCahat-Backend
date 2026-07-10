@@ -4,7 +4,11 @@ import User from '../modules/user.model.js';
 import ApiError from '../utils/ApiError.js';
 import { getPaginationOptions, formatPaginatedResponse } from '../utils/pagination.util.js';
 import { getPeriodRange } from '../utils/date.util.js';
+import { buildUtcCreatedAtFilter } from '../utils/date-filter.util.js';
+import { getCache, setCache, deleteCache } from '../utils/redis.util.js';
 import logger from '../utils/logger.util.js';
+
+const ADMIN_STATS_CACHE_KEY = 'notifications:admin:stats';
 
 // Audience → user `type` mapping for admin broadcasts.
 const AUDIENCE_TYPE = {
@@ -64,9 +68,99 @@ class NotificationService {
    * Platform-wide KPI strip for admin dashboards.
    */
   async getAdminStats() {
+    const cached = await getCache(ADMIN_STATS_CACHE_KEY);
+    if (cached) return cached;
+
     const { start: todayStart } = getPeriodRange('today');
     const { start: weekStart } = getPeriodRange('week');
-    return notificationRepository.getStatsCounts({}, todayStart, weekStart);
+    const stats = await notificationRepository.getStatsCounts({}, todayStart, weekStart);
+    await setCache(ADMIN_STATS_CACHE_KEY, stats, 30);
+    return stats;
+  }
+
+  async bustAdminStatsCache() {
+    await deleteCache(ADMIN_STATS_CACHE_KEY);
+  }
+
+  /**
+   * Paginated platform notification log for admin.
+   */
+  async adminListNotifications(query = {}) {
+    const { page, limit, skip, sort } = getPaginationOptions({
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+      ...query,
+    });
+
+    const match = { ...buildUtcCreatedAtFilter(query) };
+    if (query.status) match.status = query.status;
+    if (query.type) match.type = query.type;
+
+    if (query.search?.trim()) {
+      const regex = { $regex: query.search.trim(), $options: 'i' };
+      match.$or = [{ title: regex }, { body: regex }];
+    }
+
+    const pipeline = [
+      { $match: match },
+      { $sort: sort },
+      {
+        $facet: {
+          metadata: [{ $count: 'total' }],
+          data: [
+            { $skip: skip },
+            { $limit: limit },
+            {
+              $lookup: {
+                from: 'users',
+                localField: 'recipientId',
+                foreignField: '_id',
+                as: 'recipient',
+              },
+            },
+            { $unwind: { path: '$recipient', preserveNullAndEmptyArrays: true } },
+            {
+              $project: {
+                title: 1,
+                body: 1,
+                type: 1,
+                status: 1,
+                createdAt: 1,
+                recipient: {
+                  id: '$recipient._id',
+                  firstName: '$recipient.firstName',
+                  lastName: '$recipient.lastName',
+                  email: '$recipient.email',
+                  type: '$recipient.type',
+                },
+              },
+            },
+          ],
+        },
+      },
+    ];
+
+    const [result] = await Notification.aggregate(pipeline);
+    const total = result.metadata[0]?.total ?? 0;
+    const docs = (result.data ?? []).map((row) => ({
+      id: row._id.toString(),
+      title: row.title,
+      body: row.body,
+      type: row.type,
+      status: row.status,
+      recipient: row.recipient?.id
+        ? {
+            id: row.recipient.id.toString(),
+            firstName: row.recipient.firstName,
+            lastName: row.recipient.lastName,
+            email: row.recipient.email,
+            type: row.recipient.type,
+          }
+        : null,
+      createdAt: row.createdAt,
+    }));
+
+    return formatPaginatedResponse(docs, total, page, limit);
   }
 
   async markAsRead(userId, notificationId) {
@@ -116,6 +210,7 @@ class NotificationService {
       metadata,
     });
 
+    await this.bustAdminStatsCache();
     return notification;
   }
 
@@ -153,6 +248,7 @@ class NotificationService {
     }
 
     logger.info(`Broadcast "${title}" sent to ${sent} ${audience} recipient(s)`);
+    await this.bustAdminStatsCache();
     return { sent, audience };
   }
 }

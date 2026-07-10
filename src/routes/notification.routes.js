@@ -4,6 +4,7 @@ import { authenticate, restrictTo } from '../middlewares/auth.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 import {
   listNotificationQuerySchema,
+  adminListNotificationQuerySchema,
   idParamSchema,
   sendNotificationSchema,
   broadcastNotificationSchema,
@@ -29,5 +30,10 @@ router.post('/admin/send', validate(sendNotificationSchema), notificationControl
 // Broadcast to all users / all listeners / all agents / everyone
 router.post('/admin/broadcast', validate(broadcastNotificationSchema), notificationController.broadcast);
 router.get('/admin/stats', notificationController.getAdminStats);
+router.get(
+  '/admin',
+  validate(adminListNotificationQuerySchema),
+  notificationController.adminListNotifications
+);
 
 export default router;

@@ -5,6 +5,12 @@ const objectId = Joi.string().hex().length(24);
 // notification.metadata is a Map<string, string> on the model
 const metadata = Joi.object().pattern(Joi.string(), Joi.string());
 
+const dateFilterFields = {
+  year: Joi.number().integer().min(2020).max(2100),
+  month: Joi.number().integer().min(1).max(12),
+  day: Joi.number().integer().min(1).max(31),
+};
+
 export const listNotificationQuerySchema = {
   query: Joi.object().keys({
     page: Joi.number().integer().min(1),
@@ -12,6 +18,18 @@ export const listNotificationQuerySchema = {
     sortOrder: Joi.string().valid('asc', 'desc'),
     status: Joi.string().valid(...NOTIFICATION_STATUSES),
     type: Joi.string().valid(...NOTIFICATION_TYPES),
+  }),
+};
+
+export const adminListNotificationQuerySchema = {
+  query: Joi.object().keys({
+    page: Joi.number().integer().min(1),
+    limit: Joi.number().integer().min(1).max(100),
+    sortOrder: Joi.string().valid('asc', 'desc'),
+    status: Joi.string().valid(...NOTIFICATION_STATUSES),
+    type: Joi.string().valid(...NOTIFICATION_TYPES),
+    search: Joi.string().trim().allow(''),
+    ...dateFilterFields,
   }),
 };
 

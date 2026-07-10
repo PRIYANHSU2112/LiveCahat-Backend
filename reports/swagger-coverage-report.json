@@ -1,0 +1,140 @@
+{
+  "generatedAt": "2026-07-10",
+  "openapi": "3.0.0",
+  "projectSetup": "Express + static OpenAPI 3.0 (src/docs/swagger.json) — not NestJS decorators",
+  "totals": {
+    "totalApisFoundInCode": 301,
+    "apisAlreadyDocumentedBefore": 241,
+    "apisNewlyDocumented": 60,
+    "apisUpdatedOrRemapped": 9,
+    "apisDocumentedAfter": 301,
+    "coveragePercent": 100
+  },
+  "newlyDocumentedGroups": {
+    "adminStatsEndpoints": [
+      "GET /anchor-levels/admin/stats",
+      "GET /avatars/admin/stats",
+      "GET /banners/admin/stats",
+      "GET /coin-packs/admin/stats",
+      "GET /company/admin/stats",
+      "GET /daily-rewards/admin/stats",
+      "GET /feedback/admin/stats",
+      "GET /gifts/admin/stats",
+      "GET /languages/admin/stats",
+      "GET /listeners/admin/stats",
+      "GET /notifications/admin/stats",
+      "GET /referrals/admin/stats",
+      "GET /sticker-categories/admin/stats",
+      "GET /stickers/admin/stats",
+      "GET /users/stats",
+      "GET /users/agent-stats",
+      "GET /users/activity/stats",
+      "GET /wallets/admin/stats",
+      "GET /xp/admin/stats",
+      "GET /notifications/stats"
+    ],
+    "adminListAndCrud": [
+      "GET /avatars/admin",
+      "GET /coin-packs/admin",
+      "GET /gifts/admin",
+      "GET /company/admin/profile",
+      "PUT /company/admin/profile",
+      "GET /daily-rewards/admin/claims",
+      "GET /daily-rewards/admin/config",
+      "POST /daily-rewards/admin/cache/clear",
+      "GET /feedback/admin",
+      "GET /feedback/admin/{id}",
+      "PATCH /feedback/admin/{id}/moderate",
+      "PATCH /languages/{id}/toggle",
+      "GET /listeners/admin/{id}",
+      "PUT /listeners/admin/{id}",
+      "GET /listeners/admin/availability-monitoring",
+      "GET /listeners/admin/performance",
+      "GET /notifications/admin",
+      "GET /referrals/admin/referrals",
+      "GET /users/activity",
+      "POST /users/agent",
+      "PATCH /users/agent/{id}/commission",
+      "GET /wallets/admin",
+      "GET /wallets/admin/{id}",
+      "PUT /wallets/admin/{id}/status",
+      "GET /wallets/admin/coin-transactions",
+      "GET /wallets/admin/payment-transactions",
+      "GET /wallets/admin/user/{userId}",
+      "POST /wallets/admin/user/{userId}/credit-debit",
+      "GET /withdrawals/admin/{id}",
+      "GET /withdrawals/admin/settlements",
+      "GET /withdrawals/me/stats",
+      "GET /xp/admin/reward-claims",
+      "GET /xp/admin/transactions"
+    ],
+    "chatsAndLiveRooms": [
+      "GET /chats/conversations",
+      "GET /chats/sessions",
+      "GET /chats/sessions/{sessionId}/messages",
+      "POST /chats/sessions/{sessionId}/media",
+      "GET /live-rooms",
+      "GET /live-rooms/{id}",
+      "POST /live-rooms/{id}/agora-token"
+    ]
+  },
+  "remappedOutdatedPaths": [
+    {
+      "old": "GET /wallets",
+      "new": "GET /wallets/admin"
+    },
+    {
+      "old": "GET /wallets/coin-transactions",
+      "new": "GET /wallets/admin/coin-transactions"
+    },
+    {
+      "old": "GET /wallets/payment-transactions",
+      "new": "GET /wallets/admin/payment-transactions"
+    },
+    {
+      "old": "GET /wallets/{id}",
+      "new": "GET /wallets/admin/{id}"
+    },
+    {
+      "old": "POST /wallets/user/{userId}/credit-debit",
+      "new": "POST /wallets/admin/user/{userId}/credit-debit"
+    },
+    {
+      "old": "PUT /wallets/{id}/status",
+      "new": "PUT /wallets/admin/{id}/status"
+    },
+    {
+      "old": "POST /daily-rewards/admin/clear-cache",
+      "new": "POST /daily-rewards/admin/cache/clear"
+    },
+    {
+      "old": "GET /feedback (admin list)",
+      "new": "GET /feedback/admin"
+    },
+    {
+      "old": "PATCH /feedback/{id}/moderate",
+      "new": "PATCH /feedback/admin/{id}/moderate"
+    }
+  ],
+  "inconsistenciesDiscovered": [
+    "Wallet admin routes lived under /wallets/admin/* in code but swagger documented them without /admin prefix.",
+    "Daily rewards cache clear path was /admin/clear-cache in swagger vs /admin/cache/clear in code.",
+    "Feedback admin list/moderate used non-admin paths in swagger.",
+    "Entire Chats and Live Rooms modules had zero swagger coverage.",
+    "Many */admin/stats endpoints existed in code but were undocumented.",
+    "Project uses static OpenAPI JSON (not NestJS @ApiProperty decorators); documentation was updated in swagger.json accordingly."
+  ],
+  "qualityNotes": {
+    "auth": "Bearer JWT documented on protected routes; public routes (e.g. GET /countries, auth OTP) remain without security.",
+    "parameters": "Query/path examples added for pagination, sorting, filters, date filters.",
+    "bodies": "Request body examples added for create/update/moderate/credit-debit endpoints.",
+    "multipart": "POST /chats/sessions/{sessionId}/media documented as multipart/form-data.",
+    "errors": "Standard 400/401/403/404/500 responses added on newly documented ops.",
+    "tagsAdded": ["Chats", "Live Rooms"]
+  },
+  "howToVerify": [
+    "Open http://localhost:5000/api-docs (hard refresh)",
+    "Or GET http://localhost:5000/api-docs.json",
+    "Re-run: node scripts/swagger-audit.mjs"
+  ]
+}

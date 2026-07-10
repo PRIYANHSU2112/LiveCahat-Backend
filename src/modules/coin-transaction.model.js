@@ -45,6 +45,7 @@ const coinTransactionSchema = new mongoose.Schema(
 
 // Add compound index for efficient querying of user's transactions
 coinTransactionSchema.index({ userId: 1, createdAt: -1 });
+coinTransactionSchema.index({ type: 1, referenceType: 1, createdAt: -1 });
 
 const CoinTransaction = mongoose.model('CoinTransaction', coinTransactionSchema);
 export default CoinTransaction;

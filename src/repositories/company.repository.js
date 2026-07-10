@@ -5,6 +5,10 @@ class CompanyRepository extends BaseRepository {
   constructor() {
     super(Company);
   }
+
+  async findPrimary() {
+    return this.model.findOne({}).sort({ createdAt: -1 }).lean();
+  }
 }
 
 export default new CompanyRepository();

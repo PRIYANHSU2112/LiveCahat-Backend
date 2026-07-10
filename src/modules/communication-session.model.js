@@ -69,6 +69,8 @@ communicationSessionSchema.index({ callerId: 1, createdAt: -1 });
 communicationSessionSchema.index({ listenerId: 1, createdAt: -1 });
 communicationSessionSchema.index({ listenerId: 1, callerId: 1 });
 communicationSessionSchema.index({ listenerId: 1, status: 1, createdAt: -1 });
+communicationSessionSchema.index({ status: 1, createdAt: -1 });
+communicationSessionSchema.index({ callerId: 1, status: 1, createdAt: -1 });
 
 const CommunicationSession = mongoose.model('CommunicationSession', communicationSessionSchema);
 export default CommunicationSession;

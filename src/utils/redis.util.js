@@ -7,7 +7,7 @@ const MAX_ATTEMPTS = 3;
 /**
  * Store OTP session (OTP + login metadata) in Redis
  * @param {String} identifier (e.g. mobile number)
- * @param {Object} session { otp, dateOfBirth, gender, type, countryCode? }
+ * @param {Object} session { otp, age, gender, type, countryCode? }
  */
 export const storeOtpSession = async (identifier, session) => {
   const key = `otp:${identifier}`;
