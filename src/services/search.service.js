@@ -161,6 +161,10 @@ class SearchService {
    */
   async adminGlobalSearch(queryParams) {
     const { page, limit, skip, sort } = getPaginationOptions(queryParams);
+    const compact =
+      queryParams.compact === true ||
+      queryParams.compact === 'true' ||
+      queryParams.compact === '1';
 
     // ── 1. Resolve language ObjectId ──────────────────────────────────────
     let languageId = null;
@@ -208,13 +212,10 @@ class SearchService {
 
     // Boolean filters
     if (queryParams.isBlocked !== undefined) {
-      userMatch.isBlocked = queryParams.isBlocked === 'true';
+      userMatch.isBlocked = queryParams.isBlocked === 'true' || queryParams.isBlocked === true;
     }
     if (queryParams.isDeleted !== undefined) {
-      userMatch.isDeleted = queryParams.isDeleted === 'true';
-    } else {
-      // Admins see non-deleted users by default unless explicitly asked for deleted
-      // (Don't forcibly exclude — admin may want to see deleted users)
+      userMatch.isDeleted = queryParams.isDeleted === 'true' || queryParams.isDeleted === true;
     }
 
     // Date range
@@ -248,7 +249,6 @@ class SearchService {
     // ── 4. Aggregation pipeline on User collection ────────────────────────
     const pipeline = [
       { $match: userMatch },
-      // Join listener profile (left join so we still get non-listeners)
       {
         $lookup: {
           from: 'listenerprofiles',
@@ -262,7 +262,6 @@ class SearchService {
           listenerProfile: { $arrayElemAt: ['$listenerProfile', 0] },
         },
       },
-      // If listener-specific filters were provided, filter by them
       ...(hasListenerFilters
         ? [
           {
@@ -272,33 +271,47 @@ class SearchService {
           },
         ]
         : []),
-      // Populate user's languages
-      {
-        $lookup: {
-          from: 'languages',
-          localField: 'languages',
-          foreignField: '_id',
-          as: 'languageDetails',
-        },
-      },
-      // Populate listener's languages (may differ from user.languages)
-      {
-        $lookup: {
-          from: 'languages',
-          localField: 'listenerProfile.languages',
-          foreignField: '_id',
-          as: 'listenerLanguageDetails',
-        },
-      },
-      // Project all relevant fields for admin view
-      {
-        $project: {
-          password: 0,
-          blockedUsers: 0,
-          unlockedAvatars: 0,
-          unlockedStickers: 0,
-        },
-      },
+      ...(compact
+        ? [
+          {
+            $project: {
+              firstName: 1,
+              lastName: 1,
+              email: 1,
+              mobileNumber: 1,
+              type: 1,
+              profileImage: 1,
+              isBlocked: 1,
+              'listenerProfile.kycStatus': 1,
+            },
+          },
+        ]
+        : [
+          {
+            $lookup: {
+              from: 'languages',
+              localField: 'languages',
+              foreignField: '_id',
+              as: 'languageDetails',
+            },
+          },
+          {
+            $lookup: {
+              from: 'languages',
+              localField: 'listenerProfile.languages',
+              foreignField: '_id',
+              as: 'listenerLanguageDetails',
+            },
+          },
+          {
+            $project: {
+              password: 0,
+              blockedUsers: 0,
+              unlockedAvatars: 0,
+              unlockedStickers: 0,
+            },
+          },
+        ]),
       { $sort: sort },
       {
         $facet: {
@@ -310,7 +323,20 @@ class SearchService {
 
     const result = await User.aggregate(pipeline);
     const total = result[0]?.metadata[0]?.total || 0;
-    const data = result[0]?.data || [];
+    let data = result[0]?.data || [];
+
+    if (compact) {
+      data = data.map((d) => ({
+        id: d._id.toString(),
+        name: [d.firstName, d.lastName].filter(Boolean).join(' ').trim() || '—',
+        email: d.email || null,
+        mobileNumber: d.mobileNumber || null,
+        type: d.type,
+        profileImage: d.profileImage || null,
+        isBlocked: Boolean(d.isBlocked),
+        kycStatus: d.listenerProfile?.kycStatus || null,
+      }));
+    }
 
     return formatPaginatedResponse(data, total, page, limit);
   }

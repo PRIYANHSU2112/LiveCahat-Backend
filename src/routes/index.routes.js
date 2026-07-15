@@ -33,6 +33,7 @@ import analyticsRoutes from './analytics.routes.js';
 import adminDashboardRoutes from './admin-dashboard.routes.js';
 import communicationRoutes from './communication.routes.js';
 import countryRoutes from './country.routes.js';
+import roleRoutes, { permissionRouter, auditLogRouter } from './role.routes.js';
 
 const router = express.Router();
 
@@ -44,6 +45,9 @@ router.use('/agent', agentRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/admin', adminDashboardRoutes);
 router.use('/communications', communicationRoutes);
+router.use('/roles', roleRoutes);
+router.use('/permissions', permissionRouter);
+router.use('/audit-logs', auditLogRouter);
 router.use('/users', userRoutes);
 router.use('/listeners', listenerRoutes);
 router.use('/languages', languageRoutes);

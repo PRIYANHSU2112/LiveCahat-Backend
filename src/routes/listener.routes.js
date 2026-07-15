@@ -1,6 +1,6 @@
 import express from 'express';
 import listenerController from '../controllers/listener.controller.js';
-import { authenticate, restrictTo } from '../middlewares/auth.middleware.js';
+import { authenticate, restrictTo, authorize } from '../middlewares/auth.middleware.js';
 import { uploadKYCDocuments, uploadIntroVideo, processAndUploadImage } from '../middlewares/upload.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 import { updateListenerProfileSchema, updateRatesSchema, updateAvailabilitySchema, updateKycStatusSchema, dashboardOverviewQuerySchema, dashboardSessionsQuerySchema, homeListenersQuerySchema, agentCreateListenerSchema, agentListenersQuerySchema } from '../validators/listener.validator.js';
@@ -15,13 +15,13 @@ router.get('/agent/stats', restrictTo('AGENT'), listenerController.getAgentStats
 router.post('/agent', restrictTo('AGENT'), validate(agentCreateListenerSchema), listenerController.createListener);
 
 // --- ADMIN ONLY ROUTES (must precede the LISTENER/CUSTOMER restriction below) ---
-router.get('/admin/stats', restrictTo('ADMIN'), listenerController.getAdminStats);
-router.get('/admin/performance', restrictTo('ADMIN'), listenerController.getAdminListenerPerformance);
-router.get('/admin/availability-monitoring', restrictTo('ADMIN'), listenerController.getAdminAvailabilityMonitoring);
-router.get('/admin/:id', restrictTo('ADMIN'), listenerController.getListenerById);
-router.put('/admin/:id', restrictTo('ADMIN'), listenerController.updateListenerByAdmin);
+router.get('/admin/stats', restrictTo('ADMIN'), authorize('listener.stats.view'), listenerController.getAdminStats);
+router.get('/admin/performance', restrictTo('ADMIN'), authorize('listener.performance.view'), listenerController.getAdminListenerPerformance);
+router.get('/admin/availability-monitoring', restrictTo('ADMIN'), authorize('listener.availability.view'), listenerController.getAdminAvailabilityMonitoring);
+router.get('/admin/:id', restrictTo('ADMIN'), authorize('listener.read'), listenerController.getListenerById);
+router.put('/admin/:id', restrictTo('ADMIN'), authorize('listener.update'), listenerController.updateListenerByAdmin);
 router.get('/', restrictTo('ADMIN', 'CUSTOMER'), listenerController.getAllListeners);
-router.post('/:id/kyc', restrictTo('ADMIN'), validate(updateKycStatusSchema), listenerController.approveOrRejectListener);
+router.post('/:id/kyc', restrictTo('ADMIN'), authorize('listener.kyc.moderate'), validate(updateKycStatusSchema), listenerController.approveOrRejectListener);
 
 // Listeners can access these
 router.use(restrictTo('LISTENER', 'CUSTOMER')); // Customer can become a listener by creating a profile

@@ -1,6 +1,6 @@
 import express from 'express';
 import companyController from '../controllers/company.controller.js';
-import { authenticate, restrictTo } from '../middlewares/auth.middleware.js';
+import { authenticate, restrictTo, authorize } from '../middlewares/auth.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 import { requireObjectId } from '../middlewares/object-id.middleware.js';
 import { createCompanySchema, updateCompanySchema } from '../validators/company.validator.js';
@@ -12,17 +12,17 @@ router.get('/profile', companyController.getCompanyProfile);
 
 router.use(authenticate);
 
-router.get('/admin/profile', adminOnly, companyController.getAdminProfile);
-router.get('/admin/stats', adminOnly, companyController.getAdminStats);
-router.put('/admin/profile', adminOnly, validate(updateCompanySchema), companyController.upsertAdminProfile);
+router.get('/admin/profile', adminOnly, authorize('company.read'), companyController.getAdminProfile);
+router.get('/admin/stats', adminOnly, authorize('company.stats.view'), companyController.getAdminStats);
+router.put('/admin/profile', adminOnly, authorize('company.update'), validate(updateCompanySchema), companyController.upsertAdminProfile);
 
-router.get('/', adminOnly, companyController.getAllCompanies);
-router.get('/:id', adminOnly, requireObjectId('id'), companyController.getCompanyById);
+router.get('/', adminOnly, authorize('company.read'), companyController.getAllCompanies);
+router.get('/:id', adminOnly, authorize('company.read'), requireObjectId('id'), companyController.getCompanyById);
 
 router.use(adminOnly);
 
-router.post('/', validate(createCompanySchema), companyController.createCompany);
-router.put('/:id', requireObjectId('id'), validate(updateCompanySchema), companyController.updateCompany);
-router.delete('/:id', requireObjectId('id'), companyController.deleteCompany);
+router.post('/', authorize('company.create'), validate(createCompanySchema), companyController.createCompany);
+router.put('/:id', authorize('company.update'), requireObjectId('id'), validate(updateCompanySchema), companyController.updateCompany);
+router.delete('/:id', authorize('company.delete'), requireObjectId('id'), companyController.deleteCompany);
 
 export default router;

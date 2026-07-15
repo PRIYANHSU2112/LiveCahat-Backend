@@ -3,11 +3,11 @@ import ApiError from '../utils/ApiError.js';
 import User from '../modules/user.model.js';
 import catchAsync from '../utils/catchAsync.util.js';
 import { getCache, setCache } from '../utils/redis.util.js';
+import rbacService from '../services/rbac.service.js';
 
 /**
  * Middleware to protect routes via JWT
  */
-
 export const authenticate = catchAsync(async (req, res, next) => {
   let token;
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
@@ -31,7 +31,7 @@ export const authenticate = catchAsync(async (req, res, next) => {
           email: 'agent@chatcorner.app',
           mobileNumber: '8888888888',
           inviteCode: 'AGT-SK100',
-          profileCompleted: true
+          profileCompleted: true,
         });
       }
     } else {
@@ -43,7 +43,7 @@ export const authenticate = catchAsync(async (req, res, next) => {
           lastName: 'Khan',
           email: 'admin@chatcorner.app',
           mobileNumber: '7777777777',
-          profileCompleted: true
+          profileCompleted: true,
         });
       }
     }
@@ -67,7 +67,7 @@ export const authenticate = catchAsync(async (req, res, next) => {
     if (!currentUser) {
       currentUser = await User.findById(decoded.id).lean();
       if (currentUser) {
-        await setCache(cacheKey, currentUser, 60); // Cache authenticated profile for 60 seconds
+        await setCache(cacheKey, currentUser, 60);
       }
     }
   }
@@ -99,4 +99,30 @@ export const restrictTo = (...roles) => {
     }
     next();
   };
+};
+
+/**
+ * Granular RBAC: require ALL listed permission codes (AND).
+ * Must run after authenticate (+ typically restrictTo('ADMIN')).
+ */
+export const authorize = (...requiredPermissions) => {
+  return catchAsync(async (req, res, next) => {
+    if (!req.user) {
+      throw new ApiError(401, 'You are not logged in! Please log in to get access.');
+    }
+
+    if (req.user.type !== 'ADMIN') {
+      throw new ApiError(403, 'You do not have permission to perform this action');
+    }
+
+    const { permissions, roleSlug } = await rbacService.getUserPermissions(req.user);
+    req.user.permissions = permissions;
+    req.user.roleSlug = roleSlug;
+
+    if (!rbacService.hasAllPermissions(permissions, requiredPermissions)) {
+      throw new ApiError(403, 'You do not have permission to perform this action');
+    }
+
+    next();
+  });
 };

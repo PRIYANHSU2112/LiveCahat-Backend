@@ -1,6 +1,6 @@
 import express from 'express';
 import followController from '../controllers/follow.controller.js';
-import { authenticate, restrictTo } from '../middlewares/auth.middleware.js';
+import { authenticate, restrictTo, authorize } from '../middlewares/auth.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 import {
   listenerIdParamSchema,
@@ -44,6 +44,6 @@ router.patch('/favorite/:listenerId', restrictTo('CUSTOMER'), validate(listenerI
 // ─── ADMIN ROUTES ───────────────────────────────────────────────
 
 // Top followed listeners (analytics)
-router.get('/top', restrictTo('ADMIN'), validate(topFollowedSchema), followController.getTopFollowed);
+router.get('/top', restrictTo('ADMIN'), authorize('follow.analytics.view'), validate(topFollowedSchema), followController.getTopFollowed);
 
 export default router;

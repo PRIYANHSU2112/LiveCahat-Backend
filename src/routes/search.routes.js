@@ -1,8 +1,8 @@
 import express from 'express';
 import searchController from '../controllers/search.controller.js';
-import { authenticate, restrictTo } from '../middlewares/auth.middleware.js';
+import { authenticate, restrictTo, authorize } from '../middlewares/auth.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
-import { agentSearchQuerySchema } from '../validators/search.validator.js';
+import { agentSearchQuerySchema, adminSearchQuerySchema } from '../validators/search.validator.js';
 
 const router = express.Router();
 
@@ -83,15 +83,19 @@ router.get(
  *   maxEarnings - Maximum totalEarnings on listener profile
  *   minRating   - Minimum avgRating on listener profile
  *
- *   --- Pagination & Sorting ---
- *   page        - Page number (default: 1)
- *   limit       - Results per page (default: 10)
- *   sortBy      - Field to sort by (default: createdAt)
- *   sortOrder   - asc | desc (default: desc)
+ *   compact     - true → lightweight rows for admin typeahead (⌘K palette)
+ *   page, limit, sortBy, sortOrder
  *
  * Example:
  *   GET /api/v1/search/admin?q=alice&type=LISTENER&kycStatus=APPROVED&minRating=4&isBlocked=false
+ *   GET /api/v1/search/admin?q=alice&compact=true&limit=10
  */
-router.get('/admin', restrictTo('ADMIN'), searchController.adminGlobalSearch);
+router.get(
+  '/admin',
+  restrictTo('ADMIN'),
+  authorize('search.admin'),
+  validate(adminSearchQuerySchema),
+  searchController.adminGlobalSearch
+);
 
 export default router;

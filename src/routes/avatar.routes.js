@@ -1,6 +1,6 @@
 import express from 'express';
 import avatarController from '../controllers/avatar.controller.js';
-import { authenticate, restrictTo } from '../middlewares/auth.middleware.js';
+import { authenticate, restrictTo, authorize } from '../middlewares/auth.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 import {
   createAvatarSchema,
@@ -21,10 +21,10 @@ router.post('/:avatarId/set-profile', avatarController.setAsProfile);
 
 // --- Admin Endpoints (Restricted to ADMIN users only) ---
 router.use(restrictTo('ADMIN'));
-router.get('/admin/stats', avatarController.getAdminStats);
-router.get('/admin', validate(adminAvatarListQuerySchema), avatarController.listAdmin);
-router.post('/admin', optionalBannerImageUpload, validate(createAvatarSchema), avatarController.create);
-router.put('/admin/:id', optionalBannerImageUpload, validate(updateAvatarSchema), avatarController.update);
-router.delete('/admin/:id', avatarController.delete);
+router.get('/admin/stats', authorize('avatar.stats.view'), avatarController.getAdminStats);
+router.get('/admin', authorize('avatar.read'), validate(adminAvatarListQuerySchema), avatarController.listAdmin);
+router.post('/admin', authorize('avatar.create'), optionalBannerImageUpload, validate(createAvatarSchema), avatarController.create);
+router.put('/admin/:id', authorize('avatar.update'), optionalBannerImageUpload, validate(updateAvatarSchema), avatarController.update);
+router.delete('/admin/:id', authorize('avatar.delete'), avatarController.delete);
 
 export default router;

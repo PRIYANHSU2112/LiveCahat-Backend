@@ -28,7 +28,7 @@ const xpConfigSchema = new mongoose.Schema(
   }
 );
 
-xpConfigSchema.index({ action: 1 }, { unique: true });
+// `action` uniqueness comes from field-level `unique: true` — do not redeclare here
 
 const XpConfig = mongoose.model('XpConfig', xpConfigSchema);
 export default XpConfig;

@@ -1,6 +1,6 @@
 import express from 'express';
 import stickerController from '../controllers/sticker.controller.js';
-import { authenticate, restrictTo } from '../middlewares/auth.middleware.js';
+import { authenticate, restrictTo, authorize } from '../middlewares/auth.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 import { requireObjectId } from '../middlewares/object-id.middleware.js';
 import {
@@ -17,7 +17,7 @@ const adminOnly = restrictTo('ADMIN');
 router.use(authenticate);
 
 // ─── Admin stats (before /:id) ──────────────────────────────────
-router.get('/admin/stats', adminOnly, stickerController.getAdminStats);
+router.get('/admin/stats', adminOnly, authorize('sticker.stats.view'), stickerController.getAdminStats);
 
 // ─── User + Admin (authenticated) ───────────────────────────────
 router.get('/', validate(listStickerQuerySchema), stickerController.getAllStickers);
@@ -38,6 +38,7 @@ router.post(
 router.post(
   '/',
   adminOnly,
+  authorize('sticker.create'),
   optionalStickerImageUpload,
   validate(createStickerSchema),
   stickerController.createSticker,
@@ -45,6 +46,7 @@ router.post(
 router.put(
   '/:id',
   adminOnly,
+  authorize('sticker.update'),
   requireObjectId('id'),
   optionalStickerImageUpload,
   validate(idParamSchema),
@@ -54,6 +56,7 @@ router.put(
 router.patch(
   '/:id/toggle',
   adminOnly,
+  authorize('sticker.update'),
   requireObjectId('id'),
   validate(idParamSchema),
   stickerController.toggleSticker,
@@ -61,6 +64,7 @@ router.patch(
 router.delete(
   '/:id',
   adminOnly,
+  authorize('sticker.delete'),
   requireObjectId('id'),
   validate(idParamSchema),
   stickerController.deleteSticker,

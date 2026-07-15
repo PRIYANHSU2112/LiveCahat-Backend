@@ -1,6 +1,6 @@
 import express from 'express';
 import dailyRewardController from '../controllers/daily-reward.controller.js';
-import { authenticate, restrictTo } from '../middlewares/auth.middleware.js';
+import { authenticate, restrictTo, authorize } from '../middlewares/auth.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 import {
   updateDaysConfigSchema,
@@ -23,11 +23,11 @@ router.post('/inventory/:inventoryId/open', dailyRewardController.openInventoryG
 // --- Admin Endpoints (Restricted to ADMIN users only) ---
 router.use(restrictTo('ADMIN'));
 
-router.get('/admin/config', dailyRewardController.getAdminConfig);
-router.get('/admin/stats', validate(adminStatsQuerySchema), dailyRewardController.getAdminStats);
-router.get('/admin/claims', validate(adminClaimsQuerySchema), dailyRewardController.listAdminClaims);
-router.put('/admin/config/days', validate(updateDaysConfigSchema), dailyRewardController.updateDaysConfig);
-router.put('/admin/config/weeks', validate(updateWeeksConfigSchema), dailyRewardController.updateWeeksConfig);
-router.post('/admin/cache/clear', dailyRewardController.clearCache);
+router.get('/admin/config', authorize('daily_reward.config.read'), dailyRewardController.getAdminConfig);
+router.get('/admin/stats', authorize('daily_reward.stats.view'), validate(adminStatsQuerySchema), dailyRewardController.getAdminStats);
+router.get('/admin/claims', authorize('daily_reward.claims.read'), validate(adminClaimsQuerySchema), dailyRewardController.listAdminClaims);
+router.put('/admin/config/days', authorize('daily_reward.config.update'), validate(updateDaysConfigSchema), dailyRewardController.updateDaysConfig);
+router.put('/admin/config/weeks', authorize('daily_reward.config.update'), validate(updateWeeksConfigSchema), dailyRewardController.updateWeeksConfig);
+router.post('/admin/cache/clear', authorize('daily_reward.cache.clear'), dailyRewardController.clearCache);
 
 export default router;

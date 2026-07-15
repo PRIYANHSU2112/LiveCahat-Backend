@@ -38,7 +38,7 @@ const levelConfigSchema = new mongoose.Schema(
   }
 );
 
-levelConfigSchema.index({ level: 1 }, { unique: true });
+// `level` uniqueness comes from field-level `unique: true` — do not redeclare here
 levelConfigSchema.index({ isActive: 1 });
 
 const LevelConfig = mongoose.model('LevelConfig', levelConfigSchema);

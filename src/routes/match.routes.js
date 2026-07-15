@@ -1,6 +1,6 @@
 import express from 'express';
 import matchController from '../controllers/match.controller.js';
-import { authenticate, restrictTo } from '../middlewares/auth.middleware.js';
+import { authenticate, restrictTo, authorize } from '../middlewares/auth.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 import matchValidator from '../validators/match.validator.js';
 
@@ -9,8 +9,8 @@ const router = express.Router();
 router.use(authenticate);
 
 // ─── Admin only (before CUSTOMER restriction) ───────────────────
-router.get('/admin/config', restrictTo('ADMIN'), matchController.getMatchConfig);
-router.put('/admin/config', restrictTo('ADMIN'), validate(matchValidator.updateMatchConfig), matchController.updateMatchConfig);
+router.get('/admin/config', restrictTo('ADMIN'), authorize('match.config.read'), matchController.getMatchConfig);
+router.put('/admin/config', restrictTo('ADMIN'), authorize('match.config.update'), validate(matchValidator.updateMatchConfig), matchController.updateMatchConfig);
 
 // ─── Customer only ──────────────────────────────────────────────
 router.use(restrictTo('CUSTOMER'));

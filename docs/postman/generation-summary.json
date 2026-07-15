@@ -1,11 +1,11 @@
 {
   "project": "LiveChat API",
-  "totalApisFound": 305,
+  "totalApisFound": 319,
   "swaggerCoverage": "100%",
   "newlyDocumentedPreviously": 60,
   "updatedSwaggerEndpoints": 9,
-  "totalPostmanRequests": 305,
-  "folders": 37,
+  "totalPostmanRequests": 319,
+  "folders": 38,
   "outputs": {
     "swaggerJson": "src/docs/swagger.json",
     "swaggerYaml": "src/docs/swagger.yaml",

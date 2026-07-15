@@ -121,6 +121,8 @@ tags:
     description: Agent commission settlement history
   - name: Admin Dashboard
     description: Unified admin executive dashboard summary, charts, busy listeners, and active chat sessions
+  - name: Roles & Permissions
+    description: Admin RBAC — roles, permission catalog, audit logs
   - name: Platform Analytics
     description: Admin platform analytics for revenue, users, listeners, sessions
   - name: Communications
@@ -5704,7 +5706,9 @@ paths:
           name: q
           schema:
             type: string
-          description: Keyword matched against first name, last name, full name, email, and mobile number (case-insensitive)
+            minLength: 2
+            maxLength: 100
+          description: Keyword matched against first name, last name, full name, email, and mobile number (case-insensitive; min 2 chars when provided)
           example: alice
         - in: query
           name: type
@@ -5848,6 +5852,16 @@ paths:
               - desc
             default: desc
           description: Sort direction
+        - in: query
+          name: compact
+          schema:
+            type: boolean
+            default: false
+          description: >-
+            When true, returns lightweight rows for admin typeahead (id, name, email,
+            mobileNumber, type, profileImage, isBlocked, kycStatus). Omits language
+            population and extra fields.
+          example: true
       responses:
         '200':
           description: Admin search results fetched successfully
@@ -7798,6 +7812,245 @@ paths:
           description: Settlement detail returned
         '404':
           description: Settlement not found
+  /roles:
+    get:
+      summary: List admin roles
+      tags:
+        - Roles & Permissions
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: isActive
+          schema:
+            type: string
+            enum:
+              - 'true'
+              - 'false'
+      responses:
+        '200':
+          description: Roles list
+        '403':
+          description: Forbidden
+    post:
+      summary: Create a role
+      tags:
+        - Roles & Permissions
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                slug:
+                  type: string
+                description:
+                  type: string
+                permissions:
+                  type: array
+                  items:
+                    type: string
+                isActive:
+                  type: boolean
+      responses:
+        '201':
+          description: Role created
+        '403':
+          description: Forbidden
+  /roles/stats:
+    get:
+      summary: Role KPIs for admin panel
+      tags:
+        - Roles & Permissions
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Role stats
+  /roles/policies:
+    get:
+      summary: Access policies derived from roles
+      tags:
+        - Roles & Permissions
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Policy rows
+  /roles/{id}:
+    get:
+      summary: Get role by id
+      tags:
+        - Roles & Permissions
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Role detail
+    patch:
+      summary: Update role
+      tags:
+        - Roles & Permissions
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Role updated
+    delete:
+      summary: Delete non-system role
+      tags:
+        - Roles & Permissions
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Role deleted
+  /roles/{id}/matrix:
+    get:
+      summary: Permission matrix for a role
+      tags:
+        - Roles & Permissions
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Matrix
+    put:
+      summary: Update permission matrix for a role
+      tags:
+        - Roles & Permissions
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Matrix updated
+  /roles/{id}/members:
+    get:
+      summary: List admins assigned to a role
+      tags:
+        - Roles & Permissions
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Members
+  /permissions:
+    get:
+      summary: List permission catalog
+      tags:
+        - Roles & Permissions
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Permissions
+  /permissions/matrix-meta:
+    get:
+      summary: UI matrix modules and actions
+      tags:
+        - Roles & Permissions
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Matrix metadata
+  /audit-logs:
+    get:
+      summary: List audit logs
+      tags:
+        - Roles & Permissions
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: search
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Audit logs
+  /users/admin/{id}/role:
+    patch:
+      summary: Assign role to an admin user
+      tags:
+        - Roles & Permissions
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - roleId
+              properties:
+                roleId:
+                  type: string
+      responses:
+        '200':
+          description: Role assigned
   /admin/dashboard/summary:
     get:
       summary: Admin dashboard KPI summary

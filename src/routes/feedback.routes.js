@@ -1,6 +1,6 @@
 import express from 'express';
 import feedbackController from '../controllers/feedback.controller.js';
-import { authenticate, restrictTo } from '../middlewares/auth.middleware.js';
+import { authenticate, restrictTo, authorize } from '../middlewares/auth.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 import {
   createFeedbackSchema,
@@ -24,18 +24,20 @@ router.get('/me', validate(listFeedbackQuerySchema), feedbackController.getMyFee
 router.get(
   '/admin/stats',
   adminOnly,
+  authorize('feedback.stats.view'),
   validate(adminFeedbackStatsQuerySchema),
   feedbackController.getAdminStats
 );
-router.get('/admin', adminOnly, validate(listFeedbackQuerySchema), feedbackController.getAllFeedback);
+router.get('/admin', adminOnly, authorize('feedback.read'), validate(listFeedbackQuerySchema), feedbackController.getAllFeedback);
 router.patch(
   '/admin/:id/moderate',
   adminOnly,
+  authorize('feedback.moderate'),
   validate(idParamSchema),
   validate(moderateFeedbackSchema),
   feedbackController.moderateFeedback
 );
-router.get('/admin/:id', adminOnly, validate(idParamSchema), feedbackController.getFeedbackById);
+router.get('/admin/:id', adminOnly, authorize('feedback.read'), validate(idParamSchema), feedbackController.getFeedbackById);
 
 router.get('/:id', validate(idParamSchema), feedbackController.getFeedbackById);
 router.put('/:id', validate(idParamSchema), validate(updateFeedbackSchema), feedbackController.updateFeedback);

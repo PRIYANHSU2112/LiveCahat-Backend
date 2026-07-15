@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "LiveChat API",
-    "description": "# LiveChat API\n\nAuto-generated from `src/docs/swagger.json` — kept in sync with backend routes.\n\n## Auth flow\n1. Run **Auth → Unified login for Admin and Agent** (`POST /auth/login`) with admin/agent email + password.\n2. Tests save `data.token` into environment variable `accessToken`.\n3. Collection auth injects `Authorization: Bearer {{accessToken}}` on protected requests.\n4. Mobile users: use **request-otp** + **verify-otp** (also saves token).\n\n## Variables\nImport `postman_environment.json` and select **LiveChat Local**.\nReplace ObjectId placeholders with real IDs from your database when needed.\n\n**Total requests:** 305",
+    "description": "# LiveChat API\n\nAuto-generated from `src/docs/swagger.json` — kept in sync with backend routes.\n\n## Auth flow\n1. Run **Auth → Unified login for Admin and Agent** (`POST /auth/login`) with admin/agent email + password.\n2. Tests save `data.token` into environment variable `accessToken`.\n3. Collection auth injects `Authorization: Bearer {{accessToken}}` on protected requests.\n4. Mobile users: use **request-otp** + **verify-otp** (also saves token).\n\n## Variables\nImport `postman_environment.json` and select **LiveChat Local**.\nReplace ObjectId placeholders with real IDs from your database when needed.\n\n**Total requests:** 319",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_postman_id": "livechat-api-collection"
   },
@@ -34636,6 +34636,1431 @@
         }
       ],
       "description": "APIs tagged \"Admin Dashboard\" from OpenAPI."
+    },
+    {
+      "name": "Roles & Permissions",
+      "item": [
+        {
+          "name": "List admin roles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roles?isActive=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "isActive",
+                  "value": "true",
+                  "description": "",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "List admin roles\n**OpenAPI path:** `GET /roles`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Roles list\n- **403**: Forbidden"
+          },
+          "response": [
+            {
+              "name": "401 Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Invalid token! Please log in again.\"\n}"
+            },
+            {
+              "name": "400 Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Validation error\",\n  \"errors\": [\n    {\n      \"field\": \"example\",\n      \"message\": \"is required\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Resource not found\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is successful or expected client error\", function () {",
+                  "  const ok = pm.response.code === 200 || (pm.response.code >= 200 && pm.response.code < 300);",
+                  "  const clientErr = [400, 401, 403, 404].includes(pm.response.code);",
+                  "  pm.expect(ok || clientErr).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response time < 5000ms\", function () {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "if (pm.response.headers.get(\"Content-Type\")?.includes(\"application/json\")) {",
+                  "  pm.test(\"JSON body parses\", function () {",
+                  "    pm.response.to.be.json;",
+                  "  });",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json && (json.status !== undefined || json.message !== undefined || json.data !== undefined)) {",
+                  "      pm.test(\"Common envelope fields present\", function () {",
+                  "        pm.expect(json).to.be.an(\"object\");",
+                  "      });",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create a role",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"\",\n  \"slug\": \"\",\n  \"description\": \"\",\n  \"permissions\": [],\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles"
+              ]
+            },
+            "description": "Create a role\n**OpenAPI path:** `POST /roles`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **201**: Role created\n- **403**: Forbidden"
+          },
+          "response": [
+            {
+              "name": "401 Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Invalid token! Please log in again.\"\n}"
+            },
+            {
+              "name": "400 Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Validation error\",\n  \"errors\": [\n    {\n      \"field\": \"example\",\n      \"message\": \"is required\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Resource not found\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is successful or expected client error\", function () {",
+                  "  const ok = pm.response.code === 201 || (pm.response.code >= 200 && pm.response.code < 300);",
+                  "  const clientErr = [400, 401, 403, 404].includes(pm.response.code);",
+                  "  pm.expect(ok || clientErr).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response time < 5000ms\", function () {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "if (pm.response.headers.get(\"Content-Type\")?.includes(\"application/json\")) {",
+                  "  pm.test(\"JSON body parses\", function () {",
+                  "    pm.response.to.be.json;",
+                  "  });",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json && (json.status !== undefined || json.message !== undefined || json.data !== undefined)) {",
+                  "      pm.test(\"Common envelope fields present\", function () {",
+                  "        pm.expect(json).to.be.an(\"object\");",
+                  "      });",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Role KPIs for admin panel",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roles/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                "stats"
+              ]
+            },
+            "description": "Role KPIs for admin panel\n**OpenAPI path:** `GET /roles/stats`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Role stats"
+          },
+          "response": [
+            {
+              "name": "401 Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Invalid token! Please log in again.\"\n}"
+            },
+            {
+              "name": "400 Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Validation error\",\n  \"errors\": [\n    {\n      \"field\": \"example\",\n      \"message\": \"is required\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Resource not found\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is successful or expected client error\", function () {",
+                  "  const ok = pm.response.code === 200 || (pm.response.code >= 200 && pm.response.code < 300);",
+                  "  const clientErr = [400, 401, 403, 404].includes(pm.response.code);",
+                  "  pm.expect(ok || clientErr).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response time < 5000ms\", function () {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "if (pm.response.headers.get(\"Content-Type\")?.includes(\"application/json\")) {",
+                  "  pm.test(\"JSON body parses\", function () {",
+                  "    pm.response.to.be.json;",
+                  "  });",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json && (json.status !== undefined || json.message !== undefined || json.data !== undefined)) {",
+                  "      pm.test(\"Common envelope fields present\", function () {",
+                  "        pm.expect(json).to.be.an(\"object\");",
+                  "      });",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Access policies derived from roles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roles/policies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                "policies"
+              ]
+            },
+            "description": "Access policies derived from roles\n**OpenAPI path:** `GET /roles/policies`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Policy rows"
+          },
+          "response": [
+            {
+              "name": "401 Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Invalid token! Please log in again.\"\n}"
+            },
+            {
+              "name": "400 Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Validation error\",\n  \"errors\": [\n    {\n      \"field\": \"example\",\n      \"message\": \"is required\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Resource not found\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is successful or expected client error\", function () {",
+                  "  const ok = pm.response.code === 200 || (pm.response.code >= 200 && pm.response.code < 300);",
+                  "  const clientErr = [400, 401, 403, 404].includes(pm.response.code);",
+                  "  pm.expect(ok || clientErr).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response time < 5000ms\", function () {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "if (pm.response.headers.get(\"Content-Type\")?.includes(\"application/json\")) {",
+                  "  pm.test(\"JSON body parses\", function () {",
+                  "    pm.response.to.be.json;",
+                  "  });",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json && (json.status !== undefined || json.message !== undefined || json.data !== undefined)) {",
+                  "      pm.test(\"Common envelope fields present\", function () {",
+                  "        pm.expect(json).to.be.an(\"object\");",
+                  "      });",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get role by id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roles/{{resourceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                "{{resourceId}}"
+              ]
+            },
+            "description": "Get role by id\n**OpenAPI path:** `GET /roles/{id}`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Role detail\n### Path params (environment variables)\n- `{{resourceId}}` — sample `507f1f77bcf86cd799439011` (replace with a real Mongo ObjectId)"
+          },
+          "response": [
+            {
+              "name": "401 Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Invalid token! Please log in again.\"\n}"
+            },
+            {
+              "name": "400 Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Validation error\",\n  \"errors\": [\n    {\n      \"field\": \"example\",\n      \"message\": \"is required\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Resource not found\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is successful or expected client error\", function () {",
+                  "  const ok = pm.response.code === 200 || (pm.response.code >= 200 && pm.response.code < 300);",
+                  "  const clientErr = [400, 401, 403, 404].includes(pm.response.code);",
+                  "  pm.expect(ok || clientErr).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response time < 5000ms\", function () {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "if (pm.response.headers.get(\"Content-Type\")?.includes(\"application/json\")) {",
+                  "  pm.test(\"JSON body parses\", function () {",
+                  "    pm.response.to.be.json;",
+                  "  });",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json && (json.status !== undefined || json.message !== undefined || json.data !== undefined)) {",
+                  "      pm.test(\"Common envelope fields present\", function () {",
+                  "        pm.expect(json).to.be.an(\"object\");",
+                  "      });",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update role",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roles/{{resourceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                "{{resourceId}}"
+              ]
+            },
+            "description": "Update role\n**OpenAPI path:** `PATCH /roles/{id}`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Role updated\n### Path params (environment variables)\n- `{{resourceId}}` — sample `507f1f77bcf86cd799439011` (replace with a real Mongo ObjectId)"
+          },
+          "response": [
+            {
+              "name": "401 Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Invalid token! Please log in again.\"\n}"
+            },
+            {
+              "name": "400 Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Validation error\",\n  \"errors\": [\n    {\n      \"field\": \"example\",\n      \"message\": \"is required\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Resource not found\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is successful or expected client error\", function () {",
+                  "  const ok = pm.response.code === 200 || (pm.response.code >= 200 && pm.response.code < 300);",
+                  "  const clientErr = [400, 401, 403, 404].includes(pm.response.code);",
+                  "  pm.expect(ok || clientErr).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response time < 5000ms\", function () {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "if (pm.response.headers.get(\"Content-Type\")?.includes(\"application/json\")) {",
+                  "  pm.test(\"JSON body parses\", function () {",
+                  "    pm.response.to.be.json;",
+                  "  });",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json && (json.status !== undefined || json.message !== undefined || json.data !== undefined)) {",
+                  "      pm.test(\"Common envelope fields present\", function () {",
+                  "        pm.expect(json).to.be.an(\"object\");",
+                  "      });",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete non-system role",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roles/{{resourceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                "{{resourceId}}"
+              ]
+            },
+            "description": "Delete non-system role\n**OpenAPI path:** `DELETE /roles/{id}`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Role deleted\n### Path params (environment variables)\n- `{{resourceId}}` — sample `507f1f77bcf86cd799439011` (replace with a real Mongo ObjectId)"
+          },
+          "response": [
+            {
+              "name": "401 Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Invalid token! Please log in again.\"\n}"
+            },
+            {
+              "name": "400 Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Validation error\",\n  \"errors\": [\n    {\n      \"field\": \"example\",\n      \"message\": \"is required\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Resource not found\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is successful or expected client error\", function () {",
+                  "  const ok = pm.response.code === 200 || (pm.response.code >= 200 && pm.response.code < 300);",
+                  "  const clientErr = [400, 401, 403, 404].includes(pm.response.code);",
+                  "  pm.expect(ok || clientErr).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response time < 5000ms\", function () {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "if (pm.response.headers.get(\"Content-Type\")?.includes(\"application/json\")) {",
+                  "  pm.test(\"JSON body parses\", function () {",
+                  "    pm.response.to.be.json;",
+                  "  });",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json && (json.status !== undefined || json.message !== undefined || json.data !== undefined)) {",
+                  "      pm.test(\"Common envelope fields present\", function () {",
+                  "        pm.expect(json).to.be.an(\"object\");",
+                  "      });",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Permission matrix for a role",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roles/{{resourceId}}/matrix",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                "{{resourceId}}",
+                "matrix"
+              ]
+            },
+            "description": "Permission matrix for a role\n**OpenAPI path:** `GET /roles/{id}/matrix`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Matrix\n### Path params (environment variables)\n- `{{resourceId}}` — sample `507f1f77bcf86cd799439011` (replace with a real Mongo ObjectId)"
+          },
+          "response": [
+            {
+              "name": "401 Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Invalid token! Please log in again.\"\n}"
+            },
+            {
+              "name": "400 Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Validation error\",\n  \"errors\": [\n    {\n      \"field\": \"example\",\n      \"message\": \"is required\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Resource not found\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is successful or expected client error\", function () {",
+                  "  const ok = pm.response.code === 200 || (pm.response.code >= 200 && pm.response.code < 300);",
+                  "  const clientErr = [400, 401, 403, 404].includes(pm.response.code);",
+                  "  pm.expect(ok || clientErr).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response time < 5000ms\", function () {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "if (pm.response.headers.get(\"Content-Type\")?.includes(\"application/json\")) {",
+                  "  pm.test(\"JSON body parses\", function () {",
+                  "    pm.response.to.be.json;",
+                  "  });",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json && (json.status !== undefined || json.message !== undefined || json.data !== undefined)) {",
+                  "      pm.test(\"Common envelope fields present\", function () {",
+                  "        pm.expect(json).to.be.an(\"object\");",
+                  "      });",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update permission matrix for a role",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roles/{{resourceId}}/matrix",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                "{{resourceId}}",
+                "matrix"
+              ]
+            },
+            "description": "Update permission matrix for a role\n**OpenAPI path:** `PUT /roles/{id}/matrix`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Matrix updated\n### Path params (environment variables)\n- `{{resourceId}}` — sample `507f1f77bcf86cd799439011` (replace with a real Mongo ObjectId)"
+          },
+          "response": [
+            {
+              "name": "401 Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Invalid token! Please log in again.\"\n}"
+            },
+            {
+              "name": "400 Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Validation error\",\n  \"errors\": [\n    {\n      \"field\": \"example\",\n      \"message\": \"is required\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Resource not found\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is successful or expected client error\", function () {",
+                  "  const ok = pm.response.code === 200 || (pm.response.code >= 200 && pm.response.code < 300);",
+                  "  const clientErr = [400, 401, 403, 404].includes(pm.response.code);",
+                  "  pm.expect(ok || clientErr).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response time < 5000ms\", function () {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "if (pm.response.headers.get(\"Content-Type\")?.includes(\"application/json\")) {",
+                  "  pm.test(\"JSON body parses\", function () {",
+                  "    pm.response.to.be.json;",
+                  "  });",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json && (json.status !== undefined || json.message !== undefined || json.data !== undefined)) {",
+                  "      pm.test(\"Common envelope fields present\", function () {",
+                  "        pm.expect(json).to.be.an(\"object\");",
+                  "      });",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List admins assigned to a role",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roles/{{resourceId}}/members",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                "{{resourceId}}",
+                "members"
+              ]
+            },
+            "description": "List admins assigned to a role\n**OpenAPI path:** `GET /roles/{id}/members`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Members\n### Path params (environment variables)\n- `{{resourceId}}` — sample `507f1f77bcf86cd799439011` (replace with a real Mongo ObjectId)"
+          },
+          "response": [
+            {
+              "name": "401 Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Invalid token! Please log in again.\"\n}"
+            },
+            {
+              "name": "400 Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Validation error\",\n  \"errors\": [\n    {\n      \"field\": \"example\",\n      \"message\": \"is required\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Resource not found\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is successful or expected client error\", function () {",
+                  "  const ok = pm.response.code === 200 || (pm.response.code >= 200 && pm.response.code < 300);",
+                  "  const clientErr = [400, 401, 403, 404].includes(pm.response.code);",
+                  "  pm.expect(ok || clientErr).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response time < 5000ms\", function () {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "if (pm.response.headers.get(\"Content-Type\")?.includes(\"application/json\")) {",
+                  "  pm.test(\"JSON body parses\", function () {",
+                  "    pm.response.to.be.json;",
+                  "  });",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json && (json.status !== undefined || json.message !== undefined || json.data !== undefined)) {",
+                  "      pm.test(\"Common envelope fields present\", function () {",
+                  "        pm.expect(json).to.be.an(\"object\");",
+                  "      });",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List permission catalog",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/permissions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "permissions"
+              ]
+            },
+            "description": "List permission catalog\n**OpenAPI path:** `GET /permissions`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Permissions"
+          },
+          "response": [
+            {
+              "name": "401 Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Invalid token! Please log in again.\"\n}"
+            },
+            {
+              "name": "400 Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Validation error\",\n  \"errors\": [\n    {\n      \"field\": \"example\",\n      \"message\": \"is required\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Resource not found\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is successful or expected client error\", function () {",
+                  "  const ok = pm.response.code === 200 || (pm.response.code >= 200 && pm.response.code < 300);",
+                  "  const clientErr = [400, 401, 403, 404].includes(pm.response.code);",
+                  "  pm.expect(ok || clientErr).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response time < 5000ms\", function () {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "if (pm.response.headers.get(\"Content-Type\")?.includes(\"application/json\")) {",
+                  "  pm.test(\"JSON body parses\", function () {",
+                  "    pm.response.to.be.json;",
+                  "  });",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json && (json.status !== undefined || json.message !== undefined || json.data !== undefined)) {",
+                  "      pm.test(\"Common envelope fields present\", function () {",
+                  "        pm.expect(json).to.be.an(\"object\");",
+                  "      });",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "UI matrix modules and actions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/permissions/matrix-meta",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "permissions",
+                "matrix-meta"
+              ]
+            },
+            "description": "UI matrix modules and actions\n**OpenAPI path:** `GET /permissions/matrix-meta`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Matrix metadata"
+          },
+          "response": [
+            {
+              "name": "401 Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Invalid token! Please log in again.\"\n}"
+            },
+            {
+              "name": "400 Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Validation error\",\n  \"errors\": [\n    {\n      \"field\": \"example\",\n      \"message\": \"is required\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Resource not found\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is successful or expected client error\", function () {",
+                  "  const ok = pm.response.code === 200 || (pm.response.code >= 200 && pm.response.code < 300);",
+                  "  const clientErr = [400, 401, 403, 404].includes(pm.response.code);",
+                  "  pm.expect(ok || clientErr).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response time < 5000ms\", function () {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "if (pm.response.headers.get(\"Content-Type\")?.includes(\"application/json\")) {",
+                  "  pm.test(\"JSON body parses\", function () {",
+                  "    pm.response.to.be.json;",
+                  "  });",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json && (json.status !== undefined || json.message !== undefined || json.data !== undefined)) {",
+                  "      pm.test(\"Common envelope fields present\", function () {",
+                  "        pm.expect(json).to.be.an(\"object\");",
+                  "      });",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List audit logs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/audit-logs?page=1&limit=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "audit-logs"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": false
+                },
+                {
+                  "key": "limit",
+                  "value": "1",
+                  "description": "",
+                  "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "List audit logs\n**OpenAPI path:** `GET /audit-logs`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Audit logs"
+          },
+          "response": [
+            {
+              "name": "401 Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Invalid token! Please log in again.\"\n}"
+            },
+            {
+              "name": "400 Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Validation error\",\n  \"errors\": [\n    {\n      \"field\": \"example\",\n      \"message\": \"is required\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Resource not found\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is successful or expected client error\", function () {",
+                  "  const ok = pm.response.code === 200 || (pm.response.code >= 200 && pm.response.code < 300);",
+                  "  const clientErr = [400, 401, 403, 404].includes(pm.response.code);",
+                  "  pm.expect(ok || clientErr).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response time < 5000ms\", function () {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "if (pm.response.headers.get(\"Content-Type\")?.includes(\"application/json\")) {",
+                  "  pm.test(\"JSON body parses\", function () {",
+                  "    pm.response.to.be.json;",
+                  "  });",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json && (json.status !== undefined || json.message !== undefined || json.data !== undefined)) {",
+                  "      pm.test(\"Common envelope fields present\", function () {",
+                  "        pm.expect(json).to.be.an(\"object\");",
+                  "      });",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Assign role to an admin user",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roleId\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/admin/{{resourceId}}/role",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "admin",
+                "{{resourceId}}",
+                "role"
+              ]
+            },
+            "description": "Assign role to an admin user\n**OpenAPI path:** `PATCH /users/admin/{id}/role`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Role assigned\n### Path params (environment variables)\n- `{{resourceId}}` — sample `507f1f77bcf86cd799439011` (replace with a real Mongo ObjectId)"
+          },
+          "response": [
+            {
+              "name": "401 Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Invalid token! Please log in again.\"\n}"
+            },
+            {
+              "name": "400 Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Validation error\",\n  \"errors\": [\n    {\n      \"field\": \"example\",\n      \"message\": \"is required\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Resource not found\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is successful or expected client error\", function () {",
+                  "  const ok = pm.response.code === 200 || (pm.response.code >= 200 && pm.response.code < 300);",
+                  "  const clientErr = [400, 401, 403, 404].includes(pm.response.code);",
+                  "  pm.expect(ok || clientErr).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response time < 5000ms\", function () {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "if (pm.response.headers.get(\"Content-Type\")?.includes(\"application/json\")) {",
+                  "  pm.test(\"JSON body parses\", function () {",
+                  "    pm.response.to.be.json;",
+                  "  });",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json && (json.status !== undefined || json.message !== undefined || json.data !== undefined)) {",
+                  "      pm.test(\"Common envelope fields present\", function () {",
+                  "        pm.expect(json).to.be.an(\"object\");",
+                  "      });",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "APIs tagged \"Roles & Permissions\" from OpenAPI."
     }
   ]
 }

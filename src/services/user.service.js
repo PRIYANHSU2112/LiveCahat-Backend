@@ -134,6 +134,14 @@ class UserService extends BaseService {
       throw new ApiError(400, 'Email already in use');
     }
 
+    if (data.roleId) {
+      const roleRepository = (await import('../repositories/role.repository.js')).default;
+      const role = await roleRepository.findById(data.roleId);
+      if (!role || !role.isActive) {
+        throw new ApiError(400, 'Invalid or inactive role');
+      }
+    }
+
     const admin = await this.repository.create({
       ...data,
       type: 'ADMIN'

@@ -142,7 +142,6 @@ const userSchema = new mongoose.Schema(
     },
     deviceId: {
       type: String,
-      sparse: true,
       trim: true,
     },
     ageVerified: {

@@ -1,6 +1,6 @@
 import express from 'express';
 import notificationController from '../controllers/notification.controller.js';
-import { authenticate, restrictTo } from '../middlewares/auth.middleware.js';
+import { authenticate, restrictTo, authorize } from '../middlewares/auth.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 import {
   listNotificationQuerySchema,
@@ -26,12 +26,13 @@ router.delete('/:id', validate(idParamSchema), notificationController.deleteNoti
 // ─── Admin only ─────────────────────────────────────────────────────
 router.use(restrictTo('ADMIN'));
 // Send to a specific user / listener / agent
-router.post('/admin/send', validate(sendNotificationSchema), notificationController.sendToUser);
+router.post('/admin/send', authorize('notification.send'), validate(sendNotificationSchema), notificationController.sendToUser);
 // Broadcast to all users / all listeners / all agents / everyone
-router.post('/admin/broadcast', validate(broadcastNotificationSchema), notificationController.broadcast);
-router.get('/admin/stats', notificationController.getAdminStats);
+router.post('/admin/broadcast', authorize('notification.broadcast'), validate(broadcastNotificationSchema), notificationController.broadcast);
+router.get('/admin/stats', authorize('notification.admin.stats.view'), notificationController.getAdminStats);
 router.get(
   '/admin',
+  authorize('notification.admin.read'),
   validate(adminListNotificationQuerySchema),
   notificationController.adminListNotifications
 );

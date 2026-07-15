@@ -5,8 +5,8 @@ const roleSchema = new mongoose.Schema(
     name: {
       type: String,
       trim: true,
+      required: true,
     },
-
     slug: {
       type: String,
       required: true,
@@ -17,10 +17,13 @@ const roleSchema = new mongoose.Schema(
     description: {
       type: String,
       trim: true,
+      default: '',
     },
+    /** Denormalized permission codes for fast authorize() checks */
     permissions: [
       {
         type: String,
+        trim: true,
       },
     ],
     isSystemRole: {
@@ -36,6 +39,9 @@ const roleSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+roleSchema.index({ isSystemRole: 1, isActive: 1 });
+roleSchema.index({ isActive: 1, name: 1 });
 
 const Role = mongoose.model('Role', roleSchema);
 export default Role;

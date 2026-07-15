@@ -1,11 +1,7 @@
 export const USER_TYPES = ['CUSTOMER', 'LISTENER', 'AGENT', 'ADMIN'];
 export const GENDERS = ['MALE', 'FEMALE', 'OTHER'];
-export const PERMISSIONS = [
-  'CREATE_ADMIN', 'UPDATE_ADMIN', 'DELETE_ADMIN', 'VIEW_ADMINS',
-  'CREATE_USER', 'UPDATE_USER', 'DELETE_USER', 'VIEW_USERS', 'BLOCK_USER',
-  'CREATE_LISTENER', 'UPDATE_LISTENER', 'DELETE_LISTENER', 'VIEW_LISTENERS', 'APPROVE_KYC',
-  'MANAGE_ROLES', 'MANAGE_SETTINGS', 'VIEW_REPORTS', 'MANAGE_TRANSACTIONS'
-];
+// RBAC: see constants/permission.constant.js (PERMISSION_CODES / PERMISSION_CATALOG)
+export { PERMISSIONS, PERMISSION_CODES, PERMISSION_CATALOG } from './permission.constant.js';
 
 export const LISTENER_CATEGORIES = ['Friendly Talk', 'Relationship Advice', 'Motivation', 'Mental Wellness', 'Career Guidance', 'Casual Chat'];
 export const KYC_STATUSES = ['PENDING', 'UNDER_REVIEW', 'APPROVED', 'REJECTED'];
