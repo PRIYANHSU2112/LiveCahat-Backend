@@ -9,7 +9,7 @@ class AnchorLevelController extends BaseController {
     this.sendResponse(res, 200, 'Anchor levels fetched successfully', data);
   });
 
-  // ─── Listener ───────────────────────────────────────────────────
+  // ─── Listener ───────────────────────────────────────────────────  
   getMyStatus = catchAsync(async (req, res) => {
     const data = await anchorLevelService.getMyAnchorStatus(req.user._id);
     this.sendResponse(res, 200, 'Anchor status fetched successfully', data);

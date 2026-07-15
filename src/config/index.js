@@ -9,7 +9,9 @@ const envVarsSchema = Joi.object()
     NODE_ENV: Joi.string().valid('production', 'development', 'test').required(),
     PORT: Joi.number().default(5000),
     DATABASE_URI: Joi.string().required().description('Mongo DB URI'),
-    REDIS_URL: Joi.string().required().description('Redis Connection URL'),
+    REDIS_HOST: Joi.string().default('localhost').description('Redis host'),
+    REDIS_PORT: Joi.number().default(6379).description('Redis port'),
+    REDIS_PASSWORD: Joi.string().allow('').optional().description('Redis password'),
     JWT_SECRET: Joi.string().required().description('JWT Secret key'),
     JWT_ACCESS_EXPIRATION_MINUTES: Joi.number().default(30).description('minutes after which access tokens expire'),
     AGORA_APP_ID: Joi.string().allow('').optional().description('Agora App ID for RTC token generation'),
@@ -31,7 +33,9 @@ const config = {
     url: envVars.DATABASE_URI,
   },
   redis: {
-    url: envVars.REDIS_URL,
+    host: envVars.REDIS_HOST || 'localhost',
+    port: envVars.REDIS_PORT || 6379,
+    password: (envVars.REDIS_PASSWORD || '').trim() || undefined,
   },
   jwt: {
     secret: envVars.JWT_SECRET,

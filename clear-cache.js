@@ -5,10 +5,14 @@ import config from './src/config/index.js';
 dotenv.config();
 
 async function run() {
-  const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-  const redis = new Redis(redisUrl);
+  const redisOpts = {
+    host: config.redis.host,
+    port: config.redis.port,
+    ...(config.redis.password ? { password: config.redis.password } : {}),
+  };
+  const redis = new Redis(redisOpts);
   try {
-    console.log(`Connecting to Redis at: ${redisUrl}`);
+    console.log(`Connecting to Redis at: ${redisOpts.host}:${redisOpts.port}`);
     
     // Delete version keys
     await redis.del('coin_packs:version');

@@ -19,6 +19,7 @@ import {
   runSettlementsSchema,
   adminListSettlementsQuerySchema,
 } from '../validators/agent-settlement.validator.js';
+import adminExportController from '../controllers/admin-export.controller.js';
 
 const router = express.Router();
 const adminOnly = restrictTo('ADMIN');
@@ -46,6 +47,13 @@ router.get(
   authorize('settlement.read'),
   validate(adminListSettlementsQuerySchema),
   withdrawalController.adminListSettlements
+);
+router.get(
+  '/admin/export',
+  adminOnly,
+  authorize('withdrawal.read'),
+  validate(listWithdrawalQuerySchema),
+  adminExportController.exportWithdrawals
 );
 router.get('/admin', adminOnly, authorize('withdrawal.read'), validate(listWithdrawalQuerySchema), withdrawalController.adminListWithdrawals);
 router.get(

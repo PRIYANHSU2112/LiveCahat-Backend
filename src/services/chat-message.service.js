@@ -15,6 +15,7 @@ class ChatMessageService extends BaseService {
   /**
    * Save a message to the database and update the Redis conversation cache.
    */
+  
   async saveMessage(sessionId, senderId, text, messageType = 'TEXT', fileUrl = null) {
     try {
       const message = await this.repository.create({

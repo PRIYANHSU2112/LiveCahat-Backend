@@ -4,6 +4,7 @@ import { authenticate, restrictTo, authorize } from '../middlewares/auth.middlew
 import { validate } from '../middlewares/validate.middleware.js';
 import { createBannerSchema, updateBannerSchema, toggleActiveSchema } from '../validators/banner.validator.js';
 import { uploadBannerImage, processAndUploadImage } from '../middlewares/upload.middleware.js';
+import adminExportController from '../controllers/admin-export.controller.js';
 
 const router = express.Router();
 
@@ -14,6 +15,7 @@ router.get('/', authenticate, bannerController.getActiveBanners);
 router.use(authenticate, restrictTo('ADMIN'));
 
 router.get('/admin/stats', authorize('banner.stats.view'), bannerController.getAdminStats);
+router.get('/export', authorize('banner.read'), adminExportController.exportBanners);
 router.post('/', authorize('banner.create'), uploadBannerImage, processAndUploadImage, validate(createBannerSchema), bannerController.createBanner);
 router.get('/all', authorize('banner.read'), bannerController.getAllBanners);
 router.get('/:id', authorize('banner.read'), bannerController.getBannerById);

@@ -3,7 +3,11 @@ import logger from '../utils/logger.util.js';
 import config from './index.js';
 
 const redisOptions = {
+  host: config.redis.host,
+  port: config.redis.port,
+  ...(config.redis.password ? { password: config.redis.password } : {}),
   maxRetriesPerRequest: null,
+  keepAlive: 10000,
   lazyConnect: true, // Do not connect automatically on boot
   showFriendlyErrorStack: config.env === 'development',
   retryStrategy(times) {
@@ -22,7 +26,7 @@ const redisOptions = {
  * simply returns null instead of throwing unhandled rejections and crashing.
  */
 const createRedisClient = (clientName) => {
-  const client = new Redis(config.redis.url, redisOptions);
+  const client = new Redis(redisOptions);
   client.isRedisAvailable = false;
 
   // Patch common commands to fail silently and gracefully when Redis is offline
@@ -55,6 +59,7 @@ const createRedisClient = (clientName) => {
   
   client.on('error', (err) => {
     client.isRedisAvailable = false;
+    logger.warn(`Redis [${clientName}] - ${err.message}`);
   });
   
   client.on('close', () => {

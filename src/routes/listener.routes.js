@@ -4,6 +4,7 @@ import { authenticate, restrictTo, authorize } from '../middlewares/auth.middlew
 import { uploadKYCDocuments, uploadIntroVideo, processAndUploadImage } from '../middlewares/upload.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 import { updateListenerProfileSchema, updateRatesSchema, updateAvailabilitySchema, updateKycStatusSchema, dashboardOverviewQuerySchema, dashboardSessionsQuerySchema, homeListenersQuerySchema, agentCreateListenerSchema, agentListenersQuerySchema } from '../validators/listener.validator.js';
+import adminExportController from '../controllers/admin-export.controller.js';
 
 const router = express.Router();
 
@@ -18,6 +19,7 @@ router.post('/agent', restrictTo('AGENT'), validate(agentCreateListenerSchema), 
 router.get('/admin/stats', restrictTo('ADMIN'), authorize('listener.stats.view'), listenerController.getAdminStats);
 router.get('/admin/performance', restrictTo('ADMIN'), authorize('listener.performance.view'), listenerController.getAdminListenerPerformance);
 router.get('/admin/availability-monitoring', restrictTo('ADMIN'), authorize('listener.availability.view'), listenerController.getAdminAvailabilityMonitoring);
+router.get('/export', restrictTo('ADMIN'), authorize('listener.read'), adminExportController.exportListeners);
 router.get('/admin/:id', restrictTo('ADMIN'), authorize('listener.read'), listenerController.getListenerById);
 router.put('/admin/:id', restrictTo('ADMIN'), authorize('listener.update'), listenerController.updateListenerByAdmin);
 router.get('/', restrictTo('ADMIN', 'CUSTOMER'), listenerController.getAllListeners);

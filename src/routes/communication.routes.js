@@ -9,6 +9,7 @@ import {
   adminCommunicationSessionIdParamSchema,
   updateCommunicationConfigSchema,
 } from '../validators/admin-communication.validator.js';
+import adminExportController from '../controllers/admin-export.controller.js';
 
 const router = express.Router();
 const adminOnly = restrictTo('ADMIN');
@@ -26,6 +27,12 @@ router.get(
   authorize('communication.session.read'),
   validate(adminCommunicationLiveQuerySchema),
   communicationController.getLiveSessions
+);
+router.get(
+  '/admin/sessions/export',
+  authorize('communication.session.read'),
+  validate(adminCommunicationListQuerySchema),
+  adminExportController.exportSessions
 );
 router.get(
   '/admin/sessions',

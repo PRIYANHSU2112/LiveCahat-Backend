@@ -8,6 +8,7 @@ import {
   updateCoinPackSchema,
   adminCoinPackListQuerySchema,
 } from '../validators/coin-pack.validator.js';
+import adminExportController from '../controllers/admin-export.controller.js';
 
 const router = express.Router();
 
@@ -18,6 +19,13 @@ router.get('/', coinPackController.getAllCoinPacks);
 
 // Admin read routes before /:id
 router.get('/admin/stats', restrictTo('ADMIN'), authorize('coin_pack.stats.view'), coinPackController.getAdminStats);
+router.get(
+  '/admin/export',
+  restrictTo('ADMIN'),
+  authorize('coin_pack.read'),
+  validate(adminCoinPackListQuerySchema),
+  adminExportController.exportCoinPacks,
+);
 router.get(
   '/admin',
   restrictTo('ADMIN'),

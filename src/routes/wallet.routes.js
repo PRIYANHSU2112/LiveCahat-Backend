@@ -12,6 +12,7 @@ import {
   idParamSchema,
   userIdParamSchema,
 } from '../validators/wallet.validator.js';
+import adminExportController from '../controllers/admin-export.controller.js';
 
 const router = express.Router();
 const adminOnly = restrictTo('ADMIN');
@@ -32,11 +33,25 @@ router.post('/payments/create-order', walletController.createOrder);
 router.get('/admin/stats', adminOnly, authorize('wallet.stats.view'), validate(adminStatsQuerySchema), walletController.getAdminStats);
 router.get('/admin', adminOnly, authorize('wallet.read'), validate(getWalletsSchema), walletController.getAllWallets);
 router.get(
+  '/admin/coin-transactions/export',
+  adminOnly,
+  authorize('wallet.transaction.read'),
+  validate(getTransactionsSchema),
+  adminExportController.exportCoinTransactions
+);
+router.get(
   '/admin/coin-transactions',
   adminOnly,
   authorize('wallet.transaction.read'),
   validate(getTransactionsSchema),
   walletController.getAllCoinTransactions
+);
+router.get(
+  '/admin/payment-transactions/export',
+  adminOnly,
+  authorize('wallet.transaction.read'),
+  validate(getTransactionsSchema),
+  adminExportController.exportPaymentTransactions
 );
 router.get(
   '/admin/payment-transactions',

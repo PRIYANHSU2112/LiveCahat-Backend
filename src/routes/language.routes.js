@@ -9,6 +9,7 @@ import {
   listLanguageQuerySchema,
   idParamSchema,
 } from '../validators/language.validator.js';
+import adminExportController from '../controllers/admin-export.controller.js';
 
 const router = express.Router();
 const adminOnly = restrictTo('ADMIN');
@@ -17,6 +18,7 @@ router.use(authenticate);
 
 // ─── Admin stats (before /:id) ──────────────────────────────────
 router.get('/admin/stats', adminOnly, authorize('language.stats.view'), languageController.getAdminStats);
+router.get('/admin/export', adminOnly, authorize('language.read'), validate(listLanguageQuerySchema), adminExportController.exportLanguages);
 
 // ─── User + Admin (authenticated) ───────────────────────────────
 router.get('/', validate(listLanguageQuerySchema), languageController.getAllLanguages);

@@ -13,6 +13,7 @@ import {
   moderateReportSchema,
   idParamSchema,
 } from '../validators/report.validator.js';
+import adminExportController from '../controllers/admin-export.controller.js';
 
 const router = express.Router();
 
@@ -68,6 +69,7 @@ router.get(
 
 router.use(restrictTo('ADMIN'));
 router.get('/stats', authorize('report.stats.view'), validate(reportStatsQuerySchema), reportController.getStats);
+router.get('/export', authorize('report.read'), validate(listReportsQuerySchema), adminExportController.exportReports);
 router.get('/', authorize('report.read'), validate(listReportsQuerySchema), reportController.getAllReports);
 router.get('/:id', authorize('report.read'), validate(idParamSchema), reportController.getReportById);
 router.patch(

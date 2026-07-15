@@ -2,11 +2,11 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import Redis from 'ioredis';
 import Avatar from './src/modules/avatar.model.js';
+import config from './src/config/index.js';
 
 dotenv.config();
 
 const DB_URI = process.env.DATABASE_URI || 'mongodb://localhost:27017/realtime_comm';
-const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 
 const avatarsData = [
   // 2 Free Avatars
@@ -108,8 +108,12 @@ async function run() {
 
     // Clear Redis Cache for avatars
     try {
-      console.log(`Connecting to Redis at: ${REDIS_URL}`);
-      const redis = new Redis(REDIS_URL);
+      console.log(`Connecting to Redis at: ${config.redis.host}:${config.redis.port}`);
+      const redis = new Redis({
+        host: config.redis.host,
+        port: config.redis.port,
+        ...(config.redis.password ? { password: config.redis.password } : {}),
+      });
       await redis.del('avatars:active_list');
       console.log('Redis cache key "avatars:active_list" cleared.');
       redis.disconnect();

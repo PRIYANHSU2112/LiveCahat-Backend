@@ -1,7 +1,12 @@
 openapi: 3.0.0
 info:
   title: LiveChat API
-  description: API documentation for the LiveChat platform
+  description: >-
+    API documentation for the LiveChat platform.
+
+    **Admin Excel exports:** most admin list resources expose `GET …/export`
+    (or `…/admin/export`) returning a streamed `.xlsx` with the same filters as
+    the list endpoint, auth via the matching `*.read` permission, max 50,000 rows.
   version: 1.0.0
 servers:
   - url: https://livechat.priyashu.in/api/v1
@@ -1020,6 +1025,40 @@ paths:
       responses:
         '200':
           description: Users fetched successfully
+  /users/export:
+    get:
+      summary: Export users to Excel (admin)
+      description: >-
+        Streams an .xlsx attachment of users matching the same filters as GET /users
+        (type, search, isBlocked). Hard-capped at 50,000 rows. Requires user.read.
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum: [CUSTOMER, LISTENER, ADMIN, AGENT]
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: isBlocked
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Excel file download
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Export exceeds max row limit
   /users/{id}:
     get:
       summary: Get user by ID (admin)

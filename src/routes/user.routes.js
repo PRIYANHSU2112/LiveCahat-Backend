@@ -15,6 +15,7 @@ import {
   paginationQuerySchema,
 } from '../validators/user.validator.js';
 import { assignAdminRoleSchema } from '../validators/role.validator.js';
+import adminExportController from '../controllers/admin-export.controller.js';
 
 const router = express.Router();
 
@@ -39,12 +40,19 @@ router.get('/stats', authorize('user.stats.view'), userController.getCustomerSta
 router.get('/agent-stats', authorize('agent.stats.view'), userController.getAgentAdminStats);
 router.get('/activity/stats', authorize('user.activity.view'), userController.getCustomerActivityStats);
 router.get(
+  '/activity/export',
+  authorize('user.activity.view'),
+  validate(paginationQuerySchema),
+  adminExportController.exportUserActivity
+);
+router.get(
   '/activity',
   authorize('user.activity.view'),
   validate(paginationQuerySchema),
   userController.getCustomerActivityFeed
 );
 
+router.get('/export', authorize('user.read'), validate(queryUserSchema), adminExportController.exportUsers);
 router.get('/', authorize('user.read'), validate(queryUserSchema), userController.getAllUsers);
 router.post('/admin', authorize('admin.create'), validate(createAdminSchema), userController.createAdmin);
 router.post(

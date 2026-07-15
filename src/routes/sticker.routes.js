@@ -10,6 +10,7 @@ import {
   idParamSchema,
 } from '../validators/sticker.validator.js';
 import { optionalStickerImageUpload } from '../middlewares/optional-upload.middleware.js';
+import adminExportController from '../controllers/admin-export.controller.js';
 
 const router = express.Router();
 const adminOnly = restrictTo('ADMIN');
@@ -18,6 +19,7 @@ router.use(authenticate);
 
 // ─── Admin stats (before /:id) ──────────────────────────────────
 router.get('/admin/stats', adminOnly, authorize('sticker.stats.view'), stickerController.getAdminStats);
+router.get('/admin/export', adminOnly, authorize('sticker.read'), validate(listStickerQuerySchema), adminExportController.exportStickers);
 
 // ─── User + Admin (authenticated) ───────────────────────────────
 router.get('/', validate(listStickerQuerySchema), stickerController.getAllStickers);

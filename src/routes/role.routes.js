@@ -10,6 +10,7 @@ import {
   putMatrixSchema,
   listAuditLogsQuerySchema,
 } from '../validators/role.validator.js';
+import adminExportController from '../controllers/admin-export.controller.js';
 
 const router = express.Router();
 
@@ -17,6 +18,7 @@ router.use(authenticate, restrictTo('ADMIN'));
 
 router.get('/stats', authorize('role.read'), roleController.stats);
 router.get('/policies', authorize('role.read'), roleController.policies);
+router.get('/export', authorize('role.read'), adminExportController.exportRoles);
 router.get('/', authorize('role.read'), validate(listRolesQuerySchema), roleController.list);
 router.post('/', authorize('role.create'), validate(createRoleSchema), roleController.create);
 router.get('/:id', authorize('role.read'), validate(roleIdParamSchema), roleController.getById);
@@ -46,6 +48,12 @@ permissionRouter.get('/matrix-meta', authorize('permission.read'), roleControlle
 
 export const auditLogRouter = express.Router();
 auditLogRouter.use(authenticate, restrictTo('ADMIN'));
+auditLogRouter.get(
+  '/export',
+  authorize('audit_log.read'),
+  validate(listAuditLogsQuerySchema),
+  adminExportController.exportAuditLogs
+);
 auditLogRouter.get(
   '/',
   authorize('audit_log.read'),

@@ -847,21 +847,14 @@
     button.btn-live:hover { box-shadow: 0 4px 20px rgba(220, 38, 38, 0.55); }
   </style>
 
-  <!-- Socket.io client — load from backend (not Live Server origin) -->
+  <!-- Socket.io client from local API (avoids CDN timeouts; matches server ^4.7.5) -->
   <script>
     (function () {
-      var livePreviewPorts = { '5500': 1, '5501': 1, '5173': 1 };
-      var backend = livePreviewPorts[window.location.port]
+      var previewPorts = { '5500': 1, '5501': 1, '5173': 1 };
+      var backend = (previewPorts[window.location.port] || !window.location.port)
         ? 'http://127.0.0.1:5000'
         : window.location.origin;
-      var s = document.createElement('script');
-      s.src = backend + '/socket.io/socket.io.js';
-      s.onerror = function () {
-        var c = document.createElement('script');
-        c.src = 'https://cdn.socket.io/4.7.5/socket.io.min.js';
-        document.head.appendChild(c);
-      };
-      document.head.appendChild(s);
+      document.write('<script src="' + backend + '/socket.io/socket.io.js"><\/script>');
     })();
   </script>
 
@@ -2001,6 +1994,7 @@
     document.getElementById('btnConnectCaller').addEventListener('click', () => {
       const token = document.getElementById('callerToken').value.trim();
       if (!token) return alert('Please input caller token');
+      if (typeof io === 'undefined') return alert('Socket.io library not loaded. Hard-refresh the page.');
       if (callerSocket) callerSocket.disconnect();
       appendLog('Caller', 'Connecting socket...');
 
@@ -2046,6 +2040,7 @@
     document.getElementById('btnConnectReceiver').addEventListener('click', () => {
       const token = document.getElementById('receiverToken').value.trim();
       if (!token) return alert('Please input receiver token');
+      if (typeof io === 'undefined') return alert('Socket.io library not loaded. Hard-refresh the page.');
       if (receiverSocket) receiverSocket.disconnect();
       appendLog('Receiver', 'Connecting socket...');
 
@@ -2357,6 +2352,7 @@
     document.getElementById('btnConnectLiveHost').addEventListener('click', () => {
       const token = document.getElementById('liveHostToken').value.trim();
       if (!token) return alert('Paste a Listener JWT token first.');
+      if (typeof io === 'undefined') return alert('Socket.io library not loaded. Hard-refresh the page.');
       if (liveHostSocket) liveHostSocket.disconnect();
 
       liveHostSocket = io(getBackendUrl(), { auth: { token } });
@@ -2479,6 +2475,7 @@
     document.getElementById('btnConnectLiveViewer').addEventListener('click', () => {
       const token = document.getElementById('liveViewerToken').value.trim();
       if (!token) return alert('Paste a Customer JWT token first.');
+      if (typeof io === 'undefined') return alert('Socket.io library not loaded. Hard-refresh the page.');
       if (liveViewerSocket) liveViewerSocket.disconnect();
 
       liveViewerSocket = io(getBackendUrl(), { auth: { token } });

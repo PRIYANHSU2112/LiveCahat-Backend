@@ -11,6 +11,7 @@ import {
   adminGiftListQuerySchema,
 } from '../validators/gift.validator.js';
 import { optionalGiftIconUpload } from '../middlewares/optional-upload.middleware.js';
+import adminExportController from '../controllers/admin-export.controller.js';
 
 const router = express.Router();
 
@@ -24,6 +25,7 @@ router.get('/history/received', giftController.getReceivedGiftsHistory);
 // Admin read routes MUST be registered before /:id (otherwise "admin" matches :id → 400)
 router.get('/admin/analytics', restrictTo('ADMIN'), authorize('gift.analytics.view'), giftController.getAdminGiftAnalytics);
 router.get('/admin/stats', restrictTo('ADMIN'), authorize('gift.stats.view'), giftController.getAdminGiftStats);
+router.get('/admin/export', restrictTo('ADMIN'), authorize('gift.read'), validate(adminGiftListQuerySchema), adminExportController.exportGifts);
 router.get('/admin', restrictTo('ADMIN'), authorize('gift.read'), validate(adminGiftListQuerySchema), giftController.getAdminGifts);
 
 router.post('/send', validate(sendGiftSchema), giftController.sendGift);

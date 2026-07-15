@@ -10,6 +10,7 @@ import {
   adminFeedbackStatsQuerySchema,
   idParamSchema,
 } from '../validators/feedback.validator.js';
+import adminExportController from '../controllers/admin-export.controller.js';
 
 const router = express.Router();
 const adminOnly = restrictTo('ADMIN');
@@ -27,6 +28,13 @@ router.get(
   authorize('feedback.stats.view'),
   validate(adminFeedbackStatsQuerySchema),
   feedbackController.getAdminStats
+);
+router.get(
+  '/admin/export',
+  adminOnly,
+  authorize('feedback.read'),
+  validate(listFeedbackQuerySchema),
+  adminExportController.exportFeedback
 );
 router.get('/admin', adminOnly, authorize('feedback.read'), validate(listFeedbackQuerySchema), feedbackController.getAllFeedback);
 router.patch(
