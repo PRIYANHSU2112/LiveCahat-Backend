@@ -91,7 +91,9 @@ class UserService extends BaseService {
     const matchQuery = { isDeleted: false };
     
     if (queryParams.type) matchQuery.type = queryParams.type;
-    if (queryParams.isBlocked !== undefined) matchQuery.isBlocked = queryParams.isBlocked === 'true';
+    if (queryParams.isBlocked !== undefined) {
+      matchQuery.isBlocked = queryParams.isBlocked === true || queryParams.isBlocked === 'true';
+    }
     if (queryParams.search) {
       matchQuery.$or = [
         { firstName: { $regex: queryParams.search, $options: 'i' } },
@@ -252,6 +254,18 @@ class UserService extends BaseService {
       totalAgentEarnings: { count: raw.totalAgentEarnings }
     };
 
+    await setCache(cacheKey, stats, 30);
+    return stats;
+  }
+
+  async getBlockedAccountStats() {
+    const version = await getCacheVersion('users');
+    const cacheKey = `users:blocked-stats:v${version}`;
+
+    const cached = await getCache(cacheKey);
+    if (cached) return cached;
+
+    const stats = await this.repository.getBlockedAccountStats();
     await setCache(cacheKey, stats, 30);
     return stats;
   }

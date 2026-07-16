@@ -34,7 +34,8 @@ class WalletController extends BaseController {
 
   handleWebhook = catchAsync(async (req, res) => {
     const signature = req.headers['x-razorpay-signature'];
-    const secret = process.env.RAZORPAY_WEBHOOK_SECRET || 'mock_webhook_secret';
+    const { default: settingsRuntime } = await import('../services/settings-runtime.service.js');
+    const secret = settingsRuntime.getRazorpayWebhookSecret();
     const payload = JSON.stringify(req.body);
 
     const result = await walletService.handleRazorpayWebhook(payload, signature, secret);
@@ -47,7 +48,8 @@ class WalletController extends BaseController {
       return this.sendError(res, 400, 'orderId is required for mock webhook');
     }
 
-    const secret = process.env.RAZORPAY_WEBHOOK_SECRET || 'mock_webhook_secret';
+    const { default: settingsRuntime } = await import('../services/settings-runtime.service.js');
+    const secret = settingsRuntime.getRazorpayWebhookSecret();
 
     const mockPayloadObject = {
       event: 'payment.captured',

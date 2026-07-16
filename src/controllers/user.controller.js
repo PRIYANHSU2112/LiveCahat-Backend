@@ -93,6 +93,11 @@ class UserController extends BaseController {
     const stats = await userService.getAgentAdminStats();
     this.sendResponse(res, 200, 'Agent stats fetched successfully', stats);
   });
+
+  getBlockedAccountStats = catchAsync(async (_req, res) => {
+    const stats = await userService.getBlockedAccountStats();
+    this.sendResponse(res, 200, 'Blocked account stats fetched successfully', stats);
+  });
 }
 
 export default new UserController();

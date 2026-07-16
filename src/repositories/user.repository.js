@@ -153,6 +153,36 @@ class UserRepository {
     };
   }
 
+  async getBlockedAccountStats() {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const sevenDaysAgo = new Date(now.getTime() - 7 * MS_DAY);
+    const base = { isDeleted: false, isBlocked: true };
+
+    const [row] = await this.aggregate([
+      { $match: base },
+      {
+        $facet: {
+          totalBlocked: [{ $count: 'n' }],
+          customers: [{ $match: { type: 'CUSTOMER' } }, { $count: 'n' }],
+          agents: [{ $match: { type: 'AGENT' } }, { $count: 'n' }],
+          listeners: [{ $match: { type: 'LISTENER' } }, { $count: 'n' }],
+          blockedThisMonth: [{ $match: { blockedAt: { $gte: startOfMonth } } }, { $count: 'n' }],
+          blockedLast7Days: [{ $match: { blockedAt: { $gte: sevenDaysAgo } } }, { $count: 'n' }],
+        },
+      },
+    ]);
+
+    return {
+      totalBlocked: countFromFacet(row, 'totalBlocked'),
+      customers: countFromFacet(row, 'customers'),
+      agents: countFromFacet(row, 'agents'),
+      listeners: countFromFacet(row, 'listeners'),
+      blockedThisMonth: countFromFacet(row, 'blockedThisMonth'),
+      blockedLast7Days: countFromFacet(row, 'blockedLast7Days'),
+    };
+  }
+
   async getCustomerVerificationStats(boundaries) {
     const { startOfToday, now } = boundaries;
     const thirtyDaysAgo = new Date(now.getTime() - 30 * MS_DAY);

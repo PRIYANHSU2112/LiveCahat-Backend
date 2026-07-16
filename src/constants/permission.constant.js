@@ -39,6 +39,14 @@ export const PERMISSION_CATALOG = [
   { code: 'communication.config.read', module: 'settings', action: 'view', description: 'View communication config' },
   { code: 'communication.config.update', module: 'settings', action: 'edit', description: 'Update communication config' },
 
+  { code: 'platform_settings.read', module: 'settings', action: 'view', description: 'View platform settings' },
+  { code: 'platform_settings.update', module: 'settings', action: 'edit', description: 'Update platform settings' },
+
+  { code: 'payment_gateway.read', module: 'settings', action: 'view', description: 'View payment gateways' },
+  { code: 'payment_gateway.create', module: 'settings', action: 'create', description: 'Create payment gateways' },
+  { code: 'payment_gateway.update', module: 'settings', action: 'edit', description: 'Update payment gateways' },
+  { code: 'payment_gateway.delete', module: 'settings', action: 'delete', description: 'Delete payment gateways' },
+
   // Wallet
   { code: 'wallet.read', module: 'finance', action: 'view', description: 'View wallets' },
   { code: 'wallet.stats.view', module: 'finance', action: 'view', description: 'View wallet stats' },

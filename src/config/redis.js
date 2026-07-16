@@ -5,7 +5,7 @@ import config from './index.js';
 const redisOptions = {
   host: config.redis.host,
   port: config.redis.port,
-  ...(config.redis.password ? { password: config.redis.password } : {}),
+  password: config.redis.password,
   maxRetriesPerRequest: null,
   keepAlive: 10000,
   lazyConnect: true, // Do not connect automatically on boot

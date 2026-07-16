@@ -34,10 +34,14 @@ import adminDashboardRoutes from './admin-dashboard.routes.js';
 import communicationRoutes from './communication.routes.js';
 import countryRoutes from './country.routes.js';
 import roleRoutes, { permissionRouter, auditLogRouter } from './role.routes.js';
+import platformSettingsRoutes from './platform-settings.routes.js';
+import paymentGatewayRoutes from './payment-gateway.routes.js';
 
 const router = express.Router();
 
 router.use('/auth', authRoutes);
+router.use('/platform-settings', platformSettingsRoutes);
+router.use('/payment-gateways', paymentGatewayRoutes);
 router.use('/countries', countryRoutes);
 router.use('/home', homeRoutes);
 router.use('/match', matchRoutes);

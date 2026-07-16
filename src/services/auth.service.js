@@ -187,7 +187,11 @@ class AuthService {
   async login(data) {
     const { email, password } = data;
 
-    const user = await userRepository.findOne({ email, type: { $in: ['ADMIN', 'AGENT'] } }, '+password');
+    const user = await userRepository.findOne(
+      { email, type: { $in: ['ADMIN', 'AGENT'] } },
+      '+password',
+      { path: 'roleId', select: 'name slug' },
+    );
     if (!user) {
       throw new ApiError(401, 'Invalid email or password');
     }

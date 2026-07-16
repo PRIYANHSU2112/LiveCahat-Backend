@@ -23,6 +23,7 @@ import { initializeSockets } from './sockets/index.js';
 import { initializeBillingJob } from './jobs/billing.job.js';
 import { initializeSettlementJob } from './jobs/settlement.job.js';
 import dailyRewardService from './services/daily-reward.service.js';
+import settingsRuntime from './services/settings-runtime.service.js';
 
 // Server & Socket Init
 const httpServer = createServer(app);
@@ -49,6 +50,10 @@ mongoose.connect(DB_URI)
     
     // Attempt Redis connection after DB
     await connectRedis();
+
+    // Warm platform/payment settings into memory (O(1) hot-path reads)
+    await settingsRuntime.warm();
+    await settingsRuntime.startSubscriber();
 
     // Start background cron jobs
     initializeBillingJob(io);

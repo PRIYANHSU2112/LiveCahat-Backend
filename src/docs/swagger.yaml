@@ -9157,6 +9157,198 @@ paths:
           description: Config updated
         '400':
           description: Validation error
+  /platform-settings:
+    get:
+      summary: Get platform settings
+      tags:
+        - Platform Settings
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Platform settings returned
+          content:
+            application/json:
+              example:
+                success: true
+                message: Platform settings fetched successfully
+                data:
+                  maintenanceMode: false
+                  allowRegistrations: true
+                  defaultLanguage: en
+                  featureFlags: {}
+    put:
+      summary: Update platform settings
+      tags:
+        - Platform Settings
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                maintenanceMode:
+                  type: boolean
+                allowRegistrations:
+                  type: boolean
+                defaultLanguage:
+                  type: string
+                featureFlags:
+                  type: object
+            example:
+              maintenanceMode: false
+              allowRegistrations: true
+              defaultLanguage: en
+      responses:
+        '200':
+          description: Platform settings updated
+  /payment-gateways:
+    get:
+      summary: List payment gateways
+      tags:
+        - Payment Gateways
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Gateways listed (secrets masked)
+    post:
+      summary: Create payment gateway
+      tags:
+        - Payment Gateways
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - provider
+                - displayName
+              properties:
+                provider:
+                  type: string
+                  enum: [RAZORPAY, STRIPE, PAYPAL, CASHFREE, APPLE_PAY, GOOGLE_PAY]
+                displayName:
+                  type: string
+                mode:
+                  type: string
+                  enum: [sandbox, live]
+                isEnabled:
+                  type: boolean
+                isDefault:
+                  type: boolean
+                publicKey:
+                  type: string
+                secret:
+                  type: string
+                webhookSecret:
+                  type: string
+            example:
+              provider: RAZORPAY
+              displayName: Razorpay
+              mode: sandbox
+              isEnabled: true
+              isDefault: true
+              publicKey: rzp_test_xxx
+              secret: secret_xxx
+      responses:
+        '201':
+          description: Gateway created
+  /payment-gateways/{id}:
+    get:
+      summary: Get payment gateway by id
+      tags:
+        - Payment Gateways
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Gateway detail (secrets masked)
+    put:
+      summary: Update payment gateway
+      tags:
+        - Payment Gateways
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Gateway updated
+    delete:
+      summary: Soft-delete payment gateway
+      tags:
+        - Payment Gateways
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Gateway deleted
+  /payment-gateways/{id}/default:
+    patch:
+      summary: Set default payment gateway
+      tags:
+        - Payment Gateways
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Default gateway updated
+  /payment-gateways/{id}/status:
+    patch:
+      summary: Enable or disable payment gateway
+      tags:
+        - Payment Gateways
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - isEnabled
+              properties:
+                isEnabled:
+                  type: boolean
+      responses:
+        '200':
+          description: Status updated
   /anchor-levels/admin/stats:
     get:
       summary: Admin anchor-level stats

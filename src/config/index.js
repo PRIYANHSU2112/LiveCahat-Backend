@@ -17,6 +17,20 @@ const envVarsSchema = Joi.object()
     AGORA_APP_ID: Joi.string().allow('').optional().description('Agora App ID for RTC token generation'),
     AGORA_APP_CERTIFICATE: Joi.string().allow('').optional().description('Agora App Certificate for RTC token signing'),
     AGORA_AUTH_MODE: Joi.string().valid('secured', 'testing').optional().description('secured=signed token, testing=App ID only (null token)'),
+    SETTINGS_ENCRYPTION_KEY: Joi.string()
+      .allow('')
+      .optional()
+      .custom((value, helpers) => {
+        if (!value) return value;
+        if (!/^[0-9a-fA-F]{64}$/.test(value)) {
+          return helpers.error('any.invalid');
+        }
+        return value;
+      })
+      .description('32-byte hex key for encrypting payment gateway secrets'),
+    RAZORPAY_KEY_ID: Joi.string().allow('').optional(),
+    RAZORPAY_KEY_SECRET: Joi.string().allow('').optional(),
+    RAZORPAY_WEBHOOK_SECRET: Joi.string().allow('').optional(),
   })
   .unknown();
 
@@ -48,6 +62,7 @@ const config = {
       envVars.AGORA_AUTH_MODE ||
       ((envVars.AGORA_APP_CERTIFICATE || '').trim() ? 'secured' : 'testing'),
   },
+  settingsEncryptionKey: (envVars.SETTINGS_ENCRYPTION_KEY || '').trim(),
 };
 
 export default config;

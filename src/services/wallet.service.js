@@ -4,7 +4,9 @@ import coinTransactionRepository from '../repositories/coin-transaction.reposito
 import paymentTransactionRepository from '../repositories/payment-transaction.repository.js';
 import coinPackRepository from '../repositories/coin-pack.repository.js';
 import userRepository from '../repositories/user.repository.js';
-import { razorpayInstance, verifyWebhookSignature } from '../config/razorpay.config.js';
+import { verifyWebhookSignature } from '../config/razorpay.config.js';
+import { getPaymentAdapter } from './payment-gateway.adapters.js';
+import settingsRuntime from './settings-runtime.service.js';
 import { getPaginationOptions, formatPaginatedResponse } from '../utils/pagination.util.js';
 import { getCache, setCache, deleteCache, bumpCacheVersion, getCacheVersion } from '../utils/redis.util.js';
 import { buildUtcCreatedAtFilter } from '../utils/date-filter.util.js';
@@ -110,14 +112,17 @@ class WalletService extends BaseService {
       receipt: `rcpt_${userId.toString().slice(-8)}_${Date.now()}`
     };
 
-    const order = await razorpayInstance.orders.create(options);
+    // Prefer runtime default provider (memory); Razorpay adapter falls back to .env
+    const provider = settingsRuntime.getDefaultProvider() || 'RAZORPAY';
+    const adapter = getPaymentAdapter(provider);
+    const order = await adapter.createOrder(options);
 
     const transaction = await paymentTransactionRepository.create({
       userId,
       coinPackId,
       amount: coinPack.price,
       currency: 'INR',
-      paymentGateway: 'RAZORPAY',
+      paymentGateway: provider,
       OrderId: order.id,
       status: 'PENDING'
     });
@@ -133,6 +138,8 @@ class WalletService extends BaseService {
       razorpayOrderId: order.id,
       amount: order.amount,
       currency: order.currency,
+      keyId: adapter.getPublicKey?.() || settingsRuntime.getRazorpayPublicKey(),
+      paymentGateway: provider,
       coinPack
     };
   }

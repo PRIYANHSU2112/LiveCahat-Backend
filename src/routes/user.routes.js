@@ -38,6 +38,7 @@ router.use(restrictTo('ADMIN'));
 
 router.get('/stats', authorize('user.stats.view'), userController.getCustomerStats);
 router.get('/agent-stats', authorize('agent.stats.view'), userController.getAgentAdminStats);
+router.get('/blocked-stats', authorize('user.read'), userController.getBlockedAccountStats);
 router.get('/activity/stats', authorize('user.activity.view'), userController.getCustomerActivityStats);
 router.get(
   '/activity/export',
