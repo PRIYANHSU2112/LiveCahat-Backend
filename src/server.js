@@ -31,7 +31,9 @@ const io = new Server(httpServer, {
   cors: {
     origin: '*',
     methods: ['GET', 'POST']
-  }
+  },
+  serveClient: true,
+  path: '/socket.io',
 });
 
 // Redis Adapter for Socket.io Scaling

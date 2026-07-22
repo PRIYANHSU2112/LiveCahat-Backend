@@ -301,42 +301,57 @@ class UserRepository {
     return { total, data };
   }
 
-  async getAgentAdminStats() {
-    const totalAgents = await User.countDocuments({ type: 'AGENT', isDeleted: false });
-    
+  async getAgentAdminStats(range = {}) {
     const ListenerProfile = mongoose.model('ListenerProfile');
-    const totalListeners = await ListenerProfile.countDocuments({ createdByAgentId: { $ne: null } });
 
-    const avgCommissionRes = await User.aggregate([
-      { $match: { type: 'AGENT', isDeleted: false } },
-      { $group: { _id: null, avgCommission: { $avg: '$commissionPercentage' } } }
-    ]);
-    const averageCommission = avgCommissionRes[0]?.avgCommission ?? 0;
-
-    const walletBalanceRes = await User.aggregate([
-      { $match: { type: 'AGENT', isDeleted: false } },
-      {
-        $lookup: {
-          from: 'wallets',
-          localField: '_id',
-          foreignField: 'userId',
-          as: 'walletDoc',
+    const [agentFacet, totalListeners] = await Promise.all([
+      User.aggregate([
+        { $match: { type: 'AGENT', isDeleted: false } },
+        {
+          $facet: {
+            count: [{ $count: 'n' }],
+            agents: [
+              { $project: { _id: 1, commissionPercentage: 1 } },
+            ],
+            avgCommission: [
+              { $group: { _id: null, avgCommission: { $avg: '$commissionPercentage' } } },
+            ],
+            earnings: [
+              {
+                $lookup: {
+                  from: 'wallets',
+                  localField: '_id',
+                  foreignField: 'userId',
+                  as: 'walletDoc',
+                },
+              },
+              {
+                $group: {
+                  _id: null,
+                  totalBalance: {
+                    $sum: { $ifNull: [{ $arrayElemAt: ['$walletDoc.coinBalance', 0] }, 0] },
+                  },
+                },
+              },
+            ],
+          },
         },
-      },
-      {
-        $addFields: {
-          wallet: { $arrayElemAt: ['$walletDoc', 0] }
-        }
-      },
-      { $group: { _id: null, totalBalance: { $sum: '$wallet.coinBalance' } } }
+      ]),
+      range.start && range.end
+        ? ListenerProfile.countDocuments({
+            createdByAgentId: { $ne: null },
+            createdAt: { $gte: range.start, $lte: range.end },
+          })
+        : ListenerProfile.countDocuments({ createdByAgentId: { $ne: null } }),
     ]);
-    const totalAgentEarnings = walletBalanceRes[0]?.totalBalance ?? 0;
 
+    const facet = agentFacet[0] ?? {};
     return {
-      totalAgents,
+      totalAgents: facet.count?.[0]?.n ?? 0,
+      agents: facet.agents ?? [],
       totalListeners,
-      averageCommission,
-      totalAgentEarnings
+      averageCommission: facet.avgCommission?.[0]?.avgCommission ?? 0,
+      totalWalletBalance: facet.earnings?.[0]?.totalBalance ?? 0,
     };
   }
 }

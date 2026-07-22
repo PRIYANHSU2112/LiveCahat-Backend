@@ -162,23 +162,19 @@ class AdminDashboardRepository {
   }
 
   async getPeakHoursSeries(start, end) {
-    const rows = await CommunicationSession.aggregate([
-      { $match: { status: 'COMPLETED', ...periodMatch(start, end) } },
+    // Aggregate segments directly — avoids session→all-segments $lookup/unwind.
+    const rows = await SessionSegment.aggregate([
       {
-        $lookup: {
-          from: 'sessionsegments',
-          localField: '_id',
-          foreignField: 'sessionId',
-          as: 'segments',
+        $match: {
+          status: 'COMPLETED',
+          startTime: { $gte: start, $lte: end },
         },
       },
-      { $unwind: '$segments' },
-      { $match: { 'segments.status': 'COMPLETED' } },
       {
         $group: {
           _id: {
-            hour: { $hour: { date: '$createdAt', timezone: DASHBOARD_TZ } },
-            mode: '$segments.mode',
+            hour: { $hour: { date: '$startTime', timezone: DASHBOARD_TZ } },
+            mode: '$mode',
           },
           count: { $sum: 1 },
         },

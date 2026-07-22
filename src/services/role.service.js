@@ -9,6 +9,9 @@ import {
   MATRIX_ACTIONS,
 } from '../constants/permission.constant.js';
 import { getPaginationOptions, formatPaginatedResponse } from '../utils/pagination.util.js';
+import { getCache, setCache, bumpCacheVersion, getCacheVersion } from '../utils/redis.util.js';
+
+const ROLES_CACHE_TTL = 45;
 
 const slugify = (name) =>
   String(name || '')
@@ -100,9 +103,21 @@ const MATRIX_CODE_GROUPS = {
 };
 
 class RoleService {
+  async _invalidateRolesCache() {
+    await bumpCacheVersion('roles');
+  }
+
   async listRoles(query = {}) {
+    const isActiveFilter =
+      query.isActive === 'true' ? true : query.isActive === 'false' ? false : undefined;
+    const search = query.search || '';
+    const version = await getCacheVersion('roles');
+    const cacheKey = `roles:list:v${version}:active=${isActiveFilter ?? 'any'}:q=${search}`;
+    const cached = await getCache(cacheKey);
+    if (cached) return cached;
+
     const roles = await roleRepository.findAll({
-      isActive: query.isActive === 'true' ? true : query.isActive === 'false' ? false : undefined,
+      isActive: isActiveFilter,
       search: query.search,
     });
 
@@ -112,7 +127,7 @@ class RoleService {
     ]);
     const countMap = new Map(counts.map((c) => [c._id.toString(), c.memberCount]));
 
-    return roles.map((r) => ({
+    const result = roles.map((r) => ({
       id: r._id.toString(),
       name: r.name,
       slug: r.slug,
@@ -124,9 +139,17 @@ class RoleService {
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
     }));
+
+    await setCache(cacheKey, result, ROLES_CACHE_TTL);
+    return result;
   }
 
   async getStats() {
+    const version = await getCacheVersion('roles');
+    const cacheKey = `roles:stats:v${version}`;
+    const cached = await getCache(cacheKey);
+    if (cached) return cached;
+
     const Role = (await import('../modules/role.model.js')).default;
     const auditLogRepository = (await import('../repositories/audit-log.repository.js')).default;
 
@@ -138,12 +161,14 @@ class RoleService {
       auditLogRepository.findLatest(),
     ]);
 
-    return {
+    const stats = {
       totalRoles,
       adminUsers,
       policyChanges,
       lastAuditAt: latest?.createdAt || null,
     };
+    await setCache(cacheKey, stats, ROLES_CACHE_TTL);
+    return stats;
   }
 
   async getById(id) {
@@ -191,6 +216,7 @@ class RoleService {
       userAgent: reqMeta.userAgent,
     });
 
+    await this._invalidateRolesCache();
     return this.getById(role._id);
   }
 
@@ -232,6 +258,7 @@ class RoleService {
       userAgent: reqMeta.userAgent,
     });
 
+    await this._invalidateRolesCache();
     return this.getById(role._id);
   }
 
@@ -258,6 +285,7 @@ class RoleService {
       userAgent: reqMeta.userAgent,
     });
 
+    await this._invalidateRolesCache();
     return { deleted: true };
   }
 
@@ -325,6 +353,7 @@ class RoleService {
       userAgent: reqMeta.userAgent,
     });
 
+    await this._invalidateRolesCache();
     return this.getMatrix(id);
   }
 
@@ -352,14 +381,21 @@ class RoleService {
   }
 
   async listPolicies() {
+    const version = await getCacheVersion('roles');
+    const cacheKey = `roles:policies:v${version}`;
+    const cached = await getCache(cacheKey);
+    if (cached) return cached;
+
     const roles = await this.listRoles({ isActive: 'true' });
-    return roles.map((r) => ({
+    const policies = roles.map((r) => ({
       id: r.id,
       policy: r.name,
       scope: this._primaryScope(r.permissions),
       roles: `${r.memberCount} member${r.memberCount === 1 ? '' : 's'}`,
       status: r.isActive ? 'active' : 'inactive',
     }));
+    await setCache(cacheKey, policies, ROLES_CACHE_TTL);
+    return policies;
   }
 
   async assignRoleToAdmin(adminUserId, roleId, actor, reqMeta = {}) {
@@ -404,6 +440,7 @@ class RoleService {
       meta: { roleId: role._id.toString(), roleSlug: role.slug },
     });
 
+    await this._invalidateRolesCache();
     return { id: user._id.toString(), roleId: role._id.toString(), roleSlug: role.slug };
   }
 

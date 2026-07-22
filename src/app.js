@@ -72,6 +72,9 @@ app.get('/test', (req, res) => {
   res.sendFile(path.resolve('public/test.html'));
 });
 
+// Static assets under /public (optional local scripts, images, etc.)
+app.use('/public', express.static(path.resolve('public')));
+
 // 3. ROUTES
 app.use('/api/v1', routes);
 app.use('/api', routes);

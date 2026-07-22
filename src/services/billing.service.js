@@ -46,6 +46,7 @@ class BillingService {
     }
   }
 
+  
   /**
    * Calculates and processes the bill for a single session.
    * @param {String} sessionId
@@ -84,15 +85,24 @@ class BillingService {
       segmentId = segmentDoc._id.toString();
     }
 
-    // Calculate elapsed duration
-    const elapsedSeconds = Math.max(0, Math.floor((timePoint.getTime() - startTime.getTime()) / 1000));
-
     // Find active segment to check how much was already charged
-    const segment = await SessionSegment.findById(segmentId);
+    let segment = segmentId ? await SessionSegment.findById(segmentId) : null;
     if (!segment || segment.status !== 'ONGOING') {
-      logger.warn(`[Billing Service] Session segment ${segmentId} not found or not ongoing.`);
-      return;
+      // Stale Redis (session ended) or mode-switch left an old segmentId — heal or clean up.
+      const healed = await this._resolveStaleSegment(sessionId, segmentId, isFinal, sessionData);
+      if (!healed) return;
+      ({
+        segment,
+        callerId,
+        listenerId,
+        ratePerMinute,
+        startTime,
+        segmentId,
+      } = healed);
     }
+
+    // Calculate elapsed duration (after any stale-segment heal so startTime is current)
+    const elapsedSeconds = Math.max(0, Math.floor((timePoint.getTime() - new Date(startTime).getTime()) / 1000));
 
     const coinsAlreadyCharged = segment.coinsCharged || 0;
 
@@ -239,6 +249,77 @@ class BillingService {
       dbSession.endSession();
       logger.error(`[Billing Service billSession Transaction Error] Session ${sessionId}: ${err.message}`);
       throw err;
+    }
+  }
+
+  /**
+   * When Redis points at a finished/missing segment: either refresh to the live
+   * ONGOING segment, or remove stale active_session keys so cron stops looping.
+   * @returns {null|object} healed billing context, or null if billing should skip
+   */
+  async _resolveStaleSegment(sessionId, staleSegmentId, isFinal, sessionData) {
+    // Final bill at endSession is idempotent — segment may already be COMPLETED.
+    if (isFinal) return null;
+
+    const sessionDoc = await CommunicationSession.findById(sessionId).lean();
+    if (!sessionDoc || sessionDoc.status !== 'ONGOING') {
+      await this._clearActiveSessionRedis(
+        sessionId,
+        sessionData?.callerId || sessionDoc?.callerId?.toString?.(),
+        sessionData?.listenerId || sessionDoc?.listenerId?.toString?.(),
+      );
+      logger.info(
+        `[Billing Service] Cleared stale Redis session ${sessionId} (segment ${staleSegmentId} not ongoing).`,
+      );
+      return null;
+    }
+
+    const liveSegment = await SessionSegment.findOne({ sessionId, status: 'ONGOING' }).lean();
+    if (!liveSegment) {
+      await this._clearActiveSessionRedis(
+        sessionId,
+        sessionData?.callerId || sessionDoc.callerId.toString(),
+        sessionData?.listenerId || sessionDoc.listenerId.toString(),
+      );
+      logger.info(
+        `[Billing Service] Cleared Redis session ${sessionId} — no ONGOING segment in DB.`,
+      );
+      return null;
+    }
+
+    const callerId = sessionDoc.callerId.toString();
+    const listenerId = sessionDoc.listenerId.toString();
+    const ratePerMinute = liveSegment.ratePerMinute || 0;
+    const startTime = sessionDoc.startTime;
+    const segmentId = liveSegment._id.toString();
+
+    if (redisClient.isRedisAvailable) {
+      await redisClient.hset(KEYS.activeSession(sessionId), {
+        callerId,
+        listenerId,
+        ratePerMinute: String(ratePerMinute),
+        startTime: new Date(startTime).toISOString(),
+        segmentId,
+        mode: liveSegment.mode || sessionData?.mode || 'CHAT',
+        lastBilledAt: sessionData?.lastBilledAt || new Date().toISOString(),
+      });
+    }
+
+    const segment = await SessionSegment.findById(segmentId);
+    if (!segment || segment.status !== 'ONGOING') return null;
+
+    return { segment, callerId, listenerId, ratePerMinute, startTime, segmentId };
+  }
+
+  async _clearActiveSessionRedis(sessionId, callerId, listenerId) {
+    if (!redisClient.isRedisAvailable) return;
+    try {
+      const ops = [redisClient.del(KEYS.activeSession(sessionId))];
+      if (callerId) ops.push(redisClient.del(KEYS.userSession(String(callerId))));
+      if (listenerId) ops.push(redisClient.del(KEYS.userSession(String(listenerId))));
+      await Promise.all(ops);
+    } catch (err) {
+      logger.error(`[Billing Service] Redis cleanup failed for ${sessionId}: ${err.message}`);
     }
   }
 

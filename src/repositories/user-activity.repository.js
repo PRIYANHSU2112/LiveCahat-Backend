@@ -6,11 +6,21 @@ import GiftTransaction from '../modules/gift-transaction.model.js';
 import UserReport from '../modules/user-report.model.js';
 
 const MS_DAY = 24 * 60 * 60 * 1000;
+const FEED_LOOKBACK_DAYS = 90;
+const FEED_SOURCE_LIMIT = 200;
 
-const customerIdsPipeline = [
-  { $match: { type: 'CUSTOMER', isDeleted: false } },
-  { $project: { _id: 1 } },
-];
+const customerUserLookup = (localField) => ({
+  $lookup: {
+    from: 'users',
+    localField,
+    foreignField: '_id',
+    as: 'customer',
+    pipeline: [
+      { $match: { type: 'CUSTOMER', isDeleted: false } },
+      { $project: { firstName: 1, lastName: 1, email: 1, mobileNumber: 1 } },
+    ],
+  },
+});
 
 class UserActivityRepository {
   async getCustomerIds() {
@@ -19,7 +29,7 @@ class UserActivityRepository {
   }
 
   async getCustomerActivityStats(boundaries) {
-    const { now, startOfToday } = boundaries;
+    const { now } = boundaries;
     const last24h = new Date(now.getTime() - MS_DAY);
 
     const [userFacet, suspicious] = await Promise.all([
@@ -66,18 +76,19 @@ class UserActivityRepository {
 
   /**
    * Unified customer activity feed (coin tx, sessions as caller, gifts sent).
+   * Filters customers via $lookup instead of loading all customer IDs into $in.
    */
   async getCustomerActivityFeed(skip, limit) {
-    const customerIds = await this.getCustomerIds();
-    if (!customerIds.length) {
-      return { total: 0, docs: [] };
-    }
-
-    const ids = customerIds.map((id) => new mongoose.Types.ObjectId(id));
+    const since = new Date(Date.now() - FEED_LOOKBACK_DAYS * MS_DAY);
 
     const [coinEvents, sessionEvents, giftEvents] = await Promise.all([
       CoinTransaction.aggregate([
-        { $match: { userId: { $in: ids } } },
+        { $match: { createdAt: { $gte: since } } },
+        { $sort: { createdAt: -1 } },
+        { $limit: FEED_SOURCE_LIMIT * 5 },
+        customerUserLookup('userId'),
+        { $match: { 'customer.0': { $exists: true } } },
+        { $limit: FEED_SOURCE_LIMIT },
         {
           $project: {
             userId: 1,
@@ -86,19 +97,24 @@ class UserActivityRepository {
             },
             occurredAt: '$createdAt',
             kind: { $literal: 'coin' },
+            customer: { $arrayElemAt: ['$customer', 0] },
           },
         },
-        { $sort: { occurredAt: -1 } },
-        { $limit: 200 },
       ]),
       CommunicationSession.aggregate([
-        { $match: { callerId: { $in: ids } } },
+        { $match: { createdAt: { $gte: since } } },
+        { $sort: { createdAt: -1 } },
+        { $limit: FEED_SOURCE_LIMIT * 5 },
+        customerUserLookup('callerId'),
+        { $match: { 'customer.0': { $exists: true } } },
+        { $limit: FEED_SOURCE_LIMIT },
         {
           $lookup: {
             from: 'users',
             localField: 'listenerId',
             foreignField: '_id',
             as: 'listener',
+            pipeline: [{ $project: { firstName: 1, lastName: 1 } }],
           },
         },
         {
@@ -124,23 +140,32 @@ class UserActivityRepository {
             },
             occurredAt: { $ifNull: ['$startTime', '$createdAt'] },
             kind: { $literal: 'session' },
+            customer: { $arrayElemAt: ['$customer', 0] },
           },
         },
-        { $sort: { occurredAt: -1 } },
-        { $limit: 200 },
       ]),
       GiftTransaction.aggregate([
-        { $match: { senderId: { $in: ids }, type: 'USER_TO_LISTENER' } },
+        {
+          $match: {
+            senderId: { $exists: true },
+            type: 'USER_TO_LISTENER',
+            createdAt: { $gte: since },
+          },
+        },
+        { $sort: { createdAt: -1 } },
+        { $limit: FEED_SOURCE_LIMIT * 5 },
+        customerUserLookup('senderId'),
+        { $match: { 'customer.0': { $exists: true } } },
+        { $limit: FEED_SOURCE_LIMIT },
         {
           $project: {
             userId: '$senderId',
             action: { $concat: ['Sent gift · ', { $toString: '$coins' }, ' coins'] },
             occurredAt: '$createdAt',
             kind: { $literal: 'gift' },
+            customer: { $arrayElemAt: ['$customer', 0] },
           },
         },
-        { $sort: { occurredAt: -1 } },
-        { $limit: 200 },
       ]),
     ]);
 
@@ -151,16 +176,8 @@ class UserActivityRepository {
     const total = merged.length;
     const page = merged.slice(skip, skip + limit);
 
-    const userObjectIds = [...new Set(page.map((e) => e.userId.toString()))].map(
-      (id) => new mongoose.Types.ObjectId(id),
-    );
-    const users = await User.find({ _id: { $in: userObjectIds } })
-      .select('firstName lastName email mobileNumber')
-      .lean();
-    const userMap = new Map(users.map((u) => [u._id.toString(), u]));
-
     const docs = page.map((e) => {
-      const u = userMap.get(e.userId.toString());
+      const u = e.customer;
       const name = u
         ? `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email || 'Customer'
         : 'Customer';

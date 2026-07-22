@@ -39,6 +39,11 @@ export const uploadKYCDocuments = upload.fields([
   { name: 'selfieImage', maxCount: 1 }
 ]);
 
+export const uploadAgentAadhaar = upload.fields([
+  { name: 'aadhaarFront', maxCount: 1 },
+  { name: 'aadhaarBack', maxCount: 1 },
+]);
+
 /**
  * Middleware to process media uploads asynchronously in the background.
  * Predicts and assigns S3 URLs instantly, offloading compression/upload to background event loop.
@@ -86,9 +91,9 @@ export const processAndUploadImage = catchAsync(async (req, res, next) => {
     }
   }
 
-  // Handle multiple files (KYC documents)
+  // Handle multiple files (KYC documents / agent Aadhaar)
   if (req.files) {
-    const fields = ['documentFront', 'documentBack', 'selfieImage'];
+    const fields = ['documentFront', 'documentBack', 'selfieImage', 'aadhaarFront', 'aadhaarBack'];
     fields.forEach(field => {
       if (req.files[field]) {
         req.body[field] = handleMedia(req.files[field][0]);

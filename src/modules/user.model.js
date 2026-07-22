@@ -206,6 +206,14 @@ const userSchema = new mongoose.Schema(
       min: 0,
       max: 100,
     },
+    aadhaarFront: {
+      type: String,
+      default: null,
+    },
+    aadhaarBack: {
+      type: String,
+      default: null,
+    },
     // User preference toggles (notifications, call availability, DND)
     settings: {
       notifications: { type: Boolean, default: true },
@@ -265,6 +273,7 @@ userSchema.index({ type: 1, isDeleted: 1, createdAt: -1 });
 userSchema.index({ type: 1, lastSeen: -1 });
 userSchema.index({ type: 1, isDeleted: 1, lastSeen: -1 });
 userSchema.index({ isDeleted: 1 });
+userSchema.index({ type: 1, roleId: 1, isDeleted: 1 });
 userSchema.index({ deviceId: 1 }, { sparse: true });
 userSchema.index({ currentLevel: 1 });
 userSchema.index({ totalXp: -1 });

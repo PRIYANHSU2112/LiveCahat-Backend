@@ -10,8 +10,10 @@ import { deleteFromS3 } from '../utils/aws.util.js';
 import { getPaginationOptions, formatPaginatedResponse } from '../utils/pagination.util.js';
 import { getCache, setCache, deleteCache, bumpCacheVersion, getCacheVersion } from '../utils/redis.util.js';
 import { getPeriodRange, getChartGrouping, buildSeries, DASHBOARD_TZ } from '../utils/date.util.js';
+import { resolveAdminAnalyticsRange } from '../utils/date-filter.util.js';
 import logger from '../utils/logger.util.js';
 import anchorLevelService from './anchor-level.service.js';
+import withdrawalService from './withdrawal.service.js';
 import Language from '../modules/language.model.js';
 import countryRepository from '../repositories/country.repository.js';
 import redisClient from '../config/redis.js';
@@ -19,6 +21,40 @@ import { KEYS } from '../utils/socket-redis-keys.util.js';
 import { getDateBoundaries, buildComparison, formatDateKey } from '../utils/stats.util.js';
 
 const round = (n) => Math.round(n || 0);
+const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
+const MS_DAY = 24 * 60 * 60 * 1000;
+const RECEIVED_GIFT_TYPES = ['USER_TO_LISTENER', 'ADMIN_TO_LISTENER'];
+
+const formatDurationSecs = (avgDur) => {
+  const mins = Math.floor((avgDur || 0) / 60);
+  const secs = Math.round((avgDur || 0) % 60);
+  return `${mins}m ${secs}s`;
+};
+
+const formatInr = (amount) =>
+  `₹${Number(amount || 0).toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+
+const buildDailyChartBuckets = (start, end) => {
+  const days = [];
+  const cursor = new Date(Date.UTC(
+    start.getUTCFullYear(),
+    start.getUTCMonth(),
+    start.getUTCDate(),
+  ));
+  const endDay = new Date(Date.UTC(
+    end.getUTCFullYear(),
+    end.getUTCMonth(),
+    end.getUTCDate(),
+  ));
+  while (cursor <= endDay) {
+    days.push({ name: cursor.toISOString().slice(0, 10), value: 0, value2: 0 });
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return days;
+};
 
 // Whitelisted sort modes for the user home feed → Mongo sort spec.
 // `featured` (default) surfaces promoted listeners, then the most-followed/top-rated.
@@ -289,6 +325,11 @@ class ListenerService extends BaseService {
     const { default: presenceService } = await import('./presence.service.js');
     const ListenerProfile = (await import('../modules/listener-profile.model.js')).default;
 
+    const withdrawalConfig = await withdrawalService.getConfig();
+    const conversionCoins = withdrawalConfig.conversionCoins || 1000;
+    const conversionInr = withdrawalConfig.conversionInr || 100;
+    const rate = conversionCoins > 0 ? conversionInr / conversionCoins : 0;
+
     const updatedData = await Promise.all(
       data.map(async (doc) => {
         const userIdStr = doc.userId.toString();
@@ -303,9 +344,11 @@ class ListenerService extends BaseService {
           await ListenerProfile.updateOne({ userId: doc.userId }, { availability: redisStatus });
         }
 
+        const coins = Number(doc.totalEarnings) || 0;
         return {
           ...doc,
-          availability: status
+          availability: status,
+          inrEarnings: formatInr(round2(coins * rate)),
         };
       })
     );
@@ -653,75 +696,86 @@ class ListenerService extends BaseService {
   }
 
   async getAdminListenerPerformance(queryParams) {
+    // Default to last 7 days when no date params (matches FE default preset)
+    const rangeQuery = { ...queryParams };
+    if (!rangeQuery.dateFrom && !rangeQuery.dateTo && !rangeQuery.year) {
+      const end = new Date();
+      const start = new Date(end.getTime() - 7 * MS_DAY);
+      rangeQuery.dateFrom = start.toISOString();
+      rangeQuery.dateTo = end.toISOString();
+    }
+
+    const { start, end: resolvedEnd, label } = resolveAdminAnalyticsRange(rangeQuery);
+    // Rolling presets (24h/7d/30d) send exact ISO dateTo; do not snap to end-of-UTC-day
+    // or a "24h" filter becomes "24h ago → midnight tonight" and looks wrong.
+    const end =
+      rangeQuery.dateFrom && rangeQuery.dateTo
+        ? new Date(rangeQuery.dateTo)
+        : resolvedEnd;
+    const daySpan = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / MS_DAY));
+    const rangeKey = `${start.toISOString()}_${end.toISOString()}`;
+
     const version = await getCacheVersion('listeners');
-    const statsCacheKey = `admin_listeners_performance_stats:v${version}`;
-    
-    // 1. Fetch cached Stats and Trends (expires in 30s)
+    const statsCacheKey = `admin_listeners_performance_stats:v${version}:${rangeKey}`;
+
     let statsAndTrends = await getCache(statsCacheKey);
     if (!statsAndTrends) {
       const CommunicationSession = mongoose.model('CommunicationSession');
-      const ListenerProfile = mongoose.model('ListenerProfile');
+      const periodMatch = { createdAt: { $gte: start, $lte: end } };
 
-      // Calculate Stats
-      // Avg. Rating
-      const approvedCount = await ListenerProfile.countDocuments({ kycStatus: 'APPROVED' });
-      const avgRatingObj = await ListenerProfile.aggregate([
-        { $match: { kycStatus: 'APPROVED' } },
-        { $group: { _id: null, avg: { $avg: '$avgRating' } } }
-      ]);
-      const avgRating = avgRatingObj[0]?.avg || 0;
-
-      // Sessions / Day (total completed sessions in the last 7 days / 7)
-      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      const sessionsLast7Days = await CommunicationSession.countDocuments({
-        status: 'COMPLETED',
-        createdAt: { $gte: sevenDaysAgo }
-      });
-      const sessionsPerDay = Math.round((sessionsLast7Days / 7) * 10) / 10;
-
-      // Completion Rate
-      const completedCount = await CommunicationSession.countDocuments({ status: 'COMPLETED' });
-      const endedCount = await CommunicationSession.countDocuments({
-        status: { $in: ['COMPLETED', 'MISSED', 'REJECTED', 'FAILED'] }
-      });
-      const completionRate = endedCount > 0 ? Math.round((completedCount / endedCount) * 100) : 100;
-
-      // Avg. Duration
-      const avgDurationRes = await CommunicationSession.aggregate([
-        { $match: { status: 'COMPLETED' } },
-        { $group: { _id: null, avg: { $avg: '$duration' } } }
-      ]);
-      const avgDurationSeconds = avgDurationRes[0]?.avg ?? 0;
-      const avgMinutes = Math.floor(avgDurationSeconds / 60);
-      const avgSeconds = Math.round(avgDurationSeconds % 60);
-      const avgDurationStr = `${avgMinutes}m ${avgSeconds}s`;
-
-      // Trends (Chart Data for last 7 days)
-      const trendRes = await CommunicationSession.aggregate([
-        {
-          $match: {
-            status: 'COMPLETED',
-            createdAt: { $gte: sevenDaysAgo }
-          }
-        },
-        {
-          $group: {
-            _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
-            sessions: { $sum: 1 },
-            avgRating: { $avg: '$rating' }
-          }
-        },
-        { $sort: { _id: 1 } }
+      const [sessionFacet, trendRes] = await Promise.all([
+        CommunicationSession.aggregate([
+          { $match: periodMatch },
+          {
+            $facet: {
+              completed: [
+                { $match: { status: 'COMPLETED' } },
+                {
+                  $group: {
+                    _id: null,
+                    count: { $sum: 1 },
+                    avgDuration: { $avg: '$duration' },
+                    avgRating: { $avg: '$rating' },
+                  },
+                },
+              ],
+              ended: [
+                {
+                  $match: {
+                    status: { $in: ['COMPLETED', 'MISSED', 'REJECTED', 'FAILED'] },
+                  },
+                },
+                { $count: 'n' },
+              ],
+            },
+          },
+        ]),
+        CommunicationSession.aggregate([
+          { $match: { ...periodMatch, status: 'COMPLETED' } },
+          {
+            $group: {
+              _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+              sessions: { $sum: 1 },
+              avgRating: { $avg: '$rating' },
+            },
+          },
+          { $sort: { _id: 1 } },
+        ]),
       ]);
 
-      const days = [];
-      for (let i = 6; i >= 0; i--) {
-        const dateStr = new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-        days.push({ name: dateStr, value: 0, value2: 0 }); // value = sessions, value2 = rating
-      }
+      const sf = sessionFacet[0] ?? {};
+      const completedRow = sf.completed?.[0] ?? {};
+      const completedCount = completedRow.count ?? 0;
+      const avgRating = completedRow.avgRating || 0;
+      const sessionsPerDay = Math.round((completedCount / daySpan) * 10) / 10;
+      const endedCount = sf.ended?.[0]?.n ?? 0;
+      const completionRate =
+        endedCount > 0 ? Math.round((completedCount / endedCount) * 100) : 100;
+      const avgDurationStr = formatDurationSecs(completedRow.avgDuration ?? 0);
 
-      trendRes.forEach(t => {
-        const day = days.find(d => d.name === t._id);
+      const days = buildDailyChartBuckets(start, end);
+      trendRes.forEach((t) => {
+        const day = days.find((d) => d.name === t._id);
         if (day) {
           day.value = t.sessions;
           day.value2 = t.avgRating ? Math.round(t.avgRating * 10) / 10 : 0;
@@ -730,23 +784,40 @@ class ListenerService extends BaseService {
 
       statsAndTrends = {
         stats: [
-          { label: "Avg. Rating", value: String(avgRating.toFixed(2)), tone: "text-success bg-success/10" },
-          { label: "Sessions / Day", value: String(sessionsPerDay), tone: "text-primary bg-accent" },
-          { label: "Completion Rate", value: `${completionRate}%`, tone: "text-success bg-success/10" },
-          { label: "Avg. Duration", value: avgDurationStr, tone: "text-foreground bg-muted" }
+          {
+            label: 'Avg. Rating',
+            value: String(Number(avgRating).toFixed(2)),
+            tone: 'text-success bg-success/10',
+          },
+          {
+            label: 'Sessions / Day',
+            value: String(sessionsPerDay),
+            tone: 'text-primary bg-accent',
+          },
+          {
+            label: 'Completion Rate',
+            value: `${completionRate}%`,
+            tone: 'text-success bg-success/10',
+          },
+          {
+            label: 'Avg. Duration',
+            value: avgDurationStr,
+            tone: 'text-foreground bg-muted',
+          },
         ],
-        chartData: days
+        chartData: days,
+        rangeLabel: label,
       };
 
-      await setCache(statsCacheKey, statsAndTrends, 30); // 30s cache
+      await setCache(statsCacheKey, statsAndTrends, 30);
     }
 
-    // 2. Fetch Paginated and Filtered Top Performers List (not cached globally due to parameters)
-    const { search = "", anchorLevel } = queryParams;
+    // ── Top Performers: period session + gift earnings, sort by period coins ──
+    const { search = '', anchorLevel } = queryParams;
     const skipOptions = getPaginationOptions(queryParams);
 
     const matchQuery = { kycStatus: 'APPROVED' };
-    if (anchorLevel !== undefined && anchorLevel !== "") {
+    if (anchorLevel !== undefined && anchorLevel !== '') {
       matchQuery.anchorLevel = Number(anchorLevel);
     }
 
@@ -757,56 +828,134 @@ class ListenerService extends BaseService {
         isDeleted: false,
         $or: [
           { firstName: { $regex: search, $options: 'i' } },
-          { lastName: { $regex: search, $options: 'i' } }
-        ]
-      }).select('_id').lean();
-      matchQuery.userId = { $in: matchedUsers.map(u => u._id) };
+          { lastName: { $regex: search, $options: 'i' } },
+        ],
+      })
+        .select('_id')
+        .lean();
+      matchQuery.userId = { $in: matchedUsers.map((u) => u._id) };
     }
 
     const ListenerProfile = mongoose.model('ListenerProfile');
-    const totalDocs = await ListenerProfile.countDocuments(matchQuery);
-    
-    // Sort by totalEarnings desc, totalSessions desc
-    const docsRaw = await ListenerProfile.find(matchQuery)
-      .sort({ totalEarnings: -1, totalSessions: -1 })
-      .skip(skipOptions.skip)
-      .limit(skipOptions.limit)
+    const CommunicationSession = mongoose.model('CommunicationSession');
+    const GiftTransaction = mongoose.model('GiftTransaction');
+
+    const profiles = await ListenerProfile.find(matchQuery)
+      .select('_id userId avgRating anchorLevel')
       .populate('userId', 'firstName lastName email')
       .lean();
 
-    const docs = await Promise.all(docsRaw.map(async (lp) => {
+    const listenerUserIds = profiles
+      .map((lp) => lp.userId?._id)
+      .filter(Boolean);
+
+    const periodMatch = { createdAt: { $gte: start, $lte: end } };
+    const sessionByListener = new Map();
+    const giftByListener = new Map();
+
+    if (listenerUserIds.length) {
+      const [sessionRows, giftRows] = await Promise.all([
+        CommunicationSession.aggregate([
+          {
+            $match: {
+              ...periodMatch,
+              status: 'COMPLETED',
+              listenerId: { $in: listenerUserIds },
+            },
+          },
+          {
+            $group: {
+              _id: '$listenerId',
+              earnedCoins: { $sum: '$totalCoinsEarned' },
+              sessionCount: { $sum: 1 },
+              avgDuration: { $avg: '$duration' },
+              avgRating: { $avg: '$rating' },
+            },
+          },
+        ]),
+        GiftTransaction.aggregate([
+          {
+            $match: {
+              ...periodMatch,
+              status: 'SUCCESS',
+              type: { $in: RECEIVED_GIFT_TYPES },
+              receiverId: { $in: listenerUserIds },
+            },
+          },
+          {
+            $group: {
+              _id: '$receiverId',
+              giftCoins: { $sum: '$earningCoins' },
+            },
+          },
+        ]),
+      ]);
+
+      for (const row of sessionRows) {
+        sessionByListener.set(String(row._id), row);
+      }
+      for (const row of giftRows) {
+        giftByListener.set(String(row._id), row.giftCoins ?? 0);
+      }
+    }
+
+    const withdrawalConfig = await withdrawalService.getConfig();
+    const conversionCoins = withdrawalConfig.conversionCoins || 1000;
+    const conversionInr = withdrawalConfig.conversionInr || 100;
+    const rate = conversionCoins > 0 ? conversionInr / conversionCoins : 0;
+
+    const ranked = profiles.map((lp) => {
+      const uid = String(lp.userId?._id || '');
+      const session = sessionByListener.get(uid);
+      const sessionCoins = session?.earnedCoins ?? 0;
+      const giftCoins = giftByListener.get(uid) ?? 0;
+      const periodCoins = sessionCoins + giftCoins;
+      const inr = round2(periodCoins * rate);
       const name = lp.userId
         ? `${lp.userId.firstName || ''} ${lp.userId.lastName || ''}`.trim()
         : 'Listener';
-
-      // Specific avg call duration for this listener
-      const CommunicationSession = mongoose.model('CommunicationSession');
-      const avgDurationRes = await CommunicationSession.aggregate([
-        { $match: { listenerId: lp.userId?._id, status: 'COMPLETED' } },
-        { $group: { _id: null, avg: { $avg: '$duration' } } }
-      ]);
-      const avgDur = avgDurationRes[0]?.avg ?? 0;
-      const mins = Math.floor(avgDur / 60);
-      const secs = Math.round(avgDur % 60);
+      const periodRating = session?.avgRating;
+      const ratingValue =
+        periodRating != null && !Number.isNaN(periodRating)
+          ? periodRating
+          : lp.avgRating ?? 0;
 
       return {
         id: String(lp._id),
-        listener: name,
+        listener: name || 'Listener',
         email: lp.userId?.email || '—',
-        rating: lp.avgRating ? lp.avgRating.toFixed(2) : '0.00',
-        sessions: lp.totalSessions ?? 0,
-        avgDuration: `${mins}m ${secs}s`,
-        earnings: `${(lp.totalEarnings ?? 0).toLocaleString('en-IN')} coins`,
-        anchorLevel: lp.anchorLevel ?? 0
+        rating: Number(ratingValue).toFixed(2),
+        sessions: session?.sessionCount ?? 0,
+        avgDuration: formatDurationSecs(session?.avgDuration ?? 0),
+        earnings: `${Number(periodCoins).toLocaleString('en-IN')} coins`,
+        inrEarnings: formatInr(inr),
+        periodCoins,
+        anchorLevel: lp.anchorLevel ?? 0,
       };
-    }));
+    });
 
-    const paginatedResponse = formatPaginatedResponse(docs, totalDocs, skipOptions.page, skipOptions.limit);
+    ranked.sort((a, b) => {
+      if (b.periodCoins !== a.periodCoins) return b.periodCoins - a.periodCoins;
+      return b.sessions - a.sessions;
+    });
+
+    const totalDocs = ranked.length;
+    const pageDocs = ranked
+      .slice(skipOptions.skip, skipOptions.skip + skipOptions.limit)
+      .map(({ periodCoins: _pc, ...row }) => row);
+
+    const paginatedResponse = formatPaginatedResponse(
+      pageDocs,
+      totalDocs,
+      skipOptions.page,
+      skipOptions.limit,
+    );
 
     return {
       stats: statsAndTrends.stats,
       chartData: statsAndTrends.chartData,
-      performers: paginatedResponse
+      rangeLabel: statsAndTrends.rangeLabel || label,
+      performers: paginatedResponse,
     };
   }
 
@@ -819,83 +968,113 @@ class ListenerService extends BaseService {
     const ListenerProfile = mongoose.model('ListenerProfile');
     const User = mongoose.model('User');
 
-    // 1. Fetch Real-time Availability Counts (ONLINE, BUSY, OFFLINE)
-    const [onlineCount, busyCount, offlineCount] = await Promise.all([
-      ListenerProfile.countDocuments({ kycStatus: 'APPROVED', availability: 'ONLINE' }),
-      ListenerProfile.countDocuments({ kycStatus: 'APPROVED', availability: 'BUSY' }),
-      ListenerProfile.countDocuments({ kycStatus: 'APPROVED', availability: 'OFFLINE' })
-    ]);
+    const listenersVersion = await getCacheVersion('listeners');
+    const statsCacheKey = `listeners:availability:${period}:v${listenersVersion}`;
+    let statsPayload = await getCache(statsCacheKey);
 
-    // Live Average Wait Time (all time or today)
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    const avgWaitRes = await CommunicationSession.aggregate([
-      { $match: { status: 'COMPLETED', startTime: { $ne: null }, createdAt: { $gte: today } } },
-      { $project: { waitTime: { $divide: [{ $subtract: ['$startTime', '$createdAt'] }, 1000] } } },
-      { $group: { _id: null, avg: { $avg: '$waitTime' } } }
-    ]);
-    const liveAvgWaitSec = avgWaitRes[0]?.avg ?? 85; // fallback to 1m 25s
-    const waitMins = Math.floor(liveAvgWaitSec / 60);
-    const waitSecs = Math.round(liveAvgWaitSec % 60);
-    const liveAvgWaitStr = `${waitMins}m ${waitSecs}s`;
+    if (!statsPayload) {
+      // 1. Fetch Real-time Availability Counts (ONLINE, BUSY, OFFLINE)
+      const [onlineCount, busyCount, offlineCount] = await Promise.all([
+        ListenerProfile.countDocuments({ kycStatus: 'APPROVED', availability: 'ONLINE' }),
+        ListenerProfile.countDocuments({ kycStatus: 'APPROVED', availability: 'BUSY' }),
+        ListenerProfile.countDocuments({ kycStatus: 'APPROVED', availability: 'OFFLINE' })
+      ]);
 
-    // 2. Fetch Period-based Stats and Trends (Percentage Changes)
-    let currentStart, currentEnd, previousStart, previousEnd;
-    if (period === 'month') {
-      currentStart = new Date(today.getFullYear(), today.getMonth(), 1);
-      currentEnd = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-      previousStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-      previousEnd = currentStart;
-    } else {
-      // Day
-      currentStart = today;
-      currentEnd = new Date(today.getTime() + 24 * 60 * 60 * 1000);
-      previousStart = new Date(today.getTime() - 24 * 60 * 60 * 1000);
-      previousEnd = currentStart;
+      // Live Average Wait Time (all time or today)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const avgWaitRes = await CommunicationSession.aggregate([
+        { $match: { status: 'COMPLETED', startTime: { $ne: null }, createdAt: { $gte: today } } },
+        { $project: { waitTime: { $divide: [{ $subtract: ['$startTime', '$createdAt'] }, 1000] } } },
+        { $group: { _id: null, avg: { $avg: '$waitTime' } } }
+      ]);
+      const liveAvgWaitSec = avgWaitRes[0]?.avg ?? 85; // fallback to 1m 25s
+      const waitMins = Math.floor(liveAvgWaitSec / 60);
+      const waitSecs = Math.round(liveAvgWaitSec % 60);
+      const liveAvgWaitStr = `${waitMins}m ${waitSecs}s`;
+
+      // 2. Fetch Period-based Stats and Trends (Percentage Changes)
+      let currentStart, currentEnd, previousStart, previousEnd;
+      if (period === 'month') {
+        currentStart = new Date(today.getFullYear(), today.getMonth(), 1);
+        currentEnd = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+        previousStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        previousEnd = currentStart;
+      } else {
+        currentStart = today;
+        currentEnd = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+        previousStart = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+        previousEnd = currentStart;
+      }
+
+      const [
+        activeLCurrentIds,
+        activeLPreviousIds,
+        sessionsCurrent,
+        sessionsPrevious,
+        waitCurrentRes,
+        waitPreviousRes,
+      ] = await Promise.all([
+        CommunicationSession.distinct('listenerId', {
+          status: 'COMPLETED',
+          createdAt: { $gte: currentStart, $lt: currentEnd },
+        }),
+        CommunicationSession.distinct('listenerId', {
+          status: 'COMPLETED',
+          createdAt: { $gte: previousStart, $lt: previousEnd },
+        }),
+        CommunicationSession.countDocuments({
+          status: 'COMPLETED',
+          createdAt: { $gte: currentStart, $lt: currentEnd },
+        }),
+        CommunicationSession.countDocuments({
+          status: 'COMPLETED',
+          createdAt: { $gte: previousStart, $lt: previousEnd },
+        }),
+        CommunicationSession.aggregate([
+          { $match: { status: 'COMPLETED', startTime: { $ne: null }, createdAt: { $gte: currentStart, $lt: currentEnd } } },
+          { $project: { waitTime: { $divide: [{ $subtract: ['$startTime', '$createdAt'] }, 1000] } } },
+          { $group: { _id: null, avg: { $avg: '$waitTime' } } },
+        ]),
+        CommunicationSession.aggregate([
+          { $match: { status: 'COMPLETED', startTime: { $ne: null }, createdAt: { $gte: previousStart, $lt: previousEnd } } },
+          { $project: { waitTime: { $divide: [{ $subtract: ['$startTime', '$createdAt'] }, 1000] } } },
+          { $group: { _id: null, avg: { $avg: '$waitTime' } } },
+        ]),
+      ]);
+
+      const activeLCurrent = activeLCurrentIds.length;
+      const activeLPrevious = activeLPreviousIds.length;
+      const activeLDiff = activeLCurrent - activeLPrevious;
+      const activeLPct = activeLPrevious > 0 ? Math.round((activeLDiff / activeLPrevious) * 100) : (activeLCurrent > 0 ? 100 : 0);
+
+      const sessionsDiff = sessionsCurrent - sessionsPrevious;
+      const sessionsPct = sessionsPrevious > 0 ? Math.round((sessionsDiff / sessionsPrevious) * 100) : (sessionsCurrent > 0 ? 100 : 0);
+
+      const waitCurrent = waitCurrentRes[0]?.avg ?? 85;
+      const waitPrevious = waitPreviousRes[0]?.avg ?? 85;
+      const waitDiff = waitCurrent - waitPrevious;
+      const waitPct = waitPrevious > 0 ? Math.round((waitDiff / waitPrevious) * 100) : 0;
+
+      const waitCurrentMins = Math.floor(waitCurrent / 60);
+      const waitCurrentSecs = Math.round(waitCurrent % 60);
+
+      statsPayload = {
+        realtime: {
+          online: onlineCount,
+          busy: busyCount,
+          offline: offlineCount,
+          avgWait: liveAvgWaitStr,
+        },
+        periodStats: [
+          { label: 'Active Listeners', value: String(activeLCurrent), trend: Math.abs(activeLPct), positive: activeLPct >= 0 },
+          { label: 'Total Sessions', value: String(sessionsCurrent), trend: Math.abs(sessionsPct), positive: sessionsPct >= 0 },
+          { label: 'Avg. Wait Time', value: `${waitCurrentMins}m ${waitCurrentSecs}s`, trend: Math.abs(waitPct), positive: waitPct <= 0 },
+        ],
+      };
+
+      await setCache(statsCacheKey, statsPayload, 30);
     }
-
-    // A. Active Listeners Count
-    const activeLCurrent = (await CommunicationSession.distinct('listenerId', {
-      status: 'COMPLETED',
-      createdAt: { $gte: currentStart, $lt: currentEnd }
-    })).length;
-    const activeLPrevious = (await CommunicationSession.distinct('listenerId', {
-      status: 'COMPLETED',
-      createdAt: { $gte: previousStart, $lt: previousEnd }
-    })).length;
-    const activeLDiff = activeLCurrent - activeLPrevious;
-    const activeLPct = activeLPrevious > 0 ? Math.round((activeLDiff / activeLPrevious) * 100) : (activeLCurrent > 0 ? 100 : 0);
-
-    // B. Total Sessions
-    const sessionsCurrent = await CommunicationSession.countDocuments({
-      status: 'COMPLETED',
-      createdAt: { $gte: currentStart, $lt: currentEnd }
-    });
-    const sessionsPrevious = await CommunicationSession.countDocuments({
-      status: 'COMPLETED',
-      createdAt: { $gte: previousStart, $lt: previousEnd }
-    });
-    const sessionsDiff = sessionsCurrent - sessionsPrevious;
-    const sessionsPct = sessionsPrevious > 0 ? Math.round((sessionsDiff / sessionsPrevious) * 100) : (sessionsCurrent > 0 ? 100 : 0);
-
-    // C. Avg Wait Time
-    const waitCurrentRes = await CommunicationSession.aggregate([
-      { $match: { status: 'COMPLETED', startTime: { $ne: null }, createdAt: { $gte: currentStart, $lt: currentEnd } } },
-      { $project: { waitTime: { $divide: [{ $subtract: ['$startTime', '$createdAt'] }, 1000] } } },
-      { $group: { _id: null, avg: { $avg: '$waitTime' } } }
-    ]);
-    const waitPreviousRes = await CommunicationSession.aggregate([
-      { $match: { status: 'COMPLETED', startTime: { $ne: null }, createdAt: { $gte: previousStart, $lt: previousEnd } } },
-      { $project: { waitTime: { $divide: [{ $subtract: ['$startTime', '$createdAt'] }, 1000] } } },
-      { $group: { _id: null, avg: { $avg: '$waitTime' } } }
-    ]);
-    const waitCurrent = waitCurrentRes[0]?.avg ?? 85;
-    const waitPrevious = waitPreviousRes[0]?.avg ?? 85;
-    const waitDiff = waitCurrent - waitPrevious;
-    const waitPct = waitPrevious > 0 ? Math.round((waitDiff / waitPrevious) * 100) : 0;
-
-    const waitCurrentMins = Math.floor(waitCurrent / 60);
-    const waitCurrentSecs = Math.round(waitCurrent % 60);
 
     // 3. Paginated Listener availability board
     const matchQuery = { kycStatus: 'APPROVED' };
@@ -942,17 +1121,8 @@ class ListenerService extends BaseService {
     const paginatedResponse = formatPaginatedResponse(docs, totalDocs, skipOptions.page, skipOptions.limit);
 
     return {
-      realtime: {
-        online: onlineCount,
-        busy: busyCount,
-        offline: offlineCount,
-        avgWait: liveAvgWaitStr
-      },
-      periodStats: [
-        { label: "Active Listeners", value: String(activeLCurrent), trend: Math.abs(activeLPct), positive: activeLPct >= 0 },
-        { label: "Total Sessions", value: String(sessionsCurrent), trend: Math.abs(sessionsPct), positive: sessionsPct >= 0 },
-        { label: "Avg. Wait Time", value: `${waitCurrentMins}m ${waitCurrentSecs}s`, trend: Math.abs(waitPct), positive: waitPct <= 0 }
-      ],
+      realtime: statsPayload.realtime,
+      periodStats: statsPayload.periodStats,
       listeners: paginatedResponse
     };
   }

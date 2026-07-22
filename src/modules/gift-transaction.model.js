@@ -69,6 +69,7 @@ giftTransactionSchema.index({ senderId: 1, createdAt: -1 });
 giftTransactionSchema.index({ receiverId: 1, createdAt: -1 });
 giftTransactionSchema.index({ receiverId: 1, status: 1, createdAt: -1 });
 giftTransactionSchema.index({ status: 1, createdAt: -1 });
+giftTransactionSchema.index({ status: 1, giftId: 1 });
 
 const GiftTransaction = mongoose.model('GiftTransaction', giftTransactionSchema);
 export default GiftTransaction;

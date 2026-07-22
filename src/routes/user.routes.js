@@ -2,7 +2,7 @@ import express from 'express';
 import userController from '../controllers/user.controller.js';
 import roleController from '../controllers/role.controller.js';
 import { authenticate, restrictTo, authorize } from '../middlewares/auth.middleware.js';
-import { uploadUserPhoto, processAndUploadImage } from '../middlewares/upload.middleware.js';
+import { uploadUserPhoto, uploadAgentAadhaar, processAndUploadImage } from '../middlewares/upload.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 import {
   updateUserProfileSchema,
@@ -12,7 +12,9 @@ import {
   createAdminSchema,
   createListenerSchema,
   createAgentSchema,
+  updateAgentSchema,
   paginationQuerySchema,
+  agentAdminStatsQuerySchema,
 } from '../validators/user.validator.js';
 import { assignAdminRoleSchema } from '../validators/role.validator.js';
 import adminExportController from '../controllers/admin-export.controller.js';
@@ -37,7 +39,7 @@ router.patch('/me/settings', validate(updateSettingsSchema), userController.upda
 router.use(restrictTo('ADMIN'));
 
 router.get('/stats', authorize('user.stats.view'), userController.getCustomerStats);
-router.get('/agent-stats', authorize('agent.stats.view'), userController.getAgentAdminStats);
+router.get('/agent-stats', authorize('agent.stats.view'), validate(agentAdminStatsQuerySchema), userController.getAgentAdminStats);
 router.get('/blocked-stats', authorize('user.read'), userController.getBlockedAccountStats);
 router.get('/activity/stats', authorize('user.activity.view'), userController.getCustomerActivityStats);
 router.get(
@@ -62,7 +64,22 @@ router.post(
   validate(createListenerSchema),
   userController.createListener
 );
-router.post('/agent', authorize('agent.create'), validate(createAgentSchema), userController.createAgent);
+router.post(
+  '/agent',
+  authorize('agent.create'),
+  uploadAgentAadhaar,
+  processAndUploadImage,
+  validate(createAgentSchema),
+  userController.createAgent
+);
+router.patch(
+  '/agent/:id',
+  authorize('agent.create'),
+  uploadAgentAadhaar,
+  processAndUploadImage,
+  validate(updateAgentSchema),
+  userController.updateAgent
+);
 router.patch(
   '/agent/:id/commission',
   authorize('agent.commission.update'),

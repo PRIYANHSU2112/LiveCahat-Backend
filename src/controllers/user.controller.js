@@ -68,6 +68,11 @@ class UserController extends BaseController {
     this.sendResponse(res, 201, 'Agent created successfully', agent);
   });
 
+  updateAgent = catchAsync(async (req, res) => {
+    const agent = await userService.updateAgentUser(req.params.id, req.body);
+    this.sendResponse(res, 200, 'Agent updated successfully', agent);
+  });
+
   updateAgentCommission = catchAsync(async (req, res) => {
     const agent = await userService.updateAgentCommission(req.params.id, req.body.commissionPercentage);
     this.sendResponse(res, 200, 'Agent commission updated successfully', agent);
@@ -89,8 +94,8 @@ class UserController extends BaseController {
     this.sendResponse(res, 200, 'Customer activity feed fetched successfully', result);
   });
 
-  getAgentAdminStats = catchAsync(async (_req, res) => {
-    const stats = await userService.getAgentAdminStats();
+  getAgentAdminStats = catchAsync(async (req, res) => {
+    const stats = await userService.getAgentAdminStats(req.query);
     this.sendResponse(res, 200, 'Agent stats fetched successfully', stats);
   });
 

@@ -176,6 +176,8 @@ listenerProfileSchema.index({ createdByAgentId: 1, kycStatus: 1 });
 listenerProfileSchema.index({ createdByAgentId: 1, availability: 1 });
 // Agent panel stat cards: approved totals + "today approved" are filtered by approval date.
 listenerProfileSchema.index({ createdByAgentId: 1, kycApprovedAt: 1 });
+// Admin performance board: APPROVED sorted by earnings / sessions
+listenerProfileSchema.index({ kycStatus: 1, totalEarnings: -1, totalSessions: -1 });
 
 const ListenerProfile = mongoose.model('ListenerProfile', listenerProfileSchema);
 export default ListenerProfile;

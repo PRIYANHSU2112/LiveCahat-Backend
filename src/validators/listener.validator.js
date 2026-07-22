@@ -51,6 +51,20 @@ export const homeListenersQuerySchema = Joi.object({
   }),
 });
 
+export const adminListenerPerformanceQuerySchema = Joi.object({
+  query: Joi.object({
+    search: Joi.string().trim().max(100).allow(''),
+    anchorLevel: Joi.number().integer().min(0).max(10),
+    page: Joi.number().integer().min(1),
+    limit: Joi.number().integer().min(1).max(100),
+    year: Joi.number().integer().min(2020).max(2100),
+    month: Joi.number().integer().min(1).max(12),
+    day: Joi.number().integer().min(1).max(31),
+    dateFrom: Joi.date().iso(),
+    dateTo: Joi.date().iso(),
+  }),
+});
+
 export const dashboardOverviewQuerySchema = Joi.object({
   query: Joi.object({
     period: Joi.string().valid(...PERIODS).default('today'),

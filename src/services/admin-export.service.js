@@ -12,10 +12,8 @@ import userService from './user.service.js';
 import listenerService from './listener.service.js';
 import { walletService } from './wallet.service.js';
 import withdrawalService from './withdrawal.service.js';
-import userReportService from './user-report.service.js';
 import adminCommunicationService from './admin-communication.service.js';
 import referralService from './referral.service.js';
-import feedbackService from './feedback.service.js';
 import {
   streamXlsx,
   streamXlsxFromQuery,
@@ -282,7 +280,29 @@ class AdminExportService {
   }
 
   async exportReports(queryParams, res) {
-    await streamFromListFn(res, {
+    const UserReport = (await import('../modules/user-report.model.js')).default;
+    const { buildUtcCreatedAtFilter } = await import('../utils/date-filter.util.js');
+    const mongoose = (await import('mongoose')).default;
+
+    const filter = { ...buildUtcCreatedAtFilter(queryParams) };
+    if (queryParams.status) filter.status = queryParams.status;
+    if (queryParams.reasonId && mongoose.Types.ObjectId.isValid(queryParams.reasonId)) {
+      filter.reasonIds = queryParams.reasonId;
+    }
+    if (queryParams.reporterType) filter.reporterType = queryParams.reporterType;
+    if (queryParams.targetType) filter.targetType = queryParams.targetType;
+    if (queryParams.search?.trim()) {
+      const regex = { $regex: queryParams.search.trim(), $options: 'i' };
+      filter.$or = [{ message: regex }, { reasonLabels: regex }];
+    }
+
+    const query = UserReport.find(filter)
+      .populate('reporterId', 'firstName lastName email')
+      .populate('targetId', 'firstName lastName email')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    await streamXlsxFromQuery(res, {
       filename: exportFilename('reports'),
       sheetName: 'Reports',
       columns: [
@@ -296,10 +316,9 @@ class AdminExportService {
         { header: 'Message', key: 'message', width: 36 },
         { header: 'Created At', key: 'createdAt', width: 24 },
       ],
-      listFn: (page, limit) =>
-        userReportService.getAllReports({ ...queryParams, page, limit }),
+      query,
       mapRow: (d) => ({
-        id: d._id?.toString?.() ?? d.id ?? '',
+        id: d._id?.toString?.() ?? '',
         status: d.status ?? '',
         reporterType: d.reporterType ?? '',
         targetType: d.targetType ?? '',
@@ -364,7 +383,21 @@ class AdminExportService {
   }
 
   async exportSessions(queryParams, res) {
-    await streamFromListFn(res, {
+    const mapRow = (d) => ({
+      id: d._id?.toString?.() ?? d.id ?? '',
+      status: d.status ?? '',
+      mode: d.mode ?? '',
+      caller: d.caller?.name || formatFullName(d.caller) || '',
+      listener: d.listener?.name || formatFullName(d.listener) || '',
+      duration: d.duration ?? '',
+      totalCoinsSpent: d.totalCoinsSpent ?? '',
+      totalCoinsEarned: d.totalCoinsEarned ?? '',
+      startTime: formatExportDate(d.startTime),
+      endTime: formatExportDate(d.endTime),
+      createdAt: formatExportDate(d.createdAt),
+    });
+
+    await streamXlsx(res, {
       filename: exportFilename('sessions'),
       sheetName: 'Sessions',
       columns: [
@@ -380,21 +413,27 @@ class AdminExportService {
         { header: 'End', key: 'endTime', width: 24 },
         { header: 'Created At', key: 'createdAt', width: 24 },
       ],
-      listFn: (page, limit) =>
-        adminCommunicationService.listSessions({ ...queryParams, page, limit }),
-      mapRow: (d) => ({
-        id: d._id?.toString?.() ?? d.id ?? '',
-        status: d.status ?? '',
-        mode: d.mode ?? '',
-        caller: d.caller?.name || formatFullName(d.caller) || '',
-        listener: d.listener?.name || formatFullName(d.listener) || '',
-        duration: d.duration ?? '',
-        totalCoinsSpent: d.totalCoinsSpent ?? '',
-        totalCoinsEarned: d.totalCoinsEarned ?? '',
-        startTime: formatExportDate(d.startTime),
-        endTime: formatExportDate(d.endTime),
-        createdAt: formatExportDate(d.createdAt),
-      }),
+      countFn: () => adminCommunicationService.countSessionsForExport(queryParams),
+      rowIteratorFn: async function* () {
+        const cursor = adminCommunicationService.iterateSessionsForExport(
+          queryParams,
+          EXPORT_BATCH_SIZE
+        );
+        for await (const doc of cursor) {
+          const mapped = {
+            ...doc,
+            caller: {
+              ...doc.caller,
+              name: doc.caller?.name?.trim() || 'Unknown',
+            },
+            listener: {
+              ...doc.listener,
+              name: doc.listener?.name?.trim() || 'Unknown',
+            },
+          };
+          yield mapRow(mapped);
+        }
+      },
     });
   }
 
@@ -663,7 +702,21 @@ class AdminExportService {
   }
 
   async exportFeedback(queryParams, res) {
-    await streamFromListFn(res, {
+    const Feedback = (await import('../modules/feedback.model.js')).default;
+    const { buildUtcCreatedAtFilter } = await import('../utils/date-filter.util.js');
+    const filter = { ...buildUtcCreatedAtFilter(queryParams) };
+    if (queryParams.status) filter.status = queryParams.status;
+    if (queryParams.category) filter.category = queryParams.category;
+    if (queryParams.search?.trim()) {
+      filter.message = { $regex: queryParams.search.trim(), $options: 'i' };
+    }
+
+    const query = Feedback.find(filter)
+      .select('status message createdAt')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    await streamXlsxFromQuery(res, {
       filename: exportFilename('feedback'),
       sheetName: 'Feedback',
       columns: [
@@ -672,10 +725,9 @@ class AdminExportService {
         { header: 'Message', key: 'message', width: 40 },
         { header: 'Created At', key: 'createdAt', width: 24 },
       ],
-      listFn: (page, limit) =>
-        feedbackService.getAllFeedback({ ...queryParams, page, limit }),
+      query,
       mapRow: (d) => ({
-        id: d._id?.toString?.() ?? d.id ?? '',
+        id: d._id?.toString?.() ?? '',
         status: d.status ?? '',
         message: d.message ?? '',
         createdAt: formatExportDate(d.createdAt),

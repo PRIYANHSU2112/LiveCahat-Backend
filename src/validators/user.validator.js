@@ -32,7 +32,12 @@ export const queryUserSchema = Joi.object({
     sortOrder: Joi.string().valid('asc', 'desc').default('desc'),
     type: Joi.string().valid('CUSTOMER', 'LISTENER', 'ADMIN', 'AGENT'),
     isBlocked: Joi.boolean(),
-  })
+    year: Joi.number().integer().min(2020).max(2100),
+    month: Joi.number().integer().min(1).max(12),
+    day: Joi.number().integer().min(1).max(31),
+    dateFrom: Joi.date().iso(),
+    dateTo: Joi.date().iso(),
+  }),
 });
 
 export const blockUserSchema = Joi.object({
@@ -72,7 +77,22 @@ export const createAgentSchema = Joi.object({
     password: Joi.string().min(6).required(),
     mobileNumber: Joi.string().required().trim(),
     commissionPercentage: Joi.number().min(0).max(100).default(0),
-  })
+    aadhaarFront: Joi.string().uri().required(),
+    aadhaarBack: Joi.string().uri().required(),
+  }),
+});
+
+export const updateAgentSchema = Joi.object({
+  body: Joi.object({
+    firstName: Joi.string().trim().min(2).max(50),
+    lastName: Joi.string().trim().min(2).max(50),
+    email: Joi.string().email().trim().lowercase(),
+    mobileNumber: Joi.string().trim(),
+    commissionPercentage: Joi.number().min(0).max(100),
+    password: Joi.string().min(6),
+    aadhaarFront: Joi.string().uri(),
+    aadhaarBack: Joi.string().uri(),
+  }).min(1),
 });
 
 export const paginationQuerySchema = Joi.object({
@@ -81,6 +101,16 @@ export const paginationQuerySchema = Joi.object({
     limit: Joi.number().integer().min(1).max(100).default(20),
     sortBy: Joi.string().default('createdAt'),
     sortOrder: Joi.string().valid('asc', 'desc').default('desc'),
+  }),
+});
+
+export const agentAdminStatsQuerySchema = Joi.object({
+  query: Joi.object({
+    year: Joi.number().integer().min(2020).max(2100),
+    month: Joi.number().integer().min(1).max(12),
+    day: Joi.number().integer().min(1).max(31),
+    dateFrom: Joi.date().iso(),
+    dateTo: Joi.date().iso(),
   }),
 });
 

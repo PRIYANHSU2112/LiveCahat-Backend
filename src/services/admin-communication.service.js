@@ -117,6 +117,23 @@ class AdminCommunicationService {
     return formatPaginatedResponse(data, total, page, limit);
   }
 
+  async countSessionsForExport(query = {}) {
+    return adminCommunicationRepository.countSessionsForExport({
+      matchQuery: buildListMatch(query),
+      mode: query.mode ?? 'all',
+      search: query.search?.trim() || null,
+    });
+  }
+
+  iterateSessionsForExport(query = {}, batchSize = 500) {
+    return adminCommunicationRepository.iterateSessionsForExport({
+      matchQuery: buildListMatch(query),
+      mode: query.mode ?? 'all',
+      search: query.search?.trim() || null,
+      batchSize,
+    });
+  }
+
   async getLiveSessions(query = {}) {
     const mode = query.mode ?? 'all';
     const limit = parseInt(query.limit, 10) || 50;

@@ -413,74 +413,83 @@ class GiftService {
    * Admin: Get dashboard analytics for gifts.
    */
   async getAdminGiftAnalytics() {
-    // 1. Active gifts count
-    const activeGiftsCount = await giftRepository.countDocuments({ isActive: true });
-    const totalGiftsCount = await giftRepository.countDocuments({});
+    const version = await getCacheVersion('gifts');
+    const cacheKey = `gifts:admin:analytics:v${version}`;
+    const cached = await getCache(cacheKey);
+    if (cached) return cached;
 
-    // 2. Gifts sent in the last 7 days
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    const last7DaysTxs = await GiftTransaction.aggregate([
-      { 
-        $match: { 
-          createdAt: { $gte: sevenDaysAgo },
-          status: 'SUCCESS' 
-        } 
-      },
-      { 
-        $group: { 
-          _id: null, 
-          count: { $sum: 1 }, 
-          totalCoins: { $sum: '$coins' },
-          totalEarningCoins: { $sum: '$earningCoins' },
-          totalAdminCoins: { $sum: '$adminCoins' }
-        } 
-      }
+    const [activeGiftsCount, totalGiftsCount, last7DaysTxs, topGifts] = await Promise.all([
+      giftRepository.countDocuments({ isActive: true }),
+      giftRepository.countDocuments({}),
+      GiftTransaction.aggregate([
+        {
+          $match: {
+            createdAt: { $gte: sevenDaysAgo },
+            status: 'SUCCESS',
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            count: { $sum: 1 },
+            totalCoins: { $sum: '$coins' },
+            totalEarningCoins: { $sum: '$earningCoins' },
+            totalAdminCoins: { $sum: '$adminCoins' },
+          },
+        },
+      ]),
+      GiftTransaction.aggregate([
+        { $match: { status: 'SUCCESS' } },
+        {
+          $group: {
+            _id: '$giftId',
+            totalRevenue: { $sum: '$coins' },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { totalRevenue: -1 } },
+        { $limit: 10 },
+        {
+          $lookup: {
+            from: 'gifts',
+            localField: '_id',
+            foreignField: '_id',
+            as: 'gift',
+          },
+        },
+        { $unwind: { path: '$gift', preserveNullAndEmptyArrays: true } },
+        {
+          $project: {
+            giftId: '$_id',
+            name: { $ifNull: ['$gift.name', 'Unknown Gift'] },
+            icon: { $ifNull: ['$gift.icon', ''] },
+            category: { $ifNull: ['$gift.category', 'Unknown'] },
+            totalRevenue: 1,
+            count: 1,
+          },
+        },
+      ]),
     ]);
 
     const stats7d = last7DaysTxs[0] || { count: 0, totalCoins: 0, totalEarningCoins: 0, totalAdminCoins: 0 };
 
-    // 3. Top gifts by revenue (total coins generated)
-    const topGiftsGroup = await GiftTransaction.aggregate([
-      { $match: { status: 'SUCCESS' } },
-      { 
-        $group: { 
-          _id: '$giftId', 
-          totalRevenue: { $sum: '$coins' }, 
-          count: { $sum: 1 } 
-        } 
-      },
-      { $sort: { totalRevenue: -1 } },
-      { $limit: 10 }
-    ]);
-
-    // Populate gift details manually
-    const topGifts = await Promise.all(
-      topGiftsGroup.map(async (item) => {
-        const gift = await giftRepository.findById(item._id);
-        return {
-          giftId: item._id,
-          name: gift ? gift.name : 'Unknown Gift',
-          icon: gift ? gift.icon : '',
-          category: gift ? gift.category : 'Unknown',
-          totalRevenue: item.totalRevenue,
-          count: item.count
-        };
-      })
-    );
-
-    return {
+    const analytics = {
       activeGiftsCount,
       totalGiftsCount,
       last7DaysStats: {
         sentCount: stats7d.count,
         totalCoinsSpent: stats7d.totalCoins,
         totalListenerEarnings: stats7d.totalEarningCoins,
-        totalPlatformCommission: stats7d.totalAdminCoins
+        totalPlatformCommission: stats7d.totalAdminCoins,
       },
-      topGifts
+      topGifts,
     };
+
+    await setCache(cacheKey, analytics, 60);
+    return analytics;
   }
 }
 

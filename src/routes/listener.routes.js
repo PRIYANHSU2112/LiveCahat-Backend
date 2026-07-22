@@ -3,7 +3,7 @@ import listenerController from '../controllers/listener.controller.js';
 import { authenticate, restrictTo, authorize } from '../middlewares/auth.middleware.js';
 import { uploadKYCDocuments, uploadIntroVideo, processAndUploadImage } from '../middlewares/upload.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
-import { updateListenerProfileSchema, updateRatesSchema, updateAvailabilitySchema, updateKycStatusSchema, dashboardOverviewQuerySchema, dashboardSessionsQuerySchema, homeListenersQuerySchema, agentCreateListenerSchema, agentListenersQuerySchema } from '../validators/listener.validator.js';
+import { updateListenerProfileSchema, updateRatesSchema, updateAvailabilitySchema, updateKycStatusSchema, dashboardOverviewQuerySchema, dashboardSessionsQuerySchema, homeListenersQuerySchema, agentCreateListenerSchema, agentListenersQuerySchema, adminListenerPerformanceQuerySchema } from '../validators/listener.validator.js';
 import adminExportController from '../controllers/admin-export.controller.js';
 
 const router = express.Router();
@@ -17,7 +17,7 @@ router.post('/agent', restrictTo('AGENT'), validate(agentCreateListenerSchema), 
 
 // --- ADMIN ONLY ROUTES (must precede the LISTENER/CUSTOMER restriction below) ---
 router.get('/admin/stats', restrictTo('ADMIN'), authorize('listener.stats.view'), listenerController.getAdminStats);
-router.get('/admin/performance', restrictTo('ADMIN'), authorize('listener.performance.view'), listenerController.getAdminListenerPerformance);
+router.get('/admin/performance', restrictTo('ADMIN'), authorize('listener.performance.view'), validate(adminListenerPerformanceQuerySchema), listenerController.getAdminListenerPerformance);
 router.get('/admin/availability-monitoring', restrictTo('ADMIN'), authorize('listener.availability.view'), listenerController.getAdminAvailabilityMonitoring);
 router.get('/export', restrictTo('ADMIN'), authorize('listener.read'), adminExportController.exportListeners);
 router.get('/admin/:id', restrictTo('ADMIN'), authorize('listener.read'), listenerController.getListenerById);

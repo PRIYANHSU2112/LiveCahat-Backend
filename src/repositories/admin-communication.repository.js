@@ -99,25 +99,77 @@ class AdminCommunicationRepository {
     };
   }
 
+  _sessionListProject() {
+    return {
+      $project: {
+        _id: 1,
+        status: 1,
+        startTime: 1,
+        endTime: 1,
+        duration: 1,
+        totalCoinsSpent: 1,
+        totalCoinsEarned: 1,
+        disconnectReason: 1,
+        createdAt: 1,
+        mode: { $ifNull: ['$currentSegment.mode', 'CHAT'] },
+        caller: {
+          _id: '$caller._id',
+          name: {
+            $trim: {
+              input: {
+                $concat: [
+                  { $ifNull: ['$caller.firstName', ''] },
+                  ' ',
+                  { $ifNull: ['$caller.lastName', ''] },
+                ],
+              },
+            },
+          },
+          profileImage: '$caller.profileImage',
+        },
+        listener: {
+          _id: '$listener._id',
+          name: {
+            $trim: {
+              input: {
+                $concat: [
+                  { $ifNull: ['$listener.firstName', ''] },
+                  ' ',
+                  { $ifNull: ['$listener.lastName', ''] },
+                ],
+              },
+            },
+          },
+          profileImage: '$listener.profileImage',
+        },
+      },
+    };
+  }
+
+  _userLookupStages() {
+    return [
+      userLookup('callerId', 'caller'),
+      userLookup('listenerId', 'listener'),
+      { $unwind: { path: '$caller', preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: '$listener', preserveNullAndEmptyArrays: true } },
+    ];
+  }
+
   _buildSessionListPipeline({ matchQuery, mode, search, sort, skip, limit, includePagination = true }) {
-    const pipeline = [
+    const filterPipeline = [
       { $match: matchQuery },
       latestSegmentLookup(),
       { $unwind: { path: '$currentSegment', preserveNullAndEmptyArrays: true } },
     ];
 
     if (mode && mode !== 'all') {
-      pipeline.push({ $match: { 'currentSegment.mode': mode } });
+      filterPipeline.push({ $match: { 'currentSegment.mode': mode } });
     }
 
-    pipeline.push(
-      userLookup('callerId', 'caller'),
-      userLookup('listenerId', 'listener'),
-      { $unwind: { path: '$caller', preserveNullAndEmptyArrays: true } },
-      { $unwind: { path: '$listener', preserveNullAndEmptyArrays: true } }
-    );
-
-    if (search) {
+    const needsSearch = Boolean(search);
+    // Search requires user docs before pagination; otherwise defer $lookup until after $limit.
+    if (needsSearch) {
+      filterPipeline.push(...this._userLookupStages());
       const searchRegex = { $regex: search, $options: 'i' };
       const orConditions = [
         { 'caller.firstName': searchRegex },
@@ -128,63 +180,29 @@ class AdminCommunicationRepository {
       if (mongoose.Types.ObjectId.isValid(search)) {
         orConditions.push({ _id: new mongoose.Types.ObjectId(search) });
       }
-      pipeline.push({ $match: { $or: orConditions } });
+      filterPipeline.push({ $match: { $or: orConditions } });
     }
 
     const dataPipeline = [
       { $sort: sort },
       ...(includePagination ? [{ $skip: skip }, { $limit: limit }] : []),
-      {
-        $project: {
-          _id: 1,
-          status: 1,
-          startTime: 1,
-          endTime: 1,
-          duration: 1,
-          totalCoinsSpent: 1,
-          totalCoinsEarned: 1,
-          disconnectReason: 1,
-          createdAt: 1,
-          mode: { $ifNull: ['$currentSegment.mode', 'CHAT'] },
-          caller: {
-            _id: '$caller._id',
-            name: {
-              $trim: {
-                input: {
-                  $concat: [
-                    { $ifNull: ['$caller.firstName', ''] },
-                    ' ',
-                    { $ifNull: ['$caller.lastName', ''] },
-                  ],
-                },
-              },
-            },
-            profileImage: '$caller.profileImage',
-          },
-          listener: {
-            _id: '$listener._id',
-            name: {
-              $trim: {
-                input: {
-                  $concat: [
-                    { $ifNull: ['$listener.firstName', ''] },
-                    ' ',
-                    { $ifNull: ['$listener.lastName', ''] },
-                  ],
-                },
-              },
-            },
-            profileImage: '$listener.profileImage',
-          },
-        },
-      },
+      ...(needsSearch ? [] : this._userLookupStages()),
+      this._sessionListProject(),
     ];
 
-    return { pipeline, dataPipeline };
+    return { filterPipeline, dataPipeline, canCheapCount: !needsSearch && !(mode && mode !== 'all') };
+  }
+
+  _mapSessionRows(rows) {
+    return rows.map((row) => ({
+      ...row,
+      caller: { ...row.caller, name: row.caller?.name?.trim() || 'Unknown' },
+      listener: { ...row.listener, name: row.listener?.name?.trim() || 'Unknown' },
+    }));
   }
 
   async getPaginatedSessions({ matchQuery, mode, search, sort, skip, limit }) {
-    const { pipeline, dataPipeline } = this._buildSessionListPipeline({
+    const { filterPipeline, dataPipeline, canCheapCount } = this._buildSessionListPipeline({
       matchQuery,
       mode,
       search,
@@ -194,8 +212,16 @@ class AdminCommunicationRepository {
       includePagination: true,
     });
 
+    if (canCheapCount) {
+      const [total, rows] = await Promise.all([
+        CommunicationSession.countDocuments(matchQuery),
+        CommunicationSession.aggregate([...filterPipeline, ...dataPipeline]).allowDiskUse(false),
+      ]);
+      return { total, data: this._mapSessionRows(rows) };
+    }
+
     const [result] = await CommunicationSession.aggregate([
-      ...pipeline,
+      ...filterPipeline,
       {
         $facet: {
           metadata: [{ $count: 'total' }],
@@ -205,17 +231,11 @@ class AdminCommunicationRepository {
     ]).allowDiskUse(false);
 
     const total = result?.metadata?.[0]?.total ?? 0;
-    const data = (result?.data ?? []).map((row) => ({
-      ...row,
-      caller: { ...row.caller, name: row.caller?.name?.trim() || 'Unknown' },
-      listener: { ...row.listener, name: row.listener?.name?.trim() || 'Unknown' },
-    }));
-
-    return { total, data };
+    return { total, data: this._mapSessionRows(result?.data ?? []) };
   }
 
   async getLiveSessions({ mode = 'all', limit = 50 }) {
-    const { pipeline, dataPipeline } = this._buildSessionListPipeline({
+    const { filterPipeline, dataPipeline } = this._buildSessionListPipeline({
       matchQuery: { status: 'ONGOING' },
       mode,
       search: null,
@@ -225,12 +245,46 @@ class AdminCommunicationRepository {
       includePagination: true,
     });
 
-    const rows = await CommunicationSession.aggregate([...pipeline, ...dataPipeline]).allowDiskUse(false);
-    return rows.map((row) => ({
-      ...row,
-      caller: { ...row.caller, name: row.caller?.name?.trim() || 'Unknown' },
-      listener: { ...row.listener, name: row.listener?.name?.trim() || 'Unknown' },
-    }));
+    const rows = await CommunicationSession.aggregate([...filterPipeline, ...dataPipeline]).allowDiskUse(false);
+    return this._mapSessionRows(rows);
+  }
+
+  /**
+   * Count + cursor for session Excel export (same projection as list, no page fan-out).
+   */
+  async countSessionsForExport({ matchQuery, mode, search }) {
+    const { filterPipeline, canCheapCount } = this._buildSessionListPipeline({
+      matchQuery,
+      mode,
+      search,
+      sort: { createdAt: -1 },
+      skip: 0,
+      limit: 1,
+      includePagination: true,
+    });
+    if (canCheapCount) {
+      return CommunicationSession.countDocuments(matchQuery);
+    }
+    const [result] = await CommunicationSession.aggregate([
+      ...filterPipeline,
+      { $count: 'total' },
+    ]).allowDiskUse(false);
+    return result?.total ?? 0;
+  }
+
+  iterateSessionsForExport({ matchQuery, mode, search, batchSize = 500 }) {
+    const { filterPipeline, dataPipeline } = this._buildSessionListPipeline({
+      matchQuery,
+      mode,
+      search,
+      sort: { createdAt: -1 },
+      skip: 0,
+      limit: 0,
+      includePagination: false,
+    });
+    return CommunicationSession.aggregate([...filterPipeline, ...dataPipeline])
+      .allowDiskUse(true)
+      .cursor({ batchSize });
   }
 
   async getSessionDetail(sessionId) {

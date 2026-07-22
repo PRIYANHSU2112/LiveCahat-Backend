@@ -485,6 +485,73 @@ class AgentAnalyticsRepository {
     return merged;
   }
 
+  /**
+   * Batch period listener coins (sessions + gifts) for many agents.
+   * @returns {Map<string, number>} agentId → total listener coins in range
+   */
+  async sumPeriodListenerCoinsByAgentIds(agentIds, start, end) {
+    const totals = new Map();
+    if (!agentIds?.length) return totals;
+
+    const agentObjectIds = agentIds.map((id) => new mongoose.Types.ObjectId(id));
+    const profiles = await ListenerProfile.find({
+      createdByAgentId: { $in: agentObjectIds },
+    })
+      .select('userId createdByAgentId')
+      .lean();
+
+    if (!profiles.length) return totals;
+
+    const listenerToAgent = new Map();
+    const listenerIds = [];
+    for (const profile of profiles) {
+      if (!profile.userId || !profile.createdByAgentId) continue;
+      const listenerId = String(profile.userId);
+      listenerToAgent.set(listenerId, String(profile.createdByAgentId));
+      listenerIds.push(profile.userId);
+    }
+
+    if (!listenerIds.length) return totals;
+
+    const ids = toObjectIds(listenerIds.map(String));
+    const dateMatch = { createdAt: { $gte: start, $lte: end } };
+
+    const [sessionRows, giftRows] = await Promise.all([
+      CommunicationSession.aggregate([
+        {
+          $match: {
+            listenerId: { $in: ids },
+            status: 'COMPLETED',
+            ...dateMatch,
+          },
+        },
+        { $group: { _id: '$listenerId', total: { $sum: '$totalCoinsEarned' } } },
+      ]),
+      GiftTransaction.aggregate([
+        {
+          $match: {
+            receiverId: { $in: ids },
+            type: { $in: RECEIVED_GIFT_TYPES },
+            status: 'SUCCESS',
+            ...dateMatch,
+          },
+        },
+        { $group: { _id: '$receiverId', total: { $sum: '$earningCoins' } } },
+      ]),
+    ]);
+
+    const addCoins = (listenerId, coins) => {
+      const agentId = listenerToAgent.get(String(listenerId));
+      if (!agentId || !coins) return;
+      totals.set(agentId, (totals.get(agentId) || 0) + coins);
+    };
+
+    for (const row of sessionRows) addCoins(row._id, row.total ?? 0);
+    for (const row of giftRows) addCoins(row._id, row.total ?? 0);
+
+    return totals;
+  }
+
   async countNewListeners(agentId, start, end) {
     const agentObjectId = new mongoose.Types.ObjectId(agentId);
     return ListenerProfile.countDocuments({

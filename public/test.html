@@ -847,19 +847,21 @@
     button.btn-live:hover { box-shadow: 0 4px 20px rgba(220, 38, 38, 0.55); }
   </style>
 
-  <!-- Socket.io client from local API (avoids CDN timeouts; matches server ^4.7.5) -->
+  <!-- Socket.io client (CDN + local fallback if CDN blocked) -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script>
-    (function () {
-      var previewPorts = { '5500': 1, '5501': 1, '5173': 1 };
-      var backend = (previewPorts[window.location.port] || !window.location.port)
-        ? 'http://127.0.0.1:5000'
-        : window.location.origin;
-      document.write('<script src="' + backend + '/socket.io/socket.io.js"><\/script>');
-    })();
+    if (typeof io === 'undefined') {
+      document.write('<script src="http://127.0.0.1:5000/socket.io/socket.io.js"><\/script>');
+    }
   </script>
 
-  <!-- Agora Web SDK 4.x (NG) via CDN -->
+  <!-- Agora Web SDK 4.x (NG) -->
   <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.21.0.js"></script>
+  <script>
+    if (typeof AgoraRTC === 'undefined') {
+      document.write('<script src="https://cdn.jsdelivr.net/npm/agora-rtc-sdk-ng@4.21.0/AgoraRTC_N-4.21.0.js"><\/script>');
+    }
+  </script>
 </head>
 
 <body>
@@ -1471,11 +1473,17 @@
       return url || window.location.origin;
     }
 
-    const livePreviewPorts = ['5500', '5501', '5173'];
-    const defaultBackendUrl = (livePreviewPorts.includes(window.location.port) || !window.location.port)
-      ? 'http://127.0.0.1:5000'
-      : window.location.origin;
+    const defaultBackendUrl = (window.location.port === '5000')
+      ? window.location.origin
+      : 'http://127.0.0.1:5000';
     document.getElementById('backendUrl').value = defaultBackendUrl;
+
+    if (typeof io === 'undefined') {
+      console.error('[test.html] Socket.io failed to load from CDN and local fallback.');
+    }
+    if (typeof AgoraRTC === 'undefined') {
+      console.warn('[test.html] AgoraRTC SDK failed to load — A/V calls will not work.');
+    }
 
     function appendLog(source, message) {
       const logsPanel = document.getElementById('logsPanel');
