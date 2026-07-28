@@ -1,0 +1,13 @@
+<CORSConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+  <CORSRule>
+    <AllowedOrigin>*</AllowedOrigin>
+    <AllowedMethod>GET</AllowedMethod>
+    <AllowedMethod>PUT</AllowedMethod>
+    <AllowedMethod>POST</AllowedMethod>
+    <AllowedMethod>DELETE</AllowedMethod>
+    <AllowedMethod>HEAD</AllowedMethod>
+    <AllowedHeader>*</AllowedHeader>
+    <ExposeHeader>ETag</ExposeHeader>
+    <MaxAgeSeconds>3000</MaxAgeSeconds>
+  </CORSRule>
+</CORSConfiguration>

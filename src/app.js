@@ -20,6 +20,12 @@ import { swaggerUiOptions } from './docs/swagger-ui.options.js';
 import { seedXpSystem } from './seeders/xp.seeder.js';
 import { seedCountries } from './seeders/country.seeder.js';
 
+// Observability Imports
+import { metricsMiddleware } from './observability/metrics.middleware.js';
+import { getPrometheusMetrics, getMetricsContentType } from './observability/metrics.js';
+import healthRoutes from './observability/health.routes.js';
+import monitoringRoutes from './observability/monitoring.routes.js';
+
 const app = express();
 
 // ==========================================
@@ -29,15 +35,28 @@ seedSuperAdmin();
 seedXpSystem();
 seedCountries();
 
-// 1. GLOBAL MIDDLEWARES
-app.use(helmet({ crossOriginResourcePolicy: false })); // Set security HTTP headers
+// 1. GLOBAL MIDDLEWARES & METRICS INSTRUMENTATION
+app.use(metricsMiddleware); // Collect Prometheus metrics & trace context
+app.use(helmet({ contentSecurityPolicy: false, crossOriginResourcePolicy: false })); // Set security HTTP headers
 app.use(cors()); // Enable CORS
 app.options('*', cors());
 app.use(express.json({ limit: '10kb' })); // Body parser, reading data from body into req.body
 app.use(express.urlencoded({ extended: true, limit: '10kb' })); // Parse URL-encoded bodies
 app.use(compression()); // Compress all responses
 
-// 2. SECURITY MIDDLEWARES
+// 2. HEALTH & METRICS ENDPOINTS (No Auth)
+app.use('/', healthRoutes);
+
+app.get('/metrics', async (req, res) => {
+  try {
+    res.set('Content-Type', getMetricsContentType());
+    res.end(await getPrometheusMetrics());
+  } catch (err) {
+    res.status(500).end(err);
+  }
+});
+
+// 3. SECURITY MIDDLEWARES
 app.use(mongoSanitize()); // Data sanitization against NoSQL query injection
 app.use(xss()); // Data sanitization against XSS
 app.use(hpp()); // Prevent parameter pollution
@@ -56,7 +75,8 @@ if (process.env.DISABLE_RATE_LIMIT !== 'true') {
 app.use(responseTimeTracker);
 
 // Swagger Documentation Setup
-const swaggerDocument = JSON.parse(fs.readFileSync('./src/docs/swagger.json', 'utf8'));
+const swaggerPath = path.resolve('src/docs/swagger.json');
+const swaggerDocument = JSON.parse(fs.readFileSync(swaggerPath, 'utf8'));
 // Never let the browser/proxy cache the docs HTML, so UI tweaks always show up
 const noCacheDocs = (req, res, next) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -64,8 +84,8 @@ const noCacheDocs = (req, res, next) => {
   res.set('Expires', '0');
   next();
 };
-app.use('/api-docs', noCacheDocs, swaggerUi.serve, swaggerUi.setup(swaggerDocument, swaggerUiOptions));
 app.get('/api-docs.json', (req, res) => res.json(swaggerDocument));
+app.use('/api-docs', noCacheDocs, swaggerUi.serve, swaggerUi.setup(swaggerDocument, swaggerUiOptions));
 
 // Test Dashboard Interface
 app.get('/test', (req, res) => {
@@ -75,7 +95,8 @@ app.get('/test', (req, res) => {
 // Static assets under /public (optional local scripts, images, etc.)
 app.use('/public', express.static(path.resolve('public')));
 
-// 3. ROUTES
+// 4. ROUTES
+app.use('/api/v1/monitoring', monitoringRoutes);
 app.use('/api/v1', routes);
 app.use('/api', routes);
 

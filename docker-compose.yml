@@ -1,0 +1,192 @@
+networks:
+  livechat-net:
+    driver: bridge
+    name: livechat-net
+
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  # 1. Backend Service (Node.js / Express)
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: livechat-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - DATABASE_URI=${DATABASE_URI:-mongodb+srv://sahujipriyanshu2112_db_user:Priyanshu123@cluster0.srclyqf.mongodb.net/LiveChat?retryWrites=true&w=majority}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - JWT_SECRET=super_secret_jwt_key_please_change_in_production
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4318/v1/traces
+      - OTEL_SERVICE_NAME=livechat-backend
+    volumes:
+      - ./src:/app/src
+      - /app/node_modules
+    depends_on:
+      - redis
+      - tempo
+      - loki
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - livechat-net
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: '1.50'
+          memory: 1024M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    restart: unless-stopped
+
+  # 2. Redis (Socket.io Adapter & Cache)
+  redis:
+    image: redis:7-alpine
+    container_name: livechat-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - livechat-net
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+        reservations:
+          cpus: '0.10'
+          memory: 64M
+    restart: unless-stopped
+
+  # 3. Prometheus (Metrics Scraper)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: livechat-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - livechat-net
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          cpus: '0.10'
+          memory: 128M
+    restart: unless-stopped
+
+  # 4. Loki (Structured Log Storage)
+  loki:
+    image: grafana/loki:latest
+    container_name: livechat-loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./monitoring/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+    command: -config.file=/etc/loki/loki-config.yml
+    networks:
+      - livechat-net
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          cpus: '0.10'
+          memory: 128M
+    restart: unless-stopped
+
+  # 5. Promtail (Log Shipper)
+  promtail:
+    image: grafana/promtail:latest
+    container_name: livechat-promtail
+    ports:
+      - "9080:9080"
+    volumes:
+      - ./monitoring/promtail/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: -config.file=/etc/promtail/promtail-config.yml
+    depends_on:
+      - loki
+    networks:
+      - livechat-net
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+        reservations:
+          cpus: '0.05'
+          memory: 32M
+    restart: unless-stopped
+
+  # 6. Tempo (Distributed Tracing)
+  tempo:
+    image: grafana/tempo:latest
+    container_name: livechat-tempo
+    ports:
+      - "3200:3200"
+      - "4318:4318"
+    volumes:
+      - ./monitoring/tempo/tempo-config.yml:/etc/tempo/tempo-config.yml:ro
+    command: -config.file=/etc/tempo/tempo-config.yml
+    networks:
+      - livechat-net
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          cpus: '0.10'
+          memory: 128M
+    restart: unless-stopped
+
+  # 7. Grafana (Visualization UI & Dashboards)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: livechat-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+    networks:
+      - livechat-net
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+        reservations:
+          cpus: '0.10'
+          memory: 64M
+    restart: unless-stopped

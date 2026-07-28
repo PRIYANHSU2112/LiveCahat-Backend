@@ -9,10 +9,14 @@ info:
     the list endpoint, auth via the matching `*.read` permission, max 50,000 rows.
   version: 1.0.0
 servers:
+  - url: /api/v1
+    description: Current Server (Relative Path)
+  - url: http://127.0.0.1:5000/api/v1
+    description: Local Development Server (127.0.0.1)
+  - url: http://localhost:5000/api/v1
+    description: Local Development Server (localhost)
   - url: https://livechat.priyashu.in/api/v1
     description: Live Server
-  - url: http://localhost:5000/api/v1
-    description: Local Development Server
 components:
   securitySchemes:
     bearerAuth:

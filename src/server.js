@@ -1,3 +1,4 @@
+import './observability/tracing.js';
 import { createServer } from 'http';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
