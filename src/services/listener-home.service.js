@@ -1,7 +1,10 @@
 import redisClient from '../config/redis.js';
+import mongoose from 'mongoose';
+import User from '../modules/user.model.js';
 import listenerHomeRepository from '../repositories/listener-home.repository.js';
 import listenerInteractionService from './listener-interaction.service.js';
 import presenceService from './presence.service.js';
+import ApiError from '../utils/ApiError.js';
 import { getCache, setCache, getCacheVersion } from '../utils/redis.util.js';
 import {
   overlayPresenceOnCards,
@@ -182,6 +185,80 @@ class ListenerHomeService {
     const docs = overlayPresenceOnCards(pageData, statusMap, redisClient.isRedisAvailable);
 
     return buildSectionResponse(docs, total, page, limit);
+  }
+
+  /**
+   * GET /home/customer/:userId — listener-safe public customer profile.
+   * Omits email/mobile/wallet; includes presence + country/languages.
+   */
+  async getCustomerPublicProfile(customerId) {
+    if (!mongoose.Types.ObjectId.isValid(customerId)) {
+      throw new ApiError(400, 'Invalid customer id');
+    }
+
+    const user = await User.findOne({
+      _id: customerId,
+      type: 'CUSTOMER',
+      isDeleted: false,
+      isBlocked: false,
+    })
+      .select(
+        'firstName lastName profileImage gender countryCode country age languages currentLevel totalXp badges isOnline createdAt profileCompleted username isGuest'
+      )
+      .populate('country', 'name emoji flag code')
+      .populate('languages', 'name code')
+      .lean();
+
+    if (!user) {
+      throw new ApiError(404, 'Customer not found');
+    }
+
+    const liveStatus = await presenceService.getStatus(customerId);
+    const isOnline = liveStatus !== 'OFFLINE' || !!user.isOnline;
+    const languageDetails = (user.languages || [])
+      .filter(Boolean)
+      .map((l) =>
+        typeof l === 'object'
+          ? { _id: l._id?.toString(), name: l.name, code: l.code }
+          : { _id: String(l), name: String(l) }
+      );
+    const countryDetails =
+      user.country && typeof user.country === 'object'
+        ? {
+            _id: user.country._id?.toString(),
+            name: user.country.name,
+            emoji: user.country.emoji || user.country.flag,
+            flag: user.country.flag || user.country.emoji,
+            code: user.country.code || user.countryCode,
+          }
+        : user.countryCode
+          ? { code: user.countryCode, name: user.countryCode }
+          : null;
+
+    return {
+      id: user._id.toString(),
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
+      username: user.username || null,
+      profileImage: user.profileImage || null,
+      gender: user.gender || null,
+      age: user.age || null,
+      countryCode: user.countryCode || countryDetails?.code || null,
+      countryDetails,
+      languageDetails,
+      languages: languageDetails.map((l) => l.name).filter(Boolean),
+      currentLevel: user.currentLevel || 1,
+      totalXp: user.totalXp || 0,
+      badges: user.badges || [],
+      isOnline,
+      liveStatus: isOnline ? liveStatus || 'ONLINE' : 'OFFLINE',
+      profileCompleted: !!user.profileCompleted,
+      isGuest: !!user.isGuest,
+      memberSince: user.createdAt || null,
+      // Customers have no bio/interests on User — UI shows placeholders when empty
+      about: null,
+      interests: [],
+    };
   }
 }
 

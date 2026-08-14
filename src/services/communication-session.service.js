@@ -59,8 +59,11 @@ class CommunicationSessionService extends BaseService {
       await redisClient.set(KEYS.userSession(listenerId.toString()), sessionIdStr);
     }
 
-    // 4. Update listener presence status to BUSY
-    await presenceService.setBusy(listenerId.toString());
+    // 4. Mark BUSY unless host is LIVE (keep LIVE badge while streaming)
+    const currentPresence = await presenceService.getStatus(listenerId.toString());
+    if (currentPresence !== 'LIVE') {
+      await presenceService.setBusy(listenerId.toString());
+    }
 
     await listenerInteractionService.markListenerCustomerInteraction(
       listenerId,
@@ -69,6 +72,80 @@ class CommunicationSessionService extends BaseService {
     );
 
     return session;
+  }
+
+  /**
+   * Atomically switch communication segment within the same parent session.
+   * e.g. CHAT -> AUDIO, AUDIO -> CHAT, CHAT -> VIDEO, etc.
+   *
+   * 1. Bill current active segment up to 'now'.
+   * 2. Complete the current active segment (endTime: now, status: 'COMPLETED').
+   * 3. Create a new segment (startTime: now, mode: newMode, ratePerMinute, status: 'ONGOING').
+   * 4. Update Redis active_session hash with new segmentId, mode, ratePerMinute, and timestamps.
+   */
+  async switchSessionSegment(sessionId, newMode, newRatePerMinute) {
+    const sessionIdStr = sessionId.toString();
+    const session = await this.repository.findById(sessionIdStr, '', '', false);
+    if (!session || session.status !== 'ONGOING') {
+      const error = new Error('Session is not active or already ended.');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const now = new Date();
+
+    // 1. Bill and settle the current active segment before closing it
+    const { default: billingService } = await import('./billing.service.js');
+    await billingService.billSession(sessionIdStr, now, true);
+
+    // 2. Find and complete current active segment
+    const activeSegment = await sessionSegmentRepository.findActiveBySessionId(sessionIdStr);
+    if (activeSegment) {
+      const durationSeconds = Math.max(
+        0,
+        Math.floor((now.getTime() - new Date(activeSegment.startTime).getTime()) / 1000)
+      );
+      await sessionSegmentRepository.updateById(activeSegment._id, {
+        status: 'COMPLETED',
+        endTime: now,
+        duration: durationSeconds,
+      });
+    }
+
+    // 3. Create the new segment
+    const newSegment = await sessionSegmentRepository.create({
+      sessionId: session._id,
+      mode: newMode,
+      ratePerMinute: Number(newRatePerMinute) || 0,
+      startTime: now,
+      status: 'ONGOING',
+    });
+
+    const newSegmentIdStr = newSegment._id.toString();
+
+    // 4. Update Redis active_session hash atomically
+    if (redisClient.isRedisAvailable) {
+      const activeSessionKey = KEYS.activeSession(sessionIdStr);
+      await redisClient.hset(activeSessionKey, {
+        callerId: session.callerId.toString(),
+        listenerId: session.listenerId.toString(),
+        ratePerMinute: String(newRatePerMinute || 0),
+        startTime: now.toISOString(),
+        lastBilledAt: now.toISOString(),
+        segmentId: newSegmentIdStr,
+        mode: newMode,
+      });
+    }
+
+    logger.info(
+      `[Session Service] Session ${sessionIdStr} switched segment to ${newMode} (Rate: ${newRatePerMinute}/min, Segment: ${newSegmentIdStr})`
+    );
+
+    return {
+      session,
+      previousSegment: activeSegment,
+      newSegment,
+    };
   }
 
   /**
@@ -156,13 +233,21 @@ class CommunicationSessionService extends BaseService {
         await redisClient.del(KEYS.disconnectGrace(session.listenerId.toString()));
       }
 
-      // 4. Mark listener available (ONLINE) if they are still connected
-      const listenerOnline = await presenceService.getStatus(session.listenerId.toString());
-      if (listenerOnline !== 'OFFLINE') {
-        await presenceService.setAvailable(session.listenerId.toString());
+      // 4. Restore presence — keep LIVE if host still has an active room
+      const listenerIdStr = session.listenerId.toString();
+      const listenerOnline = await presenceService.getStatus(listenerIdStr);
+      const { default: liveRoomService } = await import('./live-room.service.js');
+      const activeLive = await liveRoomService
+        .getActiveRoomByHost(listenerIdStr)
+        .catch(() => null);
+
+      if (activeLive) {
+        await presenceService.setLive(listenerIdStr);
+      } else if (listenerOnline !== 'OFFLINE') {
+        await presenceService.setAvailable(listenerIdStr);
       } else {
         await ListenerProfile.findOneAndUpdate({ userId: session.listenerId }, { availability: 'OFFLINE' });
-        presenceService.broadcastStatusChange(session.listenerId.toString(), 'OFFLINE');
+        presenceService.broadcastStatusChange(listenerIdStr, 'OFFLINE');
       }
 
       logger.info(`[Session Service] Session ${sessionIdStr} ended successfully. Reason: ${disconnectReason}`);
@@ -194,6 +279,8 @@ class CommunicationSessionService extends BaseService {
 
   /**
    * Fetch active session for a given user (Redis first, DB fallback).
+   * Stale Redis `user_session` keys (no active hash / not ONGOING) are cleared
+   * so callers are not stuck with "already in an active session".
    */
   async getActiveSessionForUser(userId) {
     const userIdStr = userId.toString();
@@ -201,13 +288,53 @@ class CommunicationSessionService extends BaseService {
     if (redisClient.isRedisAvailable) {
       const sessionId = await redisClient.get(KEYS.userSession(userIdStr));
       if (sessionId) {
-        return sessionId;
+        const active = await redisClient.hgetall(KEYS.activeSession(sessionId));
+        if (active && active.callerId) {
+          return sessionId;
+        }
+
+        // Redis pointer is stale — verify DB before clearing
+        const dbSession = await this.repository.findById(sessionId, '', '', false);
+        if (dbSession && dbSession.status === 'ONGOING') {
+          return sessionId;
+        }
+
+        await redisClient.del(KEYS.userSession(userIdStr));
+        await redisClient.del(KEYS.activeSession(sessionId));
+        logger.warn(`[Session Service] Cleared stale user_session for ${userIdStr} → ${sessionId}`);
       }
     }
 
-    // DB Fallback
     const session = await this.repository.findActiveByUserId(userIdStr);
     return session ? session._id.toString() : null;
+  }
+
+  /**
+   * Abort a session that was created but never successfully handed to clients
+   * (e.g. Agora token failure after startSession).
+   */
+  async abortSession(sessionId, reason = 'SYSTEM_ERROR') {
+    try {
+      return await this.endSession(sessionId, reason);
+    } catch (err) {
+      logger.error(`[Session Service] abortSession failed for ${sessionId}: ${err.message}`);
+      // Best-effort Redis/presence cleanup if endSession blew up mid-billing
+      try {
+        const sessionIdStr = sessionId.toString();
+        if (redisClient.isRedisAvailable) {
+          const active = await redisClient.hgetall(KEYS.activeSession(sessionIdStr));
+          await redisClient.del(KEYS.activeSession(sessionIdStr));
+          if (active?.callerId) await redisClient.del(KEYS.userSession(active.callerId));
+          if (active?.listenerId) {
+            await redisClient.del(KEYS.userSession(active.listenerId));
+            await presenceService.setAvailable(active.listenerId);
+          }
+        }
+      } catch (cleanupErr) {
+        logger.error(`[Session Service] abort cleanup failed: ${cleanupErr.message}`);
+      }
+      return null;
+    }
   }
 }
 

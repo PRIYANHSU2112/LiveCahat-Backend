@@ -47,6 +47,42 @@ class UserController extends BaseController {
     this.sendResponse(res, 200, 'User fetched successfully', user);
   });
 
+  /**
+   * Listener-safe customer fetch — same path as production GET /users/:id.
+   * Returns public customer fields (no wallet/email/mobile secrets).
+   */
+  getCustomerByIdForListener = catchAsync(async (req, res) => {
+    const listenerHomeService = (await import('../services/listener-home.service.js')).default;
+    const profile = await listenerHomeService.getCustomerPublicProfile(req.params.id);
+    // Shape compatible with app screens that also accept admin-style user docs
+    this.sendResponse(res, 200, 'User fetched successfully', {
+      _id: profile.id,
+      id: profile.id,
+      type: 'CUSTOMER',
+      firstName: profile.firstName,
+      lastName: profile.lastName,
+      username: profile.username,
+      profileImage: profile.profileImage,
+      gender: profile.gender,
+      age: profile.age,
+      countryCode: profile.countryCode,
+      countryDetails: profile.countryDetails,
+      languages: profile.languages,
+      languageDetails: profile.languageDetails,
+      isOnline: profile.isOnline,
+      liveStatus: profile.liveStatus,
+      profileCompleted: profile.profileCompleted,
+      isGuest: profile.isGuest,
+      totalXp: profile.totalXp,
+      currentLevel: profile.currentLevel,
+      badges: profile.badges,
+      memberSince: profile.memberSince,
+      about: profile.about,
+      interests: profile.interests,
+      createdAt: profile.memberSince,
+    });
+  });
+
   blockUser = catchAsync(async (req, res) => {
     const user = await userService.blockUser(req.params.id, req.body);
     const action = req.body.isBlocked ? 'blocked' : 'unblocked';

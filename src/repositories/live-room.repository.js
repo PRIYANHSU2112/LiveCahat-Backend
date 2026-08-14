@@ -7,7 +7,14 @@ class LiveRoomRepository extends BaseRepository {
   }
 
   async findLiveRooms(skip = 0, limit = 20) {
-    return this.findMany({ status: 'live' }, '', '', { startedAt: -1 }, limit, skip);
+    return this.findMany(
+      { status: 'live' },
+      '',
+      { path: 'hostId', select: 'firstName lastName profileImage' },
+      { startedAt: -1 },
+      limit,
+      skip,
+    );
   }
 
   async findActiveByHostId(hostId) {

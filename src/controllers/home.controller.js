@@ -18,6 +18,11 @@ class HomeController extends BaseController {
     const result = await listenerHomeService.getListenerHome(req.user._id, req.query);
     this.sendResponse(res, 200, 'Listener home fetched successfully', result);
   });
+
+  getCustomerPublicProfile = catchAsync(async (req, res) => {
+    const result = await listenerHomeService.getCustomerPublicProfile(req.params.userId);
+    this.sendResponse(res, 200, 'Customer profile fetched successfully', result);
+  });
 }
 
 export default new HomeController();

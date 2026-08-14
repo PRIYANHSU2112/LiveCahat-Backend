@@ -318,6 +318,96 @@
       color: var(--text-muted);
     }
 
+    .unread-badge {
+      background: linear-gradient(135deg, #e1306c 0%, #fd1d1d 50%, #f56040 100%);
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(225, 48, 108, 0.4);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 18px;
+      height: 18px;
+    }
+
+    .has-unread {
+      border-left: 3px solid #e1306c !important;
+      background: rgba(225, 48, 108, 0.08) !important;
+    }
+
+    .has-unread .listener-name {
+      font-weight: 700 !important;
+      color: #ffffff !important;
+    }
+
+    .has-unread .listener-meta {
+      font-weight: 600 !important;
+      color: #f43f5e !important;
+    }
+
+    .chat-top-call-btn {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(139, 92, 246, 0.2) 100%);
+      border: 1px solid rgba(99, 102, 241, 0.5);
+      color: #ffffff;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+    }
+
+    .chat-top-call-btn:hover {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+    }
+
+    .chat-top-call-btn.btn-video {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(5, 150, 105, 0.2) 100%);
+      border-color: rgba(16, 185, 129, 0.5);
+    }
+
+    .chat-top-call-btn.btn-video:hover {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    }
+
+    .segment-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .segment-chat {
+      background: rgba(99, 102, 241, 0.15);
+      color: #818cf8;
+      border: 1px solid rgba(99, 102, 241, 0.4);
+    }
+
+    .segment-audio {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      animation: recordingPulse 1.5s infinite;
+    }
+
+    .segment-video {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      animation: recordingPulse 1.5s infinite;
+    }
+
     .listener-status {
       font-size: 11px;
       font-weight: 700;
@@ -956,10 +1046,45 @@
           </div>
 
           <div class="chat-section" id="customerChatBox" style="display: none;">
-            <div class="chat-header">
-              <span>Session ID: <span id="customerSessionIdVal" style="color: var(--text-main);"></span></span>
-              <button class="btn-secondary" style="padding: 4px 8px; font-size: 11px;" id="btnCustomerEndChat">⬅️ Back</button>
+            <div class="chat-header" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(0, 0, 0, 0.35); border-bottom: 1px solid var(--panel-border);">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <button class="btn-secondary" style="padding: 4px 8px; font-size: 12px; border-radius: 8px;" id="btnCustomerEndChat" title="Back to inbox">⬅️</button>
+                <div>
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <strong id="customerChatPartnerTitle" style="font-size: 14px; color: #fff;">Chat Partner</strong>
+                    <span id="customerActiveSegmentBadge" class="segment-badge segment-chat">💬 CHAT</span>
+                  </div>
+                  <div style="font-size: 11px; color: var(--text-muted);">Session: <span id="customerSessionIdVal" style="color: #a5b4fc; font-family: monospace;"></span></div>
+                </div>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <button class="chat-top-call-btn" id="btnCustomerUpgradeAudio" title="Start Audio Call inside this session">📞 Audio Call</button>
+                <button class="chat-top-call-btn btn-video" id="btnCustomerUpgradeVideo" title="Start Video Call inside this session">📹 Video Call</button>
+                <button class="btn-danger" id="btnCustomerHangupCall" style="display: none; padding: 6px 12px; font-size: 12px; border-radius: 20px; font-weight: bold;" title="End Call and return to Chat">🔴 Return to Chat</button>
+                <button class="btn-danger" id="btnCustomerEndSessionFull" style="padding: 6px 10px; font-size: 11px; border-radius: 8px;" title="Completely finish session">❌ End Session</button>
+              </div>
             </div>
+            <div id="customerCallStatusNotice" style="display: none; background: linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(99,102,241,0.15) 100%); border-bottom: 1px solid rgba(16,185,129,0.3); padding: 10px 16px; font-size: 12px; justify-content: space-between; align-items: center;">
+              <div>🟢 <strong id="customerCallStatusText">Audio Call Active</strong> | Channel: <span id="customerAgoraChannel" style="font-family: monospace; color: #34d399; font-weight: bold;"></span></div>
+              <span style="font-size: 11px; color: #a5b4fc;">Connected via Agora RTC</span>
+            </div>
+
+            <!-- In-Session Live Video/Audio Call Screen -->
+            <div id="customerInCallMediaBox" style="display: none; position: relative; border-radius: 12px; overflow: hidden; margin: 8px; border: 1px solid rgba(99, 102, 241, 0.4); background: #050a14; min-height: 220px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);">
+              <div id="customerInCallVideoArea" class="call-video-area" style="min-height: 220px; height: 240px; position: relative; display: flex; align-items: center; justify-content: center; background: #050a14;">
+                <div id="customerInCallRemoteVideo" class="remote-video" style="width: 100%; height: 100%; object-fit: cover;"></div>
+                <div id="customerInCallLocalVideo" class="local-video-pip" style="position: absolute; bottom: 50px; right: 12px; width: 100px; height: 80px; border-radius: 8px; overflow: hidden; border: 2px solid #818cf8; z-index: 10; background: #1e1b4b;"></div>
+                <div id="customerInCallAudioWave" class="audio-wave-visual" style="display: none; width: 100%; justify-content: center; height: 100%; align-items: center;">
+                  <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                </div>
+              </div>
+              <div style="position: absolute; bottom: 8px; left: 0; right: 0; display: flex; justify-content: center; gap: 10px; z-index: 20; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); padding: 6px 0;">
+                <button id="btnCustomerInCallMute" class="call-ctrl-btn mute-btn" style="width: 36px; height: 36px; font-size: 15px;" title="Mute Microphone">🎤</button>
+                <button id="btnCustomerInCallCamera" class="call-ctrl-btn camera-btn" style="width: 36px; height: 36px; font-size: 15px;" title="Toggle Camera">📹</button>
+                <button id="btnCustomerInCallHangup" class="call-ctrl-btn end-btn" style="width: 36px; height: 36px; font-size: 15px; background: #dc2626;" title="Return to Chat">🔴</button>
+              </div>
+            </div>
+
             <div class="chat-messages" id="customerMessages"></div>
             <div class="typing-indicator" id="customerTypingInd"></div>
             <div class="chat-input-row" style="position: relative; align-items: center;">
@@ -1057,10 +1182,55 @@
             </div>
           </div>
 
+          <div id="incomingCallBanner" class="request-banner" style="display: none; border-color: #818cf8; background: linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(139, 92, 246, 0.15) 100%);">
+            <div class="banner-text">
+              📞 <strong>Incoming <span id="incomingCallMode">AUDIO</span> Call Request!</strong><br>
+              Caller Name: <strong id="incomingCallCallerName">Caller</strong><br>
+              Caller ID: <strong id="incomingCallCallerId">--</strong><br>
+              Rate: <strong id="incomingCallRateVal">0</strong> coins/min <span id="incomingCallUpgradeBadge" style="background:#818cf8;color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;display:none;">IN-SESSION UPGRADE</span>
+            </div>
+            <div class="banner-actions">
+              <button class="btn-success" style="flex: 1;" id="btnAcceptCall">Accept Call</button>
+              <button class="btn-danger" style="flex: 1;" id="btnRejectCall">Reject</button>
+            </div>
+          </div>
+
           <div class="chat-section" id="listenerChatBox" style="display: none;">
-            <div class="chat-header">
-              <span>Session ID: <span id="listenerSessionIdVal" style="color: var(--text-main);"></span></span>
-              <button class="btn-secondary" style="padding: 4px 8px; font-size: 11px;" id="btnListenerEndChat">⬅️ Back</button>
+            <div class="chat-header" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(0, 0, 0, 0.35); border-bottom: 1px solid var(--panel-border);">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <button class="btn-secondary" style="padding: 4px 8px; font-size: 12px; border-radius: 8px;" id="btnListenerEndChat" title="Back to inbox">⬅️</button>
+                <div>
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <strong id="listenerChatPartnerTitle" style="font-size: 14px; color: #fff;">Customer</strong>
+                    <span id="listenerActiveSegmentBadge" class="segment-badge segment-chat">💬 CHAT</span>
+                  </div>
+                  <div style="font-size: 11px; color: var(--text-muted);">Session: <span id="listenerSessionIdVal" style="color: #a5b4fc; font-family: monospace;"></span></div>
+                </div>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <button class="btn-danger" id="btnListenerHangupCall" style="display: none; padding: 6px 12px; font-size: 12px; border-radius: 20px; font-weight: bold;" title="End Call and return to Chat">🔴 Return to Chat</button>
+                <button class="btn-danger" id="btnListenerEndSessionFull" style="padding: 6px 10px; font-size: 11px; border-radius: 8px;" title="Completely finish session">❌ End Session</button>
+              </div>
+            </div>
+            <div id="listenerCallStatusNotice" style="display: none; background: linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(99,102,241,0.15) 100%); border-bottom: 1px solid rgba(16,185,129,0.3); padding: 10px 16px; font-size: 12px; justify-content: space-between; align-items: center;">
+              <div>🟢 <strong id="listenerCallStatusText">Audio Call Active</strong> | Channel: <span id="listenerAgoraChannel" style="font-family: monospace; color: #34d399; font-weight: bold;"></span></div>
+              <span style="font-size: 11px; color: #a5b4fc;">Connected via Agora RTC</span>
+            </div>
+
+            <!-- In-Session Live Video/Audio Call Screen -->
+            <div id="listenerInCallMediaBox" style="display: none; position: relative; border-radius: 12px; overflow: hidden; margin: 8px; border: 1px solid rgba(99, 102, 241, 0.4); background: #050a14; min-height: 220px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);">
+              <div id="listenerInCallVideoArea" class="call-video-area" style="min-height: 220px; height: 240px; position: relative; display: flex; align-items: center; justify-content: center; background: #050a14;">
+                <div id="listenerInCallRemoteVideo" class="remote-video" style="width: 100%; height: 100%; object-fit: cover;"></div>
+                <div id="listenerInCallLocalVideo" class="local-video-pip" style="position: absolute; bottom: 50px; right: 12px; width: 100px; height: 80px; border-radius: 8px; overflow: hidden; border: 2px solid #818cf8; z-index: 10; background: #1e1b4b;"></div>
+                <div id="listenerInCallAudioWave" class="audio-wave-visual" style="display: none; width: 100%; justify-content: center; height: 100%; align-items: center;">
+                  <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                </div>
+              </div>
+              <div style="position: absolute; bottom: 8px; left: 0; right: 0; display: flex; justify-content: center; gap: 10px; z-index: 20; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); padding: 6px 0;">
+                <button id="btnListenerInCallMute" class="call-ctrl-btn mute-btn" style="width: 36px; height: 36px; font-size: 15px;" title="Mute Microphone">🎤</button>
+                <button id="btnListenerInCallCamera" class="call-ctrl-btn camera-btn" style="width: 36px; height: 36px; font-size: 15px;" title="Toggle Camera">📹</button>
+                <button id="btnListenerInCallHangup" class="call-ctrl-btn end-btn" style="width: 36px; height: 36px; font-size: 15px; background: #dc2626;" title="Return to Chat">🔴</button>
+              </div>
             </div>
             <div class="chat-messages" id="listenerMessages"></div>
             <div class="typing-indicator" id="listenerTypingInd"></div>
@@ -1341,6 +1511,12 @@
               <div class="live-comments-feed" id="liveHostCommentsFeed"></div>
             </div>
 
+            <!-- Host Comment Input -->
+            <div class="chat-input-row" style="padding:0;margin-bottom:4px;">
+              <input type="text" id="liveHostCommentInput" placeholder="Reply as host..." maxlength="200">
+              <button id="btnSendLiveHostComment" style="padding:10px 14px;">Send</button>
+            </div>
+
             <button class="btn-danger" style="width:100%;padding:12px;" id="btnEndLive">⬛ End Live</button>
           </div>
         </div>
@@ -1451,6 +1627,14 @@
     let currentSelectedListener = null;
     let currentIncomingCallerId = null;
     let recentSessionsByParticipant = {};
+
+    // In-Session (Tab 1) Agora Real-Time Streaming State
+    let customerInSessionAgoraClient = null;
+    let listenerInSessionAgoraClient = null;
+    let customerInSessionTracks = { audio: null, video: null };
+    let listenerInSessionTracks = { audio: null, video: null };
+    let customerInSessionState = { muted: false, cameraOff: false };
+    let listenerInSessionState = { muted: false, cameraOff: false };
 
     // Call-tab specific state
     let callerSocket = null;
@@ -1583,7 +1767,48 @@
         appendMsg('customerMessages', 'System', '--- Chat session has ended ---', false);
         document.getElementById('customerMsgInput').disabled = true;
         document.getElementById('btnCustomerSend').disabled = true;
+        document.getElementById('customerCallStatusNotice').style.display = 'none';
+        document.getElementById('btnCustomerHangupCall').style.display = 'none';
+        stopInSessionAgora('customer');
         fetchRecentSessions('customer');
+      });
+
+      customerSocket.on('call_request_accepted', async (data) => {
+        appendLog('Customer', `📞 Call accepted! (${data.mode}) Agora channel: ${data.agora?.channelName}`);
+        const badge = document.getElementById('customerActiveSegmentBadge');
+        badge.textContent = data.mode === 'VIDEO' ? '📹 VIDEO' : '📞 AUDIO';
+        badge.className = `segment-badge ${data.mode === 'VIDEO' ? 'segment-video' : 'segment-audio'}`;
+        document.getElementById('customerCallStatusNotice').style.display = 'flex';
+        document.getElementById('customerCallStatusText').textContent = `${data.mode} Call Active`;
+        document.getElementById('customerAgoraChannel').textContent = data.agora?.channelName || data.sessionId;
+        document.getElementById('btnCustomerHangupCall').style.display = 'inline-block';
+        document.getElementById('btnCustomerUpgradeAudio').style.display = 'none';
+        document.getElementById('btnCustomerUpgradeVideo').style.display = 'none';
+        if (data.agora) {
+          await startInSessionAgora('customer', data.agora, data.mode, data.sessionId);
+        }
+      });
+
+      customerSocket.on('call_request_rejected', (data) => {
+        appendLog('Customer', `📞 Call declined by listener: ${data.reason}`);
+        alert(`Call declined: ${data.reason}`);
+      });
+
+      customerSocket.on('call_ended', (data) => {
+        appendLog('Customer', `📞 Call ended (${data.reason}). Switched to chat: ${data.switchedToChat}`);
+        document.getElementById('customerCallStatusNotice').style.display = 'none';
+        document.getElementById('btnCustomerHangupCall').style.display = 'none';
+        document.getElementById('btnCustomerUpgradeAudio').style.display = 'inline-flex';
+        document.getElementById('btnCustomerUpgradeVideo').style.display = 'inline-flex';
+        const badge = document.getElementById('customerActiveSegmentBadge');
+        badge.textContent = '💬 CHAT';
+        badge.className = 'segment-badge segment-chat';
+        stopInSessionAgora('customer');
+        if (!data.switchedToChat) {
+          appendMsg('customerMessages', 'System', '--- Session ended ---', false);
+          document.getElementById('customerMsgInput').disabled = true;
+          document.getElementById('btnCustomerSend').disabled = true;
+        }
       });
 
       customerSocket.on('listener_status_changed', (data) => {
@@ -1610,6 +1835,10 @@
       });
 
       customerSocket.on('receive_message', (data) => appendMsg('customerMessages', data.senderId, data.message, false, data.messageType, data.fileUrl));
+      customerSocket.on('message_deleted', (data) => {
+        appendLog('Customer', `🗑️ Message deleted: ${data.messageId}`);
+        handleMessageDeletedUI('customerMessages', data.messageId);
+      });
       customerSocket.on('display_typing', (data) => { document.getElementById('customerTypingInd').textContent = data.isTyping ? 'Listener is typing...' : ''; });
       customerSocket.on('balance_warning', (data) => { appendLog('Customer', `⚠️ ${data.message}`); alert(`⚠️ ${data.message}`); });
       customerSocket.on('socket_error', (data) => { appendLog('Customer', `❌ ${data.message}`); alert(`Error: ${data.message}`); });
@@ -1651,6 +1880,47 @@
         document.getElementById('incomingRequestBanner').style.display = 'flex';
       });
 
+      listenerSocket.on('incoming_call_request', (data) => {
+        appendLog('Listener', `📞 Incoming ${data.mode} call request from ${data.callerId} (Rate: ${data.ratePerMinute}/min)`);
+        currentIncomingCallerId = data.callerId;
+        document.getElementById('incomingCallMode').textContent = data.mode;
+        document.getElementById('incomingCallCallerName').textContent = `${data.callerInfo?.firstName || ''} ${data.callerInfo?.lastName || ''}`.trim() || 'Customer';
+        document.getElementById('incomingCallCallerId').textContent = data.callerId;
+        document.getElementById('incomingCallRateVal').textContent = data.ratePerMinute;
+        document.getElementById('incomingCallUpgradeBadge').style.display = data.isUpgrade ? 'inline-block' : 'none';
+        document.getElementById('incomingCallBanner').style.display = 'flex';
+      });
+
+      listenerSocket.on('call_started', async (data) => {
+        appendLog('Listener', `📞 Call started! (${data.mode}) Agora channel: ${data.agora?.channelName}`);
+        document.getElementById('incomingCallBanner').style.display = 'none';
+        const badge = document.getElementById('listenerActiveSegmentBadge');
+        badge.textContent = data.mode === 'VIDEO' ? '📹 VIDEO' : '📞 AUDIO';
+        badge.className = `segment-badge ${data.mode === 'VIDEO' ? 'segment-video' : 'segment-audio'}`;
+        document.getElementById('listenerCallStatusNotice').style.display = 'flex';
+        document.getElementById('listenerCallStatusText').textContent = `${data.mode} Call Active`;
+        document.getElementById('listenerAgoraChannel').textContent = data.agora?.channelName || data.sessionId;
+        document.getElementById('btnListenerHangupCall').style.display = 'inline-block';
+        if (data.agora) {
+          await startInSessionAgora('listener', data.agora, data.mode, data.sessionId);
+        }
+      });
+
+      listenerSocket.on('call_ended', (data) => {
+        appendLog('Listener', `📞 Call ended (${data.reason}). Switched to chat: ${data.switchedToChat}`);
+        document.getElementById('listenerCallStatusNotice').style.display = 'none';
+        document.getElementById('btnListenerHangupCall').style.display = 'none';
+        const badge = document.getElementById('listenerActiveSegmentBadge');
+        badge.textContent = '💬 CHAT';
+        badge.className = 'segment-badge segment-chat';
+        stopInSessionAgora('listener');
+        if (!data.switchedToChat) {
+          appendMsg('listenerMessages', 'System', '--- Session ended ---', false);
+          document.getElementById('listenerMsgInput').disabled = true;
+          document.getElementById('btnListenerSend').disabled = true;
+        }
+      });
+
       listenerSocket.on('chat_started', (data) => {
         appendLog('Listener', `Chat started! Session: ${data.sessionId}`);
         activeListenerSessionId = data.sessionId;
@@ -1671,10 +1941,17 @@
         appendMsg('listenerMessages', 'System', '--- Chat session has ended ---', false);
         document.getElementById('listenerMsgInput').disabled = true;
         document.getElementById('btnListenerSend').disabled = true;
+        document.getElementById('listenerCallStatusNotice').style.display = 'none';
+        document.getElementById('btnListenerHangupCall').style.display = 'none';
+        stopInSessionAgora('listener');
         fetchRecentSessions('listener');
       });
 
       listenerSocket.on('receive_message', (data) => appendMsg('listenerMessages', data.senderId, data.message, false, data.messageType, data.fileUrl));
+      listenerSocket.on('message_deleted', (data) => {
+        appendLog('Listener', `🗑️ Message deleted: ${data.messageId}`);
+        handleMessageDeletedUI('listenerMessages', data.messageId);
+      });
       listenerSocket.on('display_typing', (data) => { document.getElementById('listenerTypingInd').textContent = data.isTyping ? 'Customer is typing...' : ''; });
       listenerSocket.on('listener_home_presence', (data) => patchListenerHomePresence(data));
       listenerSocket.on('listener_home_interaction', (data) => {
@@ -1778,23 +2055,258 @@
       currentIncomingCallerId = null;
     });
 
+    // ─── Call Upgrade & Management Listeners ─────────────────────────────────
+    document.getElementById('btnCustomerUpgradeAudio').addEventListener('click', () => {
+      if (!customerSocket || !activeCustomerSessionId) return alert('No active session. Please start or open a chat first.');
+      const partnerId = currentSelectedListener;
+      if (!partnerId) return alert('Please select a listener.');
+      customerSocket.emit('request_call', { listenerId: partnerId, mode: 'AUDIO' });
+      appendLog('Customer', `📞 Requesting Audio Call upgrade with ${partnerId}...`);
+    });
+
+    document.getElementById('btnCustomerUpgradeVideo').addEventListener('click', () => {
+      if (!customerSocket || !activeCustomerSessionId) return alert('No active session. Please start or open a chat first.');
+      const partnerId = currentSelectedListener;
+      if (!partnerId) return alert('Please select a listener.');
+      customerSocket.emit('request_call', { listenerId: partnerId, mode: 'VIDEO' });
+      appendLog('Customer', `📹 Requesting Video Call upgrade with ${partnerId}...`);
+    });
+
+    document.getElementById('btnAcceptCall').addEventListener('click', () => {
+      if (!listenerSocket || !currentIncomingCallerId) return;
+      listenerSocket.emit('accept_call', { callerId: currentIncomingCallerId });
+      document.getElementById('incomingCallBanner').style.display = 'none';
+      appendLog('Listener', `Accepted call from ${currentIncomingCallerId}`);
+    });
+
+    document.getElementById('btnRejectCall').addEventListener('click', () => {
+      if (!listenerSocket || !currentIncomingCallerId) return;
+      listenerSocket.emit('reject_call', { callerId: currentIncomingCallerId, reason: 'Declined by listener' });
+      document.getElementById('incomingCallBanner').style.display = 'none';
+      appendLog('Listener', `Rejected call from ${currentIncomingCallerId}`);
+    });
+
+    document.getElementById('btnCustomerHangupCall').addEventListener('click', () => {
+      if (!customerSocket || !activeCustomerSessionId) return;
+      customerSocket.emit('end_call', { sessionId: activeCustomerSessionId, endEntireSession: false });
+      stopInSessionAgora('customer');
+      appendLog('Customer', 'Ended call (returning to chat).');
+    });
+
+    document.getElementById('btnListenerHangupCall').addEventListener('click', () => {
+      if (!listenerSocket || !activeListenerSessionId) return;
+      listenerSocket.emit('end_call', { sessionId: activeListenerSessionId, endEntireSession: false });
+      stopInSessionAgora('listener');
+      appendLog('Listener', 'Ended call (returning to chat).');
+    });
+
+    document.getElementById('btnCustomerEndSessionFull').addEventListener('click', () => {
+      if (!customerSocket || !activeCustomerSessionId) return;
+      if (!confirm('End entire chat & call session?')) return;
+      customerSocket.emit('end_chat', { sessionId: activeCustomerSessionId });
+      stopInSessionAgora('customer');
+      appendLog('Customer', 'Ended entire session.');
+    });
+
+    document.getElementById('btnListenerEndSessionFull').addEventListener('click', () => {
+      if (!listenerSocket || !activeListenerSessionId) return;
+      if (!confirm('End entire chat & call session?')) return;
+      listenerSocket.emit('end_chat', { sessionId: activeListenerSessionId });
+      stopInSessionAgora('listener');
+      appendLog('Listener', 'Ended entire session.');
+    });
+
     document.getElementById('btnCustomerEndChat').addEventListener('click', () => {
-      if (customerSocket && activeCustomerSessionId) customerSocket.emit('end_chat', { sessionId: activeCustomerSessionId });
       activeCustomerSessionId = null;
       document.getElementById('customerChatBox').style.display = 'none';
       document.getElementById('requestArea').style.display = 'flex';
       document.getElementById('customerMsgInput').disabled = false;
       document.getElementById('btnCustomerSend').disabled = false;
+      stopInSessionAgora('customer');
       fetchRecentSessions('customer');
     });
 
     document.getElementById('btnListenerEndChat').addEventListener('click', () => {
-      if (listenerSocket && activeListenerSessionId) listenerSocket.emit('end_chat', { sessionId: activeListenerSessionId });
       activeListenerSessionId = null;
       document.getElementById('listenerChatBox').style.display = 'none';
       document.getElementById('listenerMsgInput').disabled = false;
       document.getElementById('btnListenerSend').disabled = false;
+      stopInSessionAgora('listener');
       fetchRecentSessions('listener');
+    });
+
+    // ─── Real-Time In-Session Agora Audio/Video Calling ──────────────────────
+    async function startInSessionAgora(role, agoraData, mode, sessionId) {
+      if (typeof AgoraRTC === 'undefined') {
+        appendLog(role === 'customer' ? 'Customer' : 'Listener', '⚠️ AgoraRTC SDK is not available. Please check network connection.');
+        return;
+      }
+      const isCustomer = role === 'customer';
+      const prefix = isCustomer ? 'customerInCall' : 'listenerInCall';
+      const tracks = isCustomer ? customerInSessionTracks : listenerInSessionTracks;
+      const state = isCustomer ? customerInSessionState : listenerInSessionState;
+      state.muted = false;
+      state.cameraOff = false;
+
+      const mediaBox = document.getElementById(`${prefix}MediaBox`);
+      const videoArea = document.getElementById(`${prefix}VideoArea`);
+      const localVideoEl = document.getElementById(`${prefix}LocalVideo`);
+      const remoteVideoEl = document.getElementById(`${prefix}RemoteVideo`);
+      const audioWave = document.getElementById(`${prefix}AudioWave`);
+      const muteBtn = document.getElementById(`btn${isCustomer ? 'Customer' : 'Listener'}InCallMute`);
+      const cameraBtn = document.getElementById(`btn${isCustomer ? 'Customer' : 'Listener'}InCallCamera`);
+
+      if (mediaBox) mediaBox.style.display = 'block';
+      if (muteBtn) {
+        muteBtn.textContent = '🎤';
+        muteBtn.style.background = 'rgba(255,255,255,0.1)';
+      }
+      if (cameraBtn) {
+        cameraBtn.textContent = '📹';
+        cameraBtn.style.background = 'rgba(255,255,255,0.1)';
+      }
+
+      if (mode === 'AUDIO') {
+        if (videoArea) videoArea.classList.add('audio-only');
+        if (audioWave) audioWave.style.display = 'flex';
+        if (localVideoEl) localVideoEl.style.display = 'none';
+        if (remoteVideoEl) remoteVideoEl.style.display = 'none';
+        if (cameraBtn) cameraBtn.style.display = 'none';
+      } else {
+        if (videoArea) videoArea.classList.remove('audio-only');
+        if (audioWave) audioWave.style.display = 'none';
+        if (localVideoEl) localVideoEl.style.display = 'block';
+        if (remoteVideoEl) remoteVideoEl.style.display = 'block';
+        if (cameraBtn) cameraBtn.style.display = 'flex';
+      }
+
+      // Create Agora Client
+      const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+      if (isCustomer) customerInSessionAgoraClient = client;
+      else listenerInSessionAgoraClient = client;
+
+      try {
+        appendLog(isCustomer ? 'Customer' : 'Listener', `Connecting Agora RTC channel: ${agoraData.channelName} (UID: ${agoraData.uid})...`);
+        await client.join(
+          agoraData.appId,
+          agoraData.channelName,
+          agoraData.token || null,
+          Number(agoraData.uid)
+        );
+        appendLog(isCustomer ? 'Customer' : 'Listener', '✅ Agora RTC Joined Successfully.');
+
+        // Initialize local camera & microphone
+        if (mode === 'VIDEO') {
+          try {
+            [tracks.audio, tracks.video] = await AgoraRTC.createMicrophoneAndCameraTracks();
+            if (localVideoEl) tracks.video.play(localVideoEl);
+            await client.publish([tracks.audio, tracks.video]);
+            appendLog(isCustomer ? 'Customer' : 'Listener', '📹 Local camera & microphone published.');
+          } catch (camErr) {
+            appendLog(isCustomer ? 'Customer' : 'Listener', `⚠️ Camera access failed (${camErr.message}), falling back to microphone.`);
+            tracks.audio = await AgoraRTC.createMicrophoneAudioTrack();
+            await client.publish([tracks.audio]);
+          }
+        } else {
+          tracks.audio = await AgoraRTC.createMicrophoneAudioTrack();
+          await client.publish([tracks.audio]);
+          appendLog(isCustomer ? 'Customer' : 'Listener', '🎤 Local microphone published.');
+        }
+
+      } catch (err) {
+        appendLog(isCustomer ? 'Customer' : 'Listener', `❌ Agora Connection Error: ${err.message}`);
+      }
+
+      // Handle remote user video and audio
+      client.on('user-published', async (remoteUser, mediaType) => {
+        try {
+          await client.subscribe(remoteUser, mediaType);
+          appendLog(isCustomer ? 'Customer' : 'Listener', `📡 Subscribed to remote ${mediaType} (UID: ${remoteUser.uid})`);
+          if (mediaType === 'video' && remoteVideoEl) {
+            remoteUser.videoTrack.play(remoteVideoEl);
+          }
+          if (mediaType === 'audio') {
+            remoteUser.audioTrack.play();
+          }
+        } catch (subErr) {
+          appendLog(isCustomer ? 'Customer' : 'Listener', `❌ Failed to subscribe remote track: ${subErr.message}`);
+        }
+      });
+
+      client.on('user-unpublished', (remoteUser, mediaType) => {
+        appendLog(isCustomer ? 'Customer' : 'Listener', `Remote user paused ${mediaType}`);
+      });
+    }
+
+    async function stopInSessionAgora(role) {
+      const isCustomer = role === 'customer';
+      const prefix = isCustomer ? 'customerInCall' : 'listenerInCall';
+      const client = isCustomer ? customerInSessionAgoraClient : listenerInSessionAgoraClient;
+      const tracks = isCustomer ? customerInSessionTracks : listenerInSessionTracks;
+
+      // Close local tracks
+      if (tracks.audio) { tracks.audio.close(); tracks.audio = null; }
+      if (tracks.video) { tracks.video.close(); tracks.video = null; }
+
+      // Leave Agora channel
+      if (client) {
+        try { await client.leave(); } catch (e) { /* ignore */ }
+        if (isCustomer) customerInSessionAgoraClient = null;
+        else listenerInSessionAgoraClient = null;
+      }
+
+      // Reset Media Box UI
+      const mediaBox = document.getElementById(`${prefix}MediaBox`);
+      if (mediaBox) mediaBox.style.display = 'none';
+      const remoteVideo = document.getElementById(`${prefix}RemoteVideo`);
+      if (remoteVideo) remoteVideo.innerHTML = '';
+      const localVideo = document.getElementById(`${prefix}LocalVideo`);
+      if (localVideo) localVideo.innerHTML = '';
+
+      appendLog(isCustomer ? 'Customer' : 'Listener', 'Live media stream closed.');
+    }
+
+    // Attach in-call media control buttons
+    ['customer', 'listener'].forEach(role => {
+      const isCustomer = role === 'customer';
+      const muteBtn = document.getElementById(`btn${isCustomer ? 'Customer' : 'Listener'}InCallMute`);
+      const cameraBtn = document.getElementById(`btn${isCustomer ? 'Customer' : 'Listener'}InCallCamera`);
+      const hangupBtn = document.getElementById(`btn${isCustomer ? 'Customer' : 'Listener'}InCallHangup`);
+
+      if (muteBtn) {
+        muteBtn.addEventListener('click', async () => {
+          const tracks = isCustomer ? customerInSessionTracks : listenerInSessionTracks;
+          const state = isCustomer ? customerInSessionState : listenerInSessionState;
+          if (!tracks.audio) return;
+          state.muted = !state.muted;
+          await tracks.audio.setMuted(state.muted);
+          muteBtn.textContent = state.muted ? '🔇' : '🎤';
+          muteBtn.style.background = state.muted ? '#ef4444' : 'rgba(255,255,255,0.1)';
+        });
+      }
+
+      if (cameraBtn) {
+        cameraBtn.addEventListener('click', async () => {
+          const tracks = isCustomer ? customerInSessionTracks : listenerInSessionTracks;
+          const state = isCustomer ? customerInSessionState : listenerInSessionState;
+          if (!tracks.video) return;
+          state.cameraOff = !state.cameraOff;
+          await tracks.video.setMuted(state.cameraOff);
+          cameraBtn.textContent = state.cameraOff ? '🚫' : '📹';
+          cameraBtn.style.background = state.cameraOff ? '#ef4444' : 'rgba(255,255,255,0.1)';
+        });
+      }
+
+      if (hangupBtn) {
+        hangupBtn.addEventListener('click', () => {
+          const socket = isCustomer ? customerSocket : listenerSocket;
+          const sessionId = isCustomer ? activeCustomerSessionId : activeListenerSessionId;
+          if (socket && sessionId) {
+            socket.emit('end_call', { sessionId, endEntireSession: false });
+          }
+          stopInSessionAgora(role);
+        });
+      }
     });
 
     // Chat send + typing
@@ -1806,8 +2318,11 @@
         const text = inputEl.value.trim();
         if (!text) return;
         socket.emit('send_message', { sessionId, text });
-        const containerId = inputEl.id.includes('customer') ? 'customerMessages' : 'listenerMessages';
-        appendMsg(containerId, 'Me', text, true, 'TEXT', null);
+        const isCustomer = inputEl.id.includes('customer');
+        const containerId = isCustomer ? 'customerMessages' : 'listenerMessages';
+        const role = isCustomer ? 'customer' : 'listener';
+        const token = document.getElementById(isCustomer ? 'customerToken' : 'listenerToken').value.trim();
+        appendMsg(containerId, 'Me', text, true, 'TEXT', null, null, sessionId, role, token);
         inputEl.value = '';
         socket.emit('typing', { sessionId, isTyping: false });
       });
@@ -1900,53 +2415,102 @@
       appendLog('Listener', `Home presence: ${customerId} → ${status}`);
     }
 
-    // Fetch helpers
+    // Fetch Instagram Direct Inbox conversations (with last message & unread badge)
     async function fetchRecentSessions(role) {
       const token = document.getElementById(role === 'customer' ? 'customerToken' : 'listenerToken').value.trim();
       if (!token) return;
       const listDiv = document.getElementById(role === 'customer' ? 'customerHistoryList' : 'listenerHistoryList');
       listDiv.innerHTML = '';
       try {
-        const res = await fetch(`${getBackendUrl()}/api/v1/chats/sessions?limit=20`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const res = await fetch(`${getBackendUrl()}/api/v1/chats/conversations?limit=20`, { headers: { 'Authorization': `Bearer ${token}` } });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message);
-        const sessions = data.data?.sessions || [];
-        if (!sessions.length) { listDiv.innerHTML = `<div style="text-align:center;color:var(--text-muted);font-size:12px;padding:15px;">No recent sessions.</div>`; return; }
-        sessions.forEach(s => {
-          const isCaller = s.myRole === 'CALLER';
-          const other = isCaller ? s.listenerId : s.callerId;
-          const otherUserId = other ? (other._id || other) : null;
-          if (otherUserId) recentSessionsByParticipant[otherUserId] = s;
-          const otherName = other ? `${other.firstName} ${other.lastName || ''}` : 'Unknown';
+        
+        const conversations = data.data?.conversations || [];
+        if (!conversations.length) { 
+          listDiv.innerHTML = `<div style="text-align:center;color:var(--text-muted);font-size:12px;padding:15px;">No conversations yet.</div>`; 
+          return; 
+        }
+
+        conversations.forEach(c => {
+          const user = c.user || {};
+          const partnerName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'User';
+          const unreadCount = Number(c.unreadCount || 0);
+          const isOnline = Boolean(user.isOnline);
+          const lastText = c.lastMessage?.text || '(No messages)';
+          const sessionId = c.sessionId;
+
           const item = document.createElement('div');
-          item.className = 'listener-item';
-          item.innerHTML = `<div class="listener-info" style="flex:1;"><div class="listener-name">${otherName} ${s.status === 'ONGOING' ? '<span style="color:var(--success);font-size:10px;">● Live</span>' : ''}</div><div class="listener-meta" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;">${s.lastMessage?.text || '(No messages)'}</div></div><div class="listener-status status-${s.status === 'ONGOING' ? 'online' : 'offline'}" style="font-size:10px;">View</div>`;
-          item.addEventListener('click', () => openSessionHistory(role, token, s._id, otherName, s.status === 'ONGOING'));
+          item.className = `listener-item ${unreadCount > 0 ? 'has-unread' : ''}`;
+          item.setAttribute('data-session-id', sessionId);
+          item.innerHTML = `
+            <div class="listener-info" style="flex:1;overflow:hidden;">
+              <div class="listener-name">
+                ${isOnline ? '🟢' : '⚫'} ${partnerName}
+              </div>
+              <div class="listener-meta" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;">
+                ${lastText}
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              ${unreadCount > 0 ? `<span class="unread-badge">${unreadCount}</span>` : `<span class="listener-status status-${isOnline ? 'online' : 'offline'}" style="font-size:10px;">Chat</span>`}
+            </div>
+          `;
+          item.addEventListener('click', () => {
+            document.querySelectorAll(`#${listDiv.id} .listener-item`).forEach(el => el.classList.remove('selected'));
+            item.classList.add('selected');
+            openSessionHistory(role, token, sessionId, partnerName, true, user.id);
+          });
           listDiv.appendChild(item);
         });
-      } catch (err) { appendLog(role, `❌ ${err.message}`); }
+      } catch (err) { 
+        appendLog(role, `❌ Conversations: ${err.message}`); 
+      }
     }
 
     async function fetchChatHistory(role, token, sessionId) {
       const containerId = role === 'customer' ? 'customerMessages' : 'listenerMessages';
       document.getElementById(containerId).innerHTML = '';
       try {
-        const res = await fetch(`${getBackendUrl()}/api/v1/chats/sessions/${sessionId}/messages`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const cleanSessionId = String(sessionId || '').trim();
+        const cleanToken = String(token || '').trim();
+        const res = await fetch(`${getBackendUrl()}/api/v1/chats/sessions/${cleanSessionId}/messages`, { headers: { 'Authorization': `Bearer ${cleanToken}` } });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message);
         const messages = data.data?.messages || [];
-        const decoded = parseJwt(token);
+        const decoded = parseJwt(cleanToken);
         messages.forEach(msg => {
           const sId = msg.senderId && typeof msg.senderId === 'object' ? msg.senderId._id : msg.senderId;
           const isSelf = sId === decoded?.id;
-          appendMsg(containerId, isSelf ? 'Me' : (msg.senderId?.firstName || 'Participant'), msg.text, isSelf, msg.messageType, msg.fileUrl);
+          const cleanMsgId = String(msg._id || '').trim();
+          appendMsg(containerId, isSelf ? 'Me' : (msg.senderId?.firstName || 'Participant'), msg.text, isSelf, msg.messageType, msg.fileUrl, cleanMsgId, cleanSessionId, role, cleanToken, msg.deletedAt);
         });
+
+        // Instantly clear unread badge UI on current conversation item
+        setTimeout(() => {
+          const listDivId = role === 'customer' ? 'customerHistoryList' : 'listenerHistoryList';
+          const item = document.querySelector(`#${listDivId} [data-session-id="${cleanSessionId}"]`);
+          if (item) {
+            item.classList.remove('has-unread');
+            const badge = item.querySelector('.unread-badge');
+            if (badge) badge.remove();
+          }
+        }, 150);
       } catch (err) { appendLog(role, `❌ History: ${err.message}`); }
     }
 
-    function openSessionHistory(role, token, sessionId, otherName, isOngoing) {
+    function openSessionHistory(role, token, sessionId, otherName, isOngoing, partnerUserId) {
       if (role === 'customer') {
         activeCustomerSessionId = isOngoing ? sessionId : null;
+        if (partnerUserId) currentSelectedListener = partnerUserId;
+        document.getElementById('customerChatPartnerTitle').textContent = otherName || 'Listener';
+        const badge = document.getElementById('customerActiveSegmentBadge');
+        badge.textContent = '💬 CHAT';
+        badge.className = 'segment-badge segment-chat';
+        document.getElementById('customerCallStatusNotice').style.display = 'none';
+        document.getElementById('btnCustomerHangupCall').style.display = 'none';
+        document.getElementById('btnCustomerUpgradeAudio').style.display = 'inline-flex';
+        document.getElementById('btnCustomerUpgradeVideo').style.display = 'inline-flex';
         document.getElementById('requestArea').style.display = 'none';
         document.getElementById('customerSessionStatusBanner').style.display = 'none';
         document.getElementById('customerSessionIdVal').textContent = sessionId;
@@ -1957,6 +2521,13 @@
         fetchChatHistory('customer', token, sessionId);
       } else {
         activeListenerSessionId = isOngoing ? sessionId : null;
+        if (partnerUserId) currentIncomingCallerId = partnerUserId;
+        document.getElementById('listenerChatPartnerTitle').textContent = otherName || 'Customer';
+        const badge = document.getElementById('listenerActiveSegmentBadge');
+        badge.textContent = '💬 CHAT';
+        badge.className = 'segment-badge segment-chat';
+        document.getElementById('listenerCallStatusNotice').style.display = 'none';
+        document.getElementById('btnListenerHangupCall').style.display = 'none';
         document.getElementById('incomingRequestBanner').style.display = 'none';
         document.getElementById('listenerSessionIdVal').textContent = sessionId;
         document.getElementById('listenerChatBox').style.display = 'flex';
@@ -1970,24 +2541,96 @@
     document.getElementById('btnLoadCustomerHistory').addEventListener('click', () => fetchRecentSessions('customer'));
     document.getElementById('btnLoadListenerHistory').addEventListener('click', () => fetchRecentSessions('listener'));
 
-    function appendMsg(containerId, sender, text, isSelf, messageType = 'TEXT', fileUrl = null) {
+    async function deleteChatMessage(role, token, sessionId, messageId, bubble) {
+      if (!confirm('Are you sure you want to delete this message?')) return;
+      try {
+        const cleanSessionId = String(sessionId || '').trim();
+        const cleanMessageId = String(messageId || '').trim();
+        const cleanToken = String(token || '').trim();
+        const res = await fetch(`${getBackendUrl()}/api/v1/chats/sessions/${cleanSessionId}/messages/${cleanMessageId}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${cleanToken}` }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
+        appendLog(role, `✅ Message deleted successfully (${cleanMessageId})`);
+        handleMessageDeletedUI(role === 'customer' ? 'customerMessages' : 'listenerMessages', cleanMessageId);
+      } catch (err) {
+        appendLog(role, `❌ Failed to delete message: ${err.message}`);
+        alert(`Failed to delete message: ${err.message}`);
+      }
+    }
+
+    function handleMessageDeletedUI(containerId, messageId) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      const bubble = container.querySelector(`[data-message-id="${messageId}"]`);
+      if (bubble) {
+        const textSpan = bubble.querySelector('.msg-text');
+        if (textSpan) {
+          textSpan.textContent = 'This message was deleted';
+          textSpan.style.fontStyle = 'italic';
+          textSpan.style.color = 'var(--text-muted)';
+        }
+        const delBtn = bubble.querySelector('.btn-delete-msg');
+        if (delBtn) delBtn.remove();
+      }
+    }
+
+    function appendMsg(containerId, sender, text, isSelf, messageType = 'TEXT', fileUrl = null, msgId = null, sessionId = null, role = null, token = null, deletedAt = null) {
       const container = document.getElementById(containerId);
       const bubble = document.createElement('div');
       bubble.className = `msg-bubble ${isSelf ? 'sent' : 'received'}`;
+      if (msgId) bubble.setAttribute('data-message-id', msgId);
+
       if (!isSelf && sender !== 'System') {
         const label = document.createElement('div');
         label.style.cssText = 'font-size:11px;color:var(--text-muted);margin-bottom:2px;font-weight:bold;';
         label.textContent = sender;
         bubble.appendChild(label);
       }
+
       const content = document.createElement('div');
-      if (messageType === 'IMAGE' && fileUrl) { const img = document.createElement('img'); img.src = fileUrl; img.onclick = () => window.open(fileUrl); content.appendChild(img); }
-      else if (messageType === 'VIDEO' && fileUrl) { const v = document.createElement('video'); v.src = fileUrl; v.controls = true; content.appendChild(v); }
-      else if (messageType === 'AUDIO' && fileUrl) { const a = document.createElement('audio'); a.src = fileUrl; a.controls = true; content.appendChild(a); }
-      else { const s = document.createElement('span'); s.textContent = text; content.appendChild(s); }
+      content.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;';
+
+      const isDeleted = Boolean(deletedAt) || text === 'This message was deleted';
+      const textSpan = document.createElement('span');
+      textSpan.className = 'msg-text';
+
+      if (messageType === 'IMAGE' && fileUrl && !isDeleted) {
+        const img = document.createElement('img'); img.src = fileUrl; img.onclick = () => window.open(fileUrl); content.appendChild(img);
+      } else if (messageType === 'VIDEO' && fileUrl && !isDeleted) {
+        const v = document.createElement('video'); v.src = fileUrl; v.controls = true; content.appendChild(v);
+      } else if (messageType === 'AUDIO' && fileUrl && !isDeleted) {
+        const a = document.createElement('audio'); a.src = fileUrl; a.controls = true; content.appendChild(a);
+      } else {
+        textSpan.textContent = text;
+        if (isDeleted) {
+          textSpan.style.fontStyle = 'italic';
+          textSpan.style.color = 'var(--text-muted)';
+        }
+        content.appendChild(textSpan);
+      }
+
+      if (isSelf && msgId && sessionId && role && token && !isDeleted) {
+        const delBtn = document.createElement('button');
+        delBtn.className = 'btn-delete-msg';
+        delBtn.title = 'Delete message';
+        delBtn.innerHTML = '🗑️';
+        delBtn.style.cssText = 'background:none;border:none;padding:0 2px;font-size:11px;cursor:pointer;opacity:0.7;line-height:1;';
+        delBtn.onmouseenter = () => { delBtn.style.opacity = '1'; };
+        delBtn.onmouseleave = () => { delBtn.style.opacity = '0.7'; };
+        delBtn.onclick = (e) => {
+          e.stopPropagation();
+          deleteChatMessage(role, token, sessionId, msgId, bubble);
+        };
+        content.appendChild(delBtn);
+      }
+
       const time = document.createElement('span');
       time.className = 'msg-time';
       time.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
       bubble.appendChild(content);
       bubble.appendChild(time);
       container.appendChild(bubble);
@@ -2045,28 +2688,30 @@
     });
 
     // -- Receiver Socket --
-    document.getElementById('btnConnectReceiver').addEventListener('click', () => {
-      const token = document.getElementById('receiverToken').value.trim();
-      if (!token) return alert('Please input receiver token');
-      if (typeof io === 'undefined') return alert('Socket.io library not loaded. Hard-refresh the page.');
-      if (receiverSocket) receiverSocket.disconnect();
-      appendLog('Receiver', 'Connecting socket...');
-
-      receiverSocket = io(getBackendUrl(), { auth: { token } });
-
-      receiverSocket.on('connect', () => {
+    function setupReceiverSocketListeners(socket) {
+      socket.on('connect', () => {
         document.getElementById('receiverSocketStatus').className = 'badge connected';
         document.getElementById('receiverPrompt').style.display = 'none';
         document.getElementById('receiverWorkspace').style.display = 'flex';
-        appendLog('Receiver', `Connected. Socket ID: ${receiverSocket.id}`);
+        document.getElementById('receiverIdleMsg').style.display = 'block';
+        appendLog('Receiver', `Connected. Socket ID: ${socket.id}`);
       });
 
-      receiverSocket.on('disconnect', () => {
+      socket.on('disconnect', () => {
         document.getElementById('receiverSocketStatus').className = 'badge';
         appendLog('Receiver', 'Disconnected.');
       });
 
-      receiverSocket.on('incoming_call_request', (data) => {
+      socket.on('connect_error', (err) => {
+        appendLog('Receiver', `❌ Connection failed: ${err.message}`);
+        alert(`Receiver connection failed: ${err.message}`);
+      });
+
+      socket.on('socket_error', (data) => {
+        appendLog('Receiver', `❌ ${data.message}`);
+      });
+
+      socket.on('incoming_call_request', (data) => {
         appendLog('Receiver', `📞 Incoming call from ${data.callerId} (${data.mode})`);
         incomingCallData = data;
         document.getElementById('incomingCallerCallName').textContent = `${data.callerInfo.firstName} ${data.callerInfo.lastName}`;
@@ -2076,20 +2721,33 @@
         document.getElementById('receiverIdleMsg').style.display = 'none';
       });
 
-      receiverSocket.on('call_started', async (data) => {
+      socket.on('call_started', async (data) => {
         appendLog('Receiver', `✅ Call started! Session: ${data.sessionId}, Mode: ${data.mode}`);
         document.getElementById('incomingCallBanner').style.display = 'none';
-        receiverSocket.emit('join_session', { sessionId: data.sessionId });
+        incomingCallData = null;
+        socket.emit('join_session', { sessionId: data.sessionId });
         await startAgoraCall('receiver', data.agora, data.mode, data.sessionId);
       });
 
-      receiverSocket.on('call_ended', (data) => {
+      socket.on('call_ended', (data) => {
         appendLog('Receiver', `Call ended. Reason: ${data.reason}`);
+        incomingCallData = null;
         stopAgoraCall('receiver');
       });
+    }
 
-      receiverSocket.on('socket_error', (data) => { appendLog('Receiver', `❌ ${data.message}`); });
-      receiverSocket.on('connect_error', (err) => { appendLog('Receiver', `❌ ${err.message}`); alert(`Rejected: ${err.message}`); });
+    document.getElementById('btnConnectReceiver').addEventListener('click', () => {
+      const token = document.getElementById('receiverToken').value.trim();
+      if (!token) return alert('Please input receiver token');
+      if (typeof io === 'undefined') return alert('Socket.io library not loaded. Hard-refresh the page.');
+      if (receiverSocket) {
+        receiverSocket.disconnect();
+        receiverSocket = null;
+      }
+      appendLog('Receiver', 'Connecting socket...');
+
+      receiverSocket = io(getBackendUrl(), { auth: { token } });
+      setupReceiverSocketListeners(receiverSocket);
     });
 
     // Load listeners for call tab
@@ -2349,6 +3007,7 @@
     let liveViewerSocket = null;
     let liveCurrentHostRoomId = null;
     let liveCurrentViewerRoomId = null;
+    let liveViewerCurrentUserId = null;
     let liveHostAgoraClient = null;
     let liveViewerAgoraClient = null;
     let liveHostLocalTracks = { audio: null, video: null };
@@ -2461,6 +3120,18 @@
       liveResetHostUI();
     });
 
+    document.getElementById('btnSendLiveHostComment').addEventListener('click', () => {
+      if (!liveHostSocket || !liveCurrentHostRoomId) return;
+      const text = document.getElementById('liveHostCommentInput').value.trim();
+      if (!text) return;
+      liveHostSocket.emit('live:comment', { roomId: liveCurrentHostRoomId, text });
+      document.getElementById('liveHostCommentInput').value = '';
+    });
+
+    document.getElementById('liveHostCommentInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('btnSendLiveHostComment').click();
+    });
+
     function liveResetHostUI() {
       liveStopHostTimer();
       liveStopAgoraHost();
@@ -2470,6 +3141,7 @@
       document.getElementById('liveHostMediaArea').style.display = 'none';
       document.getElementById('liveHostCommentsFeed').innerHTML = '';
       document.getElementById('liveHostCommentCount').textContent = '';
+      document.getElementById('liveHostCommentInput').value = '';
     }
 
     function liveStopHostTimer() {
@@ -2492,6 +3164,12 @@
         document.getElementById('liveViewerStatus').className = 'badge connected';
         document.getElementById('liveViewerPrompt').style.display = 'none';
         document.getElementById('liveViewerWorkspace').style.display = 'flex';
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+          liveViewerCurrentUserId = payload.id || payload._id || null;
+        } catch (e) {
+          liveViewerCurrentUserId = null;
+        }
         appendLog('LiveViewer', `Connected. Socket: ${liveViewerSocket.id}`);
         document.getElementById('btnRefreshLiveRooms').click();
       });
@@ -2501,7 +3179,7 @@
         appendLog('LiveViewer', 'Disconnected.');
       });
 
-      // Server sends this only to the joining viewer — contains agora info + recent comments
+      // Server sends this only to the joining viewer — contains agora info + recent comments + hasLiked
       liveViewerSocket.on('live:viewer_joined', async (data) => {
         appendLog('LiveViewer', `Joined room ${data.roomId}. Viewers: ${data.viewerCount}`);
         liveCurrentViewerRoomId = data.roomId;
@@ -2512,6 +3190,7 @@
         document.getElementById('liveViewerRoomMode').textContent = data.mode || '';
         document.getElementById('liveViewerViewerCount').textContent = data.viewerCount;
         document.getElementById('liveViewerLikeCount').textContent = data.likeCount;
+        updateLikeButtonUI(!!data.hasLiked);
 
         // Load recent comments (oldest → newest already sorted by service)
         document.getElementById('liveViewerCommentsFeed').innerHTML = '';
@@ -2555,6 +3234,9 @@
       });
       liveViewerSocket.on('live:like_update', (d) => {
         document.getElementById('liveViewerLikeCount').textContent = d.likeCount;
+        if (d.userId && liveViewerCurrentUserId && d.userId === liveViewerCurrentUserId) {
+          updateLikeButtonUI(!!d.liked);
+        }
       });
       liveViewerSocket.on('live:ended', (d) => {
         appendLog('LiveViewer', `Room ended by host.`);
@@ -2627,7 +3309,26 @@
     document.getElementById('btnLiveLike').addEventListener('click', () => {
       if (!liveViewerSocket || !liveCurrentViewerRoomId) return;
       liveViewerSocket.emit('live:like', { roomId: liveCurrentViewerRoomId });
+      const btn = document.getElementById('btnLiveLike');
+      btn.style.transform = 'scale(1.2)';
+      setTimeout(() => { btn.style.transform = 'scale(1)'; }, 150);
     });
+
+    function updateLikeButtonUI(liked) {
+      const btn = document.getElementById('btnLiveLike');
+      if (!btn) return;
+      if (liked) {
+        btn.innerHTML = '❤️ Liked';
+        btn.style.background = 'linear-gradient(135deg, #ef4444, #ec4899)';
+        btn.style.boxShadow = '0 0 12px rgba(239, 68, 68, 0.5)';
+        btn.style.borderColor = '#ef4444';
+      } else {
+        btn.innerHTML = '🤍 Like';
+        btn.style.background = 'rgba(255, 255, 255, 0.08)';
+        btn.style.boxShadow = 'none';
+        btn.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+      }
+    }
 
     document.getElementById('btnLiveLeave').addEventListener('click', () => {
       if (!liveViewerSocket || !liveCurrentViewerRoomId) return;
@@ -2639,6 +3340,7 @@
 
     function liveResetViewerUI() {
       liveCurrentViewerRoomId = null;
+      updateLikeButtonUI(false);
       document.getElementById('liveViewerInRoomArea').style.display = 'none';
       document.getElementById('liveViewerBrowseArea').style.display = 'block';
       document.getElementById('liveViewerMediaArea').style.display = 'none';

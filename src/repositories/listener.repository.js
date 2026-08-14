@@ -30,7 +30,10 @@ class ListenerRepository {
   }
 
   async findByUserId(userId) {
-    return await this.findOne({ userId }, '', [{ path: 'userId', select: 'firstName lastName email profileImage isOnline' }]);
+    return await this.findOne({ userId }, '', [
+      { path: 'userId', select: 'firstName lastName email profileImage isOnline age currentLevel gender' },
+      { path: 'languages', select: 'name code flagUrl' },
+    ]);
   }
 
   /**

@@ -35,6 +35,18 @@ router.delete('/me', userController.deleteMe);
 router.get('/me/settings', userController.getMySettings);
 router.patch('/me/settings', validate(updateSettingsSchema), userController.updateMySettings);
 
+/**
+ * GET /users/:id — Listener may fetch a CUSTOMER's public profile
+ * (matches deployed API used by the app). Admin uses the route under ADMIN block.
+ */
+router.get('/:id', (req, res, next) => {
+  if (req.user?.type === 'LISTENER') {
+    return userController.getCustomerByIdForListener(req, res, next);
+  }
+  // Skip to the next matching route (admin GET /:id below)
+  return next('route');
+});
+
 // --- ADMIN ONLY ROUTES ---
 router.use(restrictTo('ADMIN'));
 

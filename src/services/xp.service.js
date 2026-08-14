@@ -155,7 +155,42 @@ class XpService {
       badge: currentLevelConfig?.badge || null,
       nextLevelTitle: nextLevelConfig?.title || null,
       badges: user.badges || [],
+      levels: await this._getPublicLevelLadder(),
     };
+  }
+
+  /**
+   * Public level ladder with reward labels for the My Level screen.
+   */
+  async _getPublicLevelLadder() {
+    const configs = await LevelConfig.find({ isActive: true })
+      .sort({ level: 1 })
+      .populate('rewards', 'type value label icon isActive')
+      .lean();
+
+    return (configs || []).map((l) => {
+      const rewards = (l.rewards || [])
+        .filter((r) => r && r.isActive !== false)
+        .map((r) => ({
+          type: r.type,
+          value: r.value,
+          label: r.label,
+          icon: r.icon || null,
+        }));
+      const rewardSummary = rewards.length
+        ? rewards.map((r) => r.label).join(' · ')
+        : l.badge
+          ? `${l.badge} badge`
+          : 'Level unlocked';
+      return {
+        level: l.level,
+        title: l.title,
+        badge: l.badge || null,
+        xpRequired: l.xpRequired,
+        rewardSummary,
+        rewards,
+      };
+    });
   }
 
   // ═══════════════════════════════════════════════════════════════════

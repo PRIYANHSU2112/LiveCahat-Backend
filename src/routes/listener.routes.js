@@ -1,7 +1,7 @@
 import express from 'express';
 import listenerController from '../controllers/listener.controller.js';
 import { authenticate, restrictTo, authorize } from '../middlewares/auth.middleware.js';
-import { uploadKYCDocuments, uploadIntroVideo, processAndUploadImage } from '../middlewares/upload.middleware.js';
+import { uploadKYCDocuments, uploadListenerProfileMedia, processAndUploadImage } from '../middlewares/upload.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 import { updateListenerProfileSchema, updateRatesSchema, updateAvailabilitySchema, updateKycStatusSchema, dashboardOverviewQuerySchema, dashboardSessionsQuerySchema, homeListenersQuerySchema, agentCreateListenerSchema, agentListenersQuerySchema, adminListenerPerformanceQuerySchema } from '../validators/listener.validator.js';
 import adminExportController from '../controllers/admin-export.controller.js';
@@ -23,6 +23,11 @@ router.get('/export', restrictTo('ADMIN'), authorize('listener.read'), adminExpo
 router.get('/admin/:id', restrictTo('ADMIN'), authorize('listener.read'), listenerController.getListenerById);
 router.put('/admin/:id', restrictTo('ADMIN'), authorize('listener.update'), listenerController.updateListenerByAdmin);
 router.get('/', restrictTo('ADMIN', 'CUSTOMER'), listenerController.getAllListeners);
+router.get(
+  '/public/:userId',
+  restrictTo('CUSTOMER', 'LISTENER', 'ADMIN', 'AGENT'),
+  listenerController.getPublicProfile,
+);
 router.post('/:id/kyc', restrictTo('ADMIN'), authorize('listener.kyc.moderate'), validate(updateKycStatusSchema), listenerController.approveOrRejectListener);
 
 // Listeners can access these
@@ -30,7 +35,13 @@ router.use(restrictTo('LISTENER', 'CUSTOMER')); // Customer can become a listene
 
 router.get('/profile', listenerController.getProfile);
 
-router.put('/profile', uploadIntroVideo, processAndUploadImage, validate(updateListenerProfileSchema), listenerController.updateProfile);
+router.put(
+  '/profile',
+  uploadListenerProfileMedia,
+  processAndUploadImage,
+  validate(updateListenerProfileSchema),
+  listenerController.updateProfile,
+);
 
 router.post('/kyc', uploadKYCDocuments, processAndUploadImage, listenerController.submitKyc);
 
@@ -47,5 +58,7 @@ router.get('/dashboard', restrictTo('LISTENER'), listenerController.getDashboard
 router.get('/dashboard/overview', restrictTo('LISTENER'), validate(dashboardOverviewQuerySchema), listenerController.getDashboardOverview);
 
 router.get('/dashboard/sessions', restrictTo('LISTENER'), validate(dashboardSessionsQuerySchema), listenerController.getRecentSessions);
+
+router.get('/host-tasks', restrictTo('LISTENER'), listenerController.getHostTasks);
 
 export default router;

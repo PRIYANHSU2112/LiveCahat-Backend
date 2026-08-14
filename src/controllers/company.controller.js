@@ -13,6 +13,11 @@ class CompanyController extends BaseController {
     this.sendResponse(res, 200, 'Company profile fetched successfully', company);
   });
 
+  getLegalByAudience = catchAsync(async (req, res) => {
+    const legal = await companyService.getLegalByAudience(req.params.audience);
+    this.sendResponse(res, 200, 'Legal documents fetched successfully', legal);
+  });
+
   getAdminProfile = catchAsync(async (req, res) => {
     const company = await companyService.getAdminProfile();
     this.sendResponse(res, 200, 'Company profile fetched successfully', company);

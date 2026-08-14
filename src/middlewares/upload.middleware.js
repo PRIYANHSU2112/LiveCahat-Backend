@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import multer from 'multer';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
@@ -30,6 +31,33 @@ const upload = multer({
 
 export const uploadUserPhoto = upload.single('profileImage');
 export const uploadIntroVideo = upload.single('introVideo');
+/**
+ * Accept listener media uploads. Uses `.any()` then keep only known fields so
+ * React Native FormData never triggers multer "Unexpected field".
+ */
+export const uploadListenerProfileMedia = (req, res, next) => {
+  upload.any()(req, res, (err) => {
+    if (err) return next(err);
+
+    const allowed = new Set(['introVideo', 'profilePhotos', 'profileImage']);
+    const map = {};
+    const files = Array.isArray(req.files) ? req.files : [];
+    for (const file of files) {
+      if (!allowed.has(file.fieldname)) continue;
+      if (!map[file.fieldname]) map[file.fieldname] = [];
+      map[file.fieldname].push(file);
+    }
+    // Cap gallery uploads
+    if (map.profilePhotos?.length > 9) {
+      map.profilePhotos = map.profilePhotos.slice(0, 9);
+    }
+    if (map.introVideo?.length > 1) map.introVideo = map.introVideo.slice(0, 1);
+    if (map.profileImage?.length > 1) map.profileImage = map.profileImage.slice(0, 1);
+
+    req.files = map;
+    next();
+  });
+};
 export const uploadBannerImage = upload.single('image');
 export const uploadGiftIcon = upload.single('icon');
 
@@ -54,10 +82,10 @@ export const processAndUploadImage = catchAsync(async (req, res, next) => {
   const handleMedia = (file) => {
     const isVideo = file.mimetype.startsWith('video/');
     const ext = isVideo ? path.extname(file.originalname) : '.webp';
-    const fileName = `${process.env.BUCKET_FOLDER_PATH || ''}${uuidv4()}${ext}`;
-    
-    const endpoint = process.env.LINODE_OBJECT_STORAGE_ENDPOINT;
-    const bucket = process.env.LINODE_OBJECT_BUCKET;
+    const fileName = `${process.env.BUCKET_FOLDER_PATH || 'LiveChat/'}${uuidv4()}${ext}`;
+
+    const endpoint = process.env.LINODE_OBJECT_STORAGE_ENDPOINT || 'https://sgp1.digitaloceanspaces.com';
+    const bucket = process.env.LINODE_OBJECT_BUCKET || 'satyakabir-bucket';
     if (!endpoint || !bucket) {
       throw new ApiError(500, 'File storage is not configured. Please provide an image URL instead.');
     }
@@ -70,7 +98,7 @@ export const processAndUploadImage = catchAsync(async (req, res, next) => {
     } else {
       queueImageCompression(file.buffer, fileName, file.mimetype);
     }
-    
+
     return fileUrl;
   };
 
@@ -91,7 +119,7 @@ export const processAndUploadImage = catchAsync(async (req, res, next) => {
     }
   }
 
-  // Handle multiple files (KYC documents / agent Aadhaar)
+  // Handle multiple files (KYC / agent Aadhaar / listener gallery)
   if (req.files) {
     const fields = ['documentFront', 'documentBack', 'selfieImage', 'aadhaarFront', 'aadhaarBack'];
     fields.forEach(field => {
@@ -99,6 +127,35 @@ export const processAndUploadImage = catchAsync(async (req, res, next) => {
         req.body[field] = handleMedia(req.files[field][0]);
       }
     });
+
+    if (req.files.introVideo?.[0]) {
+      req.body.introVideo = handleMedia(req.files.introVideo[0]);
+    }
+    if (req.files.profileImage?.[0]) {
+      req.body.profileImage = handleMedia(req.files.profileImage[0]);
+    }
+    if (req.files.profilePhotos?.length) {
+      const uploaded = req.files.profilePhotos.map(file => handleMedia(file));
+      let existing = [];
+      if (typeof req.body.existingPhotos === 'string' && req.body.existingPhotos.trim()) {
+        try {
+          const parsed = JSON.parse(req.body.existingPhotos);
+          if (Array.isArray(parsed)) existing = parsed;
+        } catch {
+          existing = [];
+        }
+      } else if (Array.isArray(req.body.profilePhotos)) {
+        existing = req.body.profilePhotos;
+      } else if (typeof req.body.profilePhotos === 'string' && req.body.profilePhotos) {
+        existing = [req.body.profilePhotos];
+      }
+      req.body.profilePhotos = [...existing, ...uploaded]
+        .map((u) => (typeof u === 'string' ? u.trim() : ''))
+        .filter(Boolean)
+        .slice(0, 9);
+      delete req.body.existingPhotos;
+    }
+
   }
 
   next();

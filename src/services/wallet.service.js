@@ -115,7 +115,23 @@ class WalletService extends BaseService {
     // Prefer runtime default provider (memory); Razorpay adapter falls back to .env
     const provider = settingsRuntime.getDefaultProvider() || 'RAZORPAY';
     const adapter = getPaymentAdapter(provider);
-    const order = await adapter.createOrder(options);
+
+    let order;
+    try {
+      order = await adapter.createOrder(options);
+    } catch (err) {
+      if (err instanceof ApiError) throw err;
+      const description =
+        err?.error?.description ||
+        err?.description ||
+        err?.message ||
+        'Unable to create payment order. Check Razorpay keys.';
+      throw new ApiError(502, description);
+    }
+
+    if (!order?.id) {
+      throw new ApiError(502, 'Payment gateway did not return an order id');
+    }
 
     const transaction = await paymentTransactionRepository.create({
       userId,

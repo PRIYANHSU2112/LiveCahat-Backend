@@ -172,3 +172,60 @@ export const getCacheVersion = async (namespace) => {
     return 1;
   }
 };
+
+const REFRESH_TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60; // 30 days
+
+/**
+ * Store a valid refresh token in Redis
+ */
+export const storeRefreshTokenInRedis = async (userId, refreshToken, ttlSeconds = REFRESH_TOKEN_TTL_SECONDS) => {
+  try {
+    const crypto = await import('crypto');
+    const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
+    const key = `auth:refresh:${userId}:${tokenHash}`;
+    await redisClient.set(key, JSON.stringify({ userId, createdAt: new Date() }), 'EX', ttlSeconds);
+  } catch (error) {
+    console.error('Redis Store Refresh Token Error:', error);
+  }
+};
+
+/**
+ * Check if a refresh token is valid in Redis
+ */
+export const isRefreshTokenValidInRedis = async (userId, refreshToken) => {
+  try {
+    const crypto = await import('crypto');
+    const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
+    const key = `auth:refresh:${userId}:${tokenHash}`;
+    const exists = await redisClient.exists(key);
+    return exists === 1;
+  } catch (error) {
+    console.error('Redis Verify Refresh Token Error:', error);
+    return true; // Fallback to JWT verification if Redis fails
+  }
+};
+
+/**
+ * Revoke a specific refresh token in Redis
+ */
+export const revokeRefreshTokenInRedis = async (userId, refreshToken) => {
+  try {
+    const crypto = await import('crypto');
+    const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
+    const key = `auth:refresh:${userId}:${tokenHash}`;
+    await redisClient.del(key);
+  } catch (error) {
+    console.error('Redis Revoke Refresh Token Error:', error);
+  }
+};
+
+/**
+ * Revoke all refresh tokens for a user (e.g. password change / logout all devices)
+ */
+export const revokeAllUserRefreshTokens = async (userId) => {
+  try {
+    await deleteCachePattern(`auth:refresh:${userId}:*`);
+  } catch (error) {
+    console.error('Redis Revoke All Refresh Tokens Error:', error);
+  }
+};

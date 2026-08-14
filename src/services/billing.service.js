@@ -170,15 +170,18 @@ class BillingService {
           await listenerProfile.save({ session: dbSession });
         }
 
+        const refType = segment.mode === 'VIDEO' ? 'VIDEO_CALL' : segment.mode === 'AUDIO' ? 'AUDIO_CALL' : 'CHAT';
+        const modeLabel = segment.mode === 'VIDEO' ? 'video call' : segment.mode === 'AUDIO' ? 'audio call' : 'chat';
+
         // 6. Create Caller DEBIT Coin Transaction
         await CoinTransaction.create([{
           userId: callerId,
           type: 'DEBIT',
           amount: actualCoinsToCharge,
           balanceAfter: callerWallet.coinBalance,
-          referenceType: 'CHAT',
+          referenceType: refType,
           referenceId: sessionId,
-          description: `Charged for chat session: ${totalElapsedMinutes} mins total`,
+          description: `Charged for ${modeLabel} session: ${totalElapsedMinutes} mins total`,
         }], { session: dbSession });
 
         // 7. Create Listener CREDIT Coin Transaction
@@ -187,9 +190,9 @@ class BillingService {
           type: 'CREDIT',
           amount: listenerShare,
           balanceAfter: listenerWallet.coinBalance,
-          referenceType: 'CHAT',
+          referenceType: refType,
           referenceId: sessionId,
-          description: `Earned from chat session: listener share (${earningPercent}%)`,
+          description: `Earned from ${modeLabel} session: listener share (${earningPercent}%)`,
         }], { session: dbSession });
 
         // 8. Update SessionSegment coins charged
@@ -232,6 +235,10 @@ class BillingService {
         const io = getSocketIo();
         if (io) {
           emitToSession(io, sessionId, SERVER_EVENTS.CHAT_ENDED, {
+            sessionId,
+            reason: 'INSUFFICIENT_BALANCE',
+          });
+          emitToSession(io, sessionId, SERVER_EVENTS.CALL_ENDED, {
             sessionId,
             reason: 'INSUFFICIENT_BALANCE',
           });

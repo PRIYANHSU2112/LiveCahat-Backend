@@ -56,6 +56,7 @@ export const authenticateSocket = async (socket, next) => {
       firstName: currentUser.firstName,
       lastName: currentUser.lastName,
       email: currentUser.email,
+      profileImage: currentUser.profileImage || null,
     };
 
     next();

@@ -1,7 +1,7 @@
 import express from 'express';
 import authController from '../controllers/auth.controller.js';
 import { validate } from '../middlewares/validate.middleware.js';
-import { requestOtpSchema, verifyOtpSchema, loginSchema, guestLoginSchema, linkAccountSchema } from '../validators/auth.validator.js';
+import { requestOtpSchema, verifyOtpSchema, loginSchema, guestLoginSchema, linkAccountSchema, refreshTokenSchema, logoutSchema } from '../validators/auth.validator.js';
 import { authenticate } from '../middlewares/auth.middleware.js';
 import {
   checkMaintenanceMode,
@@ -35,5 +35,7 @@ router.post(
 );
 router.post('/link-account', authenticate, validate(linkAccountSchema), authController.linkAccount);
 router.post('/direct-login', authController.directLogin);
+router.post('/refresh-token', validate(refreshTokenSchema), authController.refreshToken);
+router.post('/logout', validate(logoutSchema), authController.logout);
 
 export default router;

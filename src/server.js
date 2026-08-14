@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import './observability/tracing.js';
 import { createServer } from 'http';
 import dotenv from 'dotenv';
@@ -47,10 +48,10 @@ initializeSockets(io);
 mongoose.connect(DB_URI)
   .then(async () => {
     logger.info('DB connection successful!');
-    
+
     // Seed default daily login reward configs and chests
     await dailyRewardService.seedDefaultConfig();
-    
+
     // Attempt Redis connection after DB
     await connectRedis();
 

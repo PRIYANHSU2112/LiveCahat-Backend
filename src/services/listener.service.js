@@ -82,7 +82,75 @@ class ListenerService extends BaseService {
     return profile;
   }
 
+  /**
+   * Public listener card for customers (bio, gallery, rates, interests).
+   */
+  async getPublicProfile(userId) {
+    const profile = await this.repository.findByUserId(userId);
+    if (!profile) throw new ApiError(404, 'Listener profile not found');
+    if (profile.kycStatus !== 'APPROVED') {
+      throw new ApiError(404, 'Listener profile not found');
+    }
+
+    const { default: presenceService } = await import('./presence.service.js');
+    const availability = await presenceService.getStatus(userId.toString());
+
+    const user = profile.userId && typeof profile.userId === 'object'
+      ? profile.userId
+      : await userRepository.findById(userId, 'firstName lastName profileImage age isOnline currentLevel gender');
+
+    return {
+      _id: profile._id,
+      userId: userId.toString(),
+      listenerId: userId.toString(),
+      firstName: user?.firstName || '',
+      lastName: user?.lastName || '',
+      profileImage: user?.profileImage || profile.profilePhotos?.[0] || null,
+      age: user?.age ?? null,
+      bio: profile.bio || '',
+      interests: profile.interests || [],
+      profilePhotos: profile.profilePhotos || [],
+      chatRate: profile.chatRate,
+      voiceRate: profile.voiceRate,
+      videoRate: profile.videoRate,
+      avgRating: profile.avgRating,
+      totalRatings: profile.totalRatings,
+      totalSessions: profile.totalSessions,
+      followersCount: profile.followersCount,
+      anchorLevel: profile.anchorLevel,
+      isFeatured: profile.isFeatured,
+      availability,
+      isOnline: availability !== 'OFFLINE',
+      liveStatus: availability,
+      languageDetails: Array.isArray(profile.languages)
+        ? profile.languages
+            .filter((l) => l && typeof l === 'object' && l.name)
+            .map((l) => ({ _id: l._id, name: l.name, code: l.code, flagUrl: l.flagUrl }))
+        : [],
+      countryDetails: profile.countryDetails || null,
+      user: {
+        _id: userId.toString(),
+        firstName: user?.firstName || '',
+        lastName: user?.lastName || '',
+        profileImage: user?.profileImage || null,
+        age: user?.age ?? null,
+        isOnline: availability !== 'OFFLINE',
+        currentLevel: user?.currentLevel,
+      },
+    };
+  }
+
   async createOrUpdateProfile(userId, data) {
+    // profileImage belongs on User — keep gallery on ListenerProfile.profilePhotos
+    if (data.profileImage) {
+      await userRepository.updateById(userId, { profileImage: data.profileImage });
+      await deleteCache(`user:${userId}`);
+      if (!data.profilePhotos?.length) {
+        data.profilePhotos = [data.profileImage];
+      }
+      delete data.profileImage;
+    }
+
     let profile = await this.repository.findOne({ userId });
     let userCacheDelete;
     if (profile) {
@@ -228,7 +296,10 @@ class ListenerService extends BaseService {
     })}`;
 
     const cached = await getCache(cacheKey);
-    if (cached) return cached;
+    if (cached) {
+      // Always refresh LIVE/BUSY/ONLINE from Redis — never serve stale presence
+      return await this._overlayPresenceOnHomePage(cached);
+    }
 
     // ── Resolve language filter (accept ObjectId, name, or code) ──
     let languageId = null;
@@ -294,8 +365,50 @@ class ListenerService extends BaseService {
     const { total, data } = await this.repository.getHomeListeners(profileMatch, userMatch, sort, skip, limit);
 
     const response = formatPaginatedResponse(data, total, page, limit);
-    await setCache(cacheKey, response, 60); // 60s — kept fresh by version bumps
-    return response;
+    await setCache(cacheKey, response, 60); // cache without presence; overlay on every read
+    return await this._overlayPresenceOnHomePage(response);
+  }
+
+  /**
+   * Apply realtime Redis presence (LIVE / BUSY / ONLINE / OFFLINE) onto a home page payload.
+   */
+  async _overlayPresenceOnHomePage(page) {
+    const docs = page?.docs ?? page?.data ?? [];
+    if (!docs.length) return page;
+
+    const { default: presenceService } = await import('./presence.service.js');
+    const ids = docs
+      .map((doc) => {
+        if (doc.user?._id) return doc.user._id.toString();
+        if (doc.userId?._id) return doc.userId._id.toString();
+        if (doc.userId) return doc.userId.toString();
+        if (doc.listenerId) return doc.listenerId.toString();
+        return null;
+      })
+      .filter(Boolean);
+
+    const statusMap = await presenceService.getStatusBatch(ids);
+    const withPresence = docs.map((doc) => {
+      const id =
+        doc.user?._id?.toString?.() ||
+        doc.userId?._id?.toString?.() ||
+        doc.userId?.toString?.() ||
+        doc.listenerId?.toString?.();
+      const status = (id && statusMap.get(id)) || doc.availability || 'OFFLINE';
+      return {
+        ...doc,
+        availability: status,
+        liveStatus: status,
+        isOnline: status !== 'OFFLINE',
+        user: doc.user
+          ? { ...doc.user, isOnline: status !== 'OFFLINE' }
+          : doc.user,
+      };
+    });
+
+    if (page.docs) return { ...page, docs: withPresence };
+    if (page.data) return { ...page, data: withPresence };
+    return { ...page, docs: withPresence };
   }
 
   async getAllListeners(queryParams) {
@@ -1182,6 +1295,118 @@ class ListenerService extends BaseService {
     const data = {
       todayEarnings: round(session.earnedCoins + gift.giftCoins),
       activeMinutes: round(session.totalSeconds / 60),
+    };
+
+    await setCache(cacheKey, data, 60);
+    return data;
+  }
+
+  /**
+   * Daily host goals computed from live session + profile metrics.
+   * Used by the Host Task screen (no separate task collection).
+   */
+  async getHostTasks(userId) {
+    const cacheKey = `listener:host-tasks:${userId}`;
+    const cached = await getCache(cacheKey);
+    if (cached) return cached;
+
+    const { start, end } = getPeriodRange('today');
+    const CommunicationSession = (await import('../modules/communication-session.model.js')).default;
+    const ListenerProfile = (await import('../modules/listener-profile.model.js')).default;
+
+    const [session, videoCountRow, profile, anchor] = await Promise.all([
+      communicationSessionRepository.getListenerStats(userId, start, end),
+      CommunicationSession.aggregate([
+        {
+          $match: {
+            listenerId: new mongoose.Types.ObjectId(userId),
+            status: 'COMPLETED',
+            mode: 'VIDEO',
+            createdAt: { $gte: start, $lte: end },
+          },
+        },
+        { $count: 'count' },
+      ]),
+      ListenerProfile.findOne({ userId }).select('avgRating totalSessions totalEarnings anchorLevel').lean(),
+      anchorLevelService.getMyAnchorStatus(userId).catch(() => null),
+    ]);
+
+    const liveTarget = 45;
+    const liveMinutes = round(session.totalSeconds / 60);
+    const liveProgress = Math.min(100, Math.floor((liveMinutes / liveTarget) * 100));
+
+    const videoTarget = 5;
+    const videoCalls = videoCountRow?.[0]?.count || 0;
+    const videoProgress = Math.min(100, Math.floor((videoCalls / videoTarget) * 100));
+
+    const ratingTarget = 4.5;
+    const rating = Number(profile?.avgRating || 0);
+    const ratingProgress =
+      rating >= ratingTarget
+        ? 100
+        : Math.min(100, Math.floor((rating / ratingTarget) * 100));
+
+    const next = anchor?.nextLevel;
+    const anchorProgress = next ? Math.min(100, Number(next.progressPercent || 0)) : 100;
+
+    const tasks = [
+      {
+        id: 'live-mins',
+        title: `Complete ${liveTarget} mins online sessions today`,
+        reward: '+300 Diamonds',
+        current: liveMinutes,
+        target: liveTarget,
+        progress: liveProgress,
+        unit: 'min',
+      },
+      {
+        id: 'video-calls',
+        title: `Complete ${videoTarget} video calls today`,
+        reward: '+500 Coins',
+        current: videoCalls,
+        target: videoTarget,
+        progress: videoProgress,
+        unit: 'calls',
+      },
+      {
+        id: 'rating',
+        title: `Maintain ${ratingTarget}+ rating`,
+        reward: 'Premium Badge',
+        current: Math.round(rating * 10) / 10,
+        target: ratingTarget,
+        progress: ratingProgress,
+        unit: 'stars',
+      },
+      {
+        id: 'anchor-level',
+        title: next
+          ? `Reach ${next.title || `Anchor Lv${next.level}`}`
+          : 'Anchor level maxed',
+        reward: next
+          ? next.requirementType === 'PROFILE_COMPLETE'
+            ? 'Complete your profile'
+            : `Earn ${Number(next.requiredEarnings || 0).toLocaleString()} coins`
+          : 'All host levels unlocked',
+        current: anchor?.totalEarnings ?? profile?.totalEarnings ?? 0,
+        target: next?.requiredEarnings ?? 0,
+        progress: anchorProgress,
+        unit: 'coins',
+      },
+    ];
+
+    const data = {
+      period: 'today',
+      completedCount: tasks.filter((t) => t.progress >= 100).length,
+      totalCount: tasks.length,
+      tasks,
+      anchor: anchor
+        ? {
+            level: anchor.anchorLevel,
+            title: anchor.currentTitle,
+            totalEarnings: anchor.totalEarnings,
+            nextLevel: anchor.nextLevel,
+          }
+        : null,
     };
 
     await setCache(cacheKey, data, 60);

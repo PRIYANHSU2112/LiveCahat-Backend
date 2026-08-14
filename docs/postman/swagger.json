@@ -7,12 +7,20 @@
   },
   "servers": [
     {
-      "url": "https://livechat.priyashu.in/api/v1",
-      "description": "Live Server"
+      "url": "/api/v1",
+      "description": "Current Server (Relative Path)"
+    },
+    {
+      "url": "http://127.0.0.1:5000/api/v1",
+      "description": "Local Development Server (127.0.0.1)"
     },
     {
       "url": "http://localhost:5000/api/v1",
-      "description": "Local Development Server"
+      "description": "Local Development Server (localhost)"
+    },
+    {
+      "url": "https://livechat.priyashu.in/api/v1",
+      "description": "Live Server"
     }
   ],
   "components": {
@@ -353,7 +361,7 @@
                   },
                   "inviteCode": {
                     "type": "string",
-                    "description": "Optional referral code — credits bonus coins to both users immediately on signup"
+                    "description": "Optional invite/referral code. For CUSTOMER type: links referrer for coin bonuses on first purchase. For LISTENER type: links new listener to Agent (createdByAgentId) if code belongs to an Agent, or Direct Admin if code belongs to an Admin (or missing). Ignored for existing registered listeners."
                   },
                   "age": {
                     "type": "integer",
@@ -9051,9 +9059,11 @@
             "in": "query",
             "name": "q",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 100
             },
-            "description": "Keyword matched against first name, last name, full name, email, and mobile number (case-insensitive)",
+            "description": "Keyword matched against first name, last name, full name, email, and mobile number (case-insensitive; min 2 chars when provided)",
             "example": "alice"
           },
           {
@@ -9259,6 +9269,16 @@
               "default": "desc"
             },
             "description": "Sort direction"
+          },
+          {
+            "in": "query",
+            "name": "compact",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "When true, returns lightweight rows for admin typeahead (id, name, email, mobileNumber, type, profileImage, isBlocked, kycStatus). Omits language population and extra fields.",
+            "example": true
           }
         ],
         "responses": {

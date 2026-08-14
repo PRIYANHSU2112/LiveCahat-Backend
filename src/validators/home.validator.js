@@ -3,6 +3,8 @@ import Joi from 'joi';
 const paginationField = (name) =>
   Joi.number().integer().min(1).optional().label(name);
 
+const objectId = Joi.string().hex().length(24);
+
 export const listenerHomeQuerySchema = Joi.object({
   query: Joi.object({
     section: Joi.string().valid('online', 'new', 'popular').optional(),
@@ -12,5 +14,11 @@ export const listenerHomeQuerySchema = Joi.object({
     newLimit: paginationField('newLimit'),
     popularPage: paginationField('popularPage'),
     popularLimit: paginationField('popularLimit'),
+  }),
+});
+
+export const customerPublicProfileParamsSchema = Joi.object({
+  params: Joi.object({
+    userId: objectId.required().label('userId'),
   }),
 });

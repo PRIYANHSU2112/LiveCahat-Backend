@@ -32,6 +32,7 @@ const createRedisClient = (clientName) => {
   // Patch common commands to fail silently and gracefully when Redis is offline
   const safeMethods = [
     'get', 'set', 'setex', 'del', 'keys', 'unlink', 'hget', 'hgetall', 'hset', 'hdel',
+    'getdel', 'eval',
     'publish', 'subscribe', 'psubscribe', 'unsubscribe', 'punsubscribe'
   ];
   

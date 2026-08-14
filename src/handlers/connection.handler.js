@@ -6,6 +6,10 @@ import { KEYS } from '../utils/socket-redis-keys.util.js';
 import { SERVER_EVENTS } from '../constants/socket-event.constant.js';
 import logger from '../utils/logger.util.js';
 
+/** Delay before ending session on disconnect — covers token-refresh reconnect */
+const DISCONNECT_GRACE_MS = 4500;
+const pendingSessionEnds = new Map();
+
 class ConnectionHandler {
   /**
    * Called when a client successfully authenticates and establishes connection.
@@ -16,6 +20,14 @@ class ConnectionHandler {
 
     logger.info(`[Socket Connection] User ${userId} (${userType}) connected via socket ${socket.id}`);
 
+    // Cancel any pending disconnect session teardown (token refresh / brief blip)
+    const pending = pendingSessionEnds.get(userId);
+    if (pending) {
+      clearTimeout(pending);
+      pendingSessionEnds.delete(userId);
+      logger.info(`[Socket Connection] Cancelled pending session end for ${userId}`);
+    }
+
     // Join user-specific private room
     socket.join(userId);
 
@@ -24,7 +36,7 @@ class ConnectionHandler {
       socket.join(agentRoom);
       const snapshot = await agentDashboardService.getLiveSnapshot(userId);
       socket.emit(SERVER_EVENTS.AGENT_DASHBOARD_LIVE, snapshot);
-      
+
       // Allow client to request fresh snapshot on demand (e.g. on component remount)
       socket.on('agent:dashboard:live:request', async () => {
         const freshSnapshot = await agentDashboardService.getLiveSnapshot(userId);
@@ -51,23 +63,58 @@ class ConnectionHandler {
     // Track presence offline
     await presenceService.goOffline(userId, socket.id, userType);
 
-    // End active session immediately on socket disconnect
+    // Grace period: token refresh reconnects quickly — don't kill the call/chat
     try {
       const activeSessionId = await communicationSessionService.getActiveSessionForUser(userId);
-      if (activeSessionId) {
-        logger.info(`[Socket Disconnect] User ${userId} has active session ${activeSessionId}. Ending session immediately.`);
+      if (!activeSessionId) return;
 
-        const disconnectReason = userType === 'LISTENER' ? 'LISTENER_DISCONNECTED' : 'CALLER_DISCONNECTED';
-
-        // Notify session room that the chat has ended
-        io.to(`session:${activeSessionId}`).emit(SERVER_EVENTS.CHAT_ENDED, {
-          sessionId: activeSessionId,
-          reason: disconnectReason,
-        });
-
-        // Conclude session lifecycle in database & Redis keys
-        await communicationSessionService.endSession(activeSessionId, disconnectReason);
+      if (pendingSessionEnds.has(userId)) {
+        clearTimeout(pendingSessionEnds.get(userId));
       }
+
+      const timer = setTimeout(async () => {
+        pendingSessionEnds.delete(userId);
+        try {
+          // Still disconnected with no other sockets?
+          if (redisClient.isRedisAvailable) {
+            const connCount = await redisClient.scard(KEYS.presenceConnections(userId));
+            if (connCount > 0) {
+              logger.info(
+                `[Socket Disconnect] User ${userId} reconnected during grace — keep session ${activeSessionId}`,
+              );
+              return;
+            }
+          }
+
+          const stillActive = await communicationSessionService.getActiveSessionForUser(userId);
+          if (!stillActive || stillActive !== activeSessionId) return;
+
+          logger.info(
+            `[Socket Disconnect] Grace expired for ${userId}. Ending session ${activeSessionId}.`,
+          );
+
+          const disconnectReason =
+            userType === 'LISTENER' ? 'LISTENER_DISCONNECTED' : 'CALLER_DISCONNECTED';
+
+          io.to(`session:${activeSessionId}`).emit(SERVER_EVENTS.CALL_ENDED, {
+            sessionId: activeSessionId,
+            reason: disconnectReason,
+          });
+          io.to(`session:${activeSessionId}`).emit(SERVER_EVENTS.CHAT_ENDED, {
+            sessionId: activeSessionId,
+            reason: disconnectReason,
+          });
+
+          await communicationSessionService.endSession(activeSessionId, disconnectReason);
+        } catch (err) {
+          logger.error(`[Socket Disconnect Session End Error] ${err.message}`);
+        }
+      }, DISCONNECT_GRACE_MS);
+
+      pendingSessionEnds.set(userId, timer);
+      logger.info(
+        `[Socket Disconnect] Scheduled session end for ${userId} in ${DISCONNECT_GRACE_MS}ms`,
+      );
     } catch (err) {
       logger.error(`[Socket Disconnect Session End Error] Failed to end session: ${err.message}`);
     }

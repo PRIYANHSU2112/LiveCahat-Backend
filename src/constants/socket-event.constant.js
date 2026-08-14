@@ -7,6 +7,7 @@ export const CLIENT_EVENTS = {
   REQUEST_CHAT: 'request_chat',
   ACCEPT_CHAT: 'accept_chat',
   REJECT_CHAT: 'reject_chat',
+  CANCEL_CHAT: 'cancel_chat',
   JOIN_SESSION: 'join_session',
   SEND_MESSAGE: 'send_message',
   TYPING: 'typing',
@@ -16,6 +17,7 @@ export const CLIENT_EVENTS = {
   REQUEST_CALL: 'request_call',
   ACCEPT_CALL: 'accept_call',
   REJECT_CALL: 'reject_call',
+  CANCEL_CALL: 'cancel_call',
   END_CALL: 'end_call',
 
   // ─── Group Live Room ──────────────────────────────────────────
@@ -34,6 +36,7 @@ export const SERVER_EVENTS = {
   CHAT_STARTED: 'chat_started',
   CHAT_ENDED: 'chat_ended',
   RECEIVE_MESSAGE: 'receive_message',
+  MESSAGE_DELETED: 'message_deleted',
   DISPLAY_TYPING: 'display_typing',
   LISTENER_STATUS_CHANGED: 'listener_status_changed',
   BALANCE_WARNING: 'balance_warning',
@@ -62,6 +65,7 @@ export const SERVER_EVENTS = {
   LIVE_ENDED: 'live:ended',
   LIVE_VIEWER_JOINED: 'live:viewer_joined',
   LIVE_VIEWER_LEFT: 'live:viewer_left',
+  LIVE_VIEWER_COUNT_UPDATE: 'live:viewer_count_update',
   LIVE_NEW_COMMENT: 'live:new_comment',
   LIVE_LIKE_UPDATE: 'live:like_update',
   // ─── Agent Dashboard ─────────────────────────────────────────────

@@ -15,7 +15,7 @@ class ChatMessageService extends BaseService {
   /**
    * Save a message to the database and update the Redis conversation cache.
    */
-  
+
   async saveMessage(sessionId, senderId, text, messageType = 'TEXT', fileUrl = null) {
     try {
       const message = await this.repository.create({
@@ -49,7 +49,7 @@ class ChatMessageService extends BaseService {
       }
 
       // Fire-and-forget XP award for sending a chat message
-      xpService.awardXp(senderId, 'CHAT_MESSAGE', { sessionId: sessionId.toString() }).catch(() => {});
+      xpService.awardXp(senderId, 'CHAT_MESSAGE', { sessionId: sessionId.toString() }).catch(() => { });
 
       return message;
     } catch (err) {
@@ -84,6 +84,11 @@ class ChatMessageService extends BaseService {
       throw error;
     }
 
+    // Fire-and-forget background markAsRead so GET session messages API stays ultra-fast (0ms blocking delay)
+    this.markAsRead(sessionId, userId).catch((err) => {
+      logger.error(`[ChatMessage Service] Background markAsRead error: ${err.message}`);
+    });
+
     // Use user-pair conversation messages cache
     const [userMin, userMax] = [callerId, listenerId].sort();
     const redisKey = `conversation:messages:${userMin}:${userMax}`;
@@ -94,7 +99,15 @@ class ChatMessageService extends BaseService {
       const exists = await redisClient.exists(redisKey);
       if (exists) {
         const cachedMsgStrs = await redisClient.lrange(redisKey, 0, -1);
-        allMessages = cachedMsgStrs.map(str => JSON.parse(str));
+        allMessages = cachedMsgStrs
+          .map(str => {
+            try {
+              return JSON.parse(str);
+            } catch {
+              return null;
+            }
+          })
+          .filter(msg => msg && !msg.deletedAt);
       } else {
         allMessages = await this.loadAndCacheConversation(callerId, listenerId, redisKey);
       }
@@ -304,11 +317,129 @@ class ChatMessageService extends BaseService {
     const sessionIds = sessions.map(s => s._id);
 
     const lastMessage = await chatMessageRepository.model
-      .findOne({ sessionId: { $in: sessionIds } })
+      .findOne({ sessionId: { $in: sessionIds }, deletedAt: null })
       .sort({ createdAt: -1 })
       .lean();
 
     return lastMessage;
+  }
+
+  /**
+   * Soft-delete a message. Only the sender may delete.
+   */
+  async deleteMessage(sessionId, messageId, userId) {
+    const cleanSessionId = String(sessionId || '').replace(/^[:{}]|[:{}]$/g, '').trim();
+    const cleanMessageId = String(messageId || '').replace(/^[:{}]|[:{}]$/g, '').trim();
+
+    const session = await communicationSessionRepository.findById(cleanSessionId);
+    if (!session) {
+      const error = new Error('Session not found.');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const callerId = session.callerId.toString();
+    const listenerId = session.listenerId.toString();
+    const userIdStr = userId.toString();
+    if (userIdStr !== callerId && userIdStr !== listenerId) {
+      const error = new Error('Unauthorized: You are not a participant of this session.');
+      error.statusCode = 403;
+      throw error;
+    }
+
+    let message;
+    try {
+      message = await this.repository.model.findById(cleanMessageId);
+    } catch {
+      message = null;
+    }
+
+    if (!message || message.sessionId.toString() !== cleanSessionId) {
+      const error = new Error('Message not found.');
+      error.statusCode = 404;
+      throw error;
+    }
+    if (message.deletedAt) {
+      return message;
+    }
+    if (message.senderId.toString() !== userIdStr) {
+      const error = new Error('You can only delete your own messages.');
+      error.statusCode = 403;
+      throw error;
+    }
+
+    message.deletedAt = new Date();
+    message.deletedBy = userId;
+    await message.save();
+
+    // Drop from Redis conversation cache if present
+    const [userMin, userMax] = [callerId, listenerId].sort();
+    const redisKey = `conversation:messages:${userMin}:${userMax}`;
+    if (redisClient.isRedisAvailable) {
+      try {
+        const exists = await redisClient.exists(redisKey);
+        if (exists) {
+          const cached = await redisClient.lrange(redisKey, 0, -1);
+          await redisClient.del(redisKey);
+          const pipeline = redisClient.pipeline();
+          cached.forEach(str => {
+            try {
+              const parsed = JSON.parse(str);
+              const id = parsed?._id?.toString?.() || parsed?._id;
+              if (id && id === messageId.toString()) return;
+              if (parsed?.deletedAt) return;
+              pipeline.rpush(redisKey, JSON.stringify(parsed));
+            } catch {
+              // skip bad entry
+            }
+          });
+          pipeline.expire(redisKey, 86400);
+          await pipeline.exec();
+        }
+      } catch (err) {
+        logger.error(`[ChatMessage Service] Redis cache rebuild failed: ${err.message}`);
+      }
+    }
+
+    return message;
+  }
+
+  /**
+   * Mark all unread messages in a session sent by the other participant as read for this user.
+   */
+  async markAsRead(sessionId, userId) {
+    const session = await communicationSessionRepository.findById(sessionId);
+    if (!session) return { modifiedCount: 0 };
+
+    const callerId = session.callerId.toString();
+    const listenerId = session.listenerId.toString();
+    const userIdStr = userId.toString();
+
+    if (userIdStr !== callerId && userIdStr !== listenerId) {
+      const error = new Error('Unauthorized: You are not a participant of this session.');
+      error.statusCode = 403;
+      throw error;
+    }
+
+    const now = new Date();
+    const result = await this.repository.model.updateMany(
+      {
+        sessionId,
+        senderId: { $ne: userId },
+        readAt: null,
+      },
+      {
+        $set: { readAt: now },
+      }
+    );
+
+    if (result.modifiedCount > 0 && redisClient.isRedisAvailable) {
+      const [userMin, userMax] = [callerId, listenerId].sort();
+      const redisKey = `conversation:messages:${userMin}:${userMax}`;
+      await redisClient.del(redisKey);
+    }
+
+    return result;
   }
 
   /**
@@ -324,7 +455,7 @@ class ChatMessageService extends BaseService {
     const sessionIds = sessions.map(s => s._id);
 
     return await chatMessageRepository.model
-      .find({ sessionId: { $in: sessionIds } })
+      .find({ sessionId: { $in: sessionIds }, deletedAt: null })
       .sort({ createdAt: 1 })
       .populate('senderId', 'firstName lastName profilePicture')
       .lean();

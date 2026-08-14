@@ -12,6 +12,9 @@ import { formatDateKey } from '../utils/stats.util.js';
 const getListenerInteractionService = () =>
   import('./listener-interaction.service.js').then((m) => m.default);
 
+const getCommunicationSessionService = () =>
+  import('./communication-session.service.js').then((m) => m.default);
+
 // TTL for the daily peak key: ~48h so the previous day's peak survives for the
 // agent stats "Peak Today" comparison before auto-expiring.
 const AGENT_PEAK_TTL_SECONDS = 172800;
@@ -56,10 +59,27 @@ class PresenceService {
           this.broadcastUserPresenceChange(userId, 'ONLINE', userType);
         }
       } else {
-        // Already online. If it's a listener and currently BUSY in DB, keep Redis BUSY.
+        // Already online. Keep LIVE / sticky BUSY when still active.
         if (userType === 'LISTENER') {
           const profile = await ListenerProfile.findOne({ userId }).select('availability');
-          if (profile && profile.availability === 'BUSY') {
+          const sessionService = await getCommunicationSessionService();
+          const activeSessionId = await sessionService
+            .getActiveSessionForUser(userId)
+            .catch(() => null);
+          const { default: liveRoomService } = await import('./live-room.service.js');
+          const activeLive = await liveRoomService
+            .getActiveRoomByHost(userId)
+            .catch(() => null);
+
+          if (activeLive || profile?.availability === 'LIVE') {
+            if (redisClient.isRedisAvailable) {
+              await redisClient.set(statusKey, 'LIVE');
+            }
+            await ListenerProfile.findOneAndUpdate({ userId }, { availability: 'LIVE' });
+            await deleteCache(`listener:${userId}`);
+            await bumpCacheVersion('listeners');
+            this.broadcastStatusChange(userId, 'LIVE');
+          } else if (profile && profile.availability === 'BUSY' && activeSessionId) {
             if (redisClient.isRedisAvailable) {
               await redisClient.set(statusKey, 'BUSY');
             }
@@ -121,6 +141,26 @@ class PresenceService {
       }
     } catch (err) {
       logger.error(`[Presence goOffline Error] Failed for user ${userId}: ${err.message}`);
+    }
+  }
+
+  /**
+   * Set listener to LIVE (hosting a live room).
+   */
+  async setLive(userId) {
+    try {
+      const statusKey = KEYS.presenceStatus(userId);
+      if (redisClient.isRedisAvailable) {
+        await redisClient.set(statusKey, 'LIVE');
+      }
+      await ListenerProfile.findOneAndUpdate({ userId }, { availability: 'LIVE' });
+      await deleteCache(`listener:${userId}`);
+      await bumpCacheVersion('listeners');
+      this.broadcastStatusChange(userId, 'LIVE');
+      await this.recordAgentOnlinePeak(userId);
+      await this._touchAgentDashboard(userId, { type: 'live', text: 'Listener went live' });
+    } catch (err) {
+      logger.error(`[Presence setLive Error] Failed for listener ${userId}: ${err.message}`);
     }
   }
 
@@ -198,7 +238,7 @@ class PresenceService {
 
       const count = await ListenerProfile.countDocuments({
         createdByAgentId: agentId,
-        availability: { $in: ['ONLINE', 'BUSY'] },
+        availability: { $in: ['ONLINE', 'BUSY', 'LIVE'] },
       });
 
       const key = KEYS.agentPeak(agentId, formatDateKey(new Date()));

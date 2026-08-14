@@ -1,14 +1,11 @@
 openapi: 3.0.0
 info:
   title: LiveChat API
-  description: >-
-    API documentation for the LiveChat platform.
-
-    **Admin Excel exports:** most admin list resources expose `GET …/export`
-    (or `…/admin/export`) returning a streamed `.xlsx` with the same filters as
-    the list endpoint, auth via the matching `*.read` permission, max 50,000 rows.
+  description: API documentation for the LiveChat platform
   version: 1.0.0
 servers:
+  - url: https://api.livechat.mbbsway.in/api/v1
+    description: Production API Server (https://api.livechat.mbbsway.in)
   - url: /api/v1
     description: Current Server (Relative Path)
   - url: http://127.0.0.1:5000/api/v1
@@ -225,7 +222,10 @@ paths:
                   description: Optional; if sent must match request-otp. LISTENER type must be FEMALE only.
                 inviteCode:
                   type: string
-                  description: Optional referral code — credits bonus coins to both users immediately on signup
+                  description: >-
+                    Optional invite/referral code. For CUSTOMER type: links referrer for coin bonuses on first purchase.
+                    For LISTENER type: links new listener to Agent (createdByAgentId) if code belongs to an Agent, or
+                    Direct Admin if code belongs to an Admin (or missing). Ignored for existing registered listeners.
                 age:
                   type: integer
                   minimum: 18
@@ -384,6 +384,47 @@ paths:
           description: Invalid token
         '404':
           description: Token or user not found
+  /auth/refresh-token:
+    post:
+      summary: Refresh JWT Access Token
+      description: Exchanges a valid long-lived Refresh Token for a fresh Access Token and rotated Refresh Token.
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+                  description: Long-lived refresh token received from login/signup
+      responses:
+        '200':
+          description: Token refreshed successfully
+        '401':
+          description: Invalid, expired, or revoked refresh token
+  /auth/logout:
+    post:
+      summary: User logout and refresh token revocation
+      description: Revokes the supplied refresh token and clears user auth cache.
+      tags:
+        - Auth
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Logged out successfully
   /users/me:
     get:
       summary: Get current user profile
@@ -1029,40 +1070,6 @@ paths:
       responses:
         '200':
           description: Users fetched successfully
-  /users/export:
-    get:
-      summary: Export users to Excel (admin)
-      description: >-
-        Streams an .xlsx attachment of users matching the same filters as GET /users
-        (type, search, isBlocked). Hard-capped at 50,000 rows. Requires user.read.
-      tags:
-        - Users
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: query
-          name: type
-          schema:
-            type: string
-            enum: [CUSTOMER, LISTENER, ADMIN, AGENT]
-        - in: query
-          name: search
-          schema:
-            type: string
-        - in: query
-          name: isBlocked
-          schema:
-            type: boolean
-      responses:
-        '200':
-          description: Excel file download
-          content:
-            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
-              schema:
-                type: string
-                format: binary
-        '400':
-          description: Export exceeds max row limit
   /users/{id}:
     get:
       summary: Get user by ID (admin)
@@ -5751,7 +5758,9 @@ paths:
             type: string
             minLength: 2
             maxLength: 100
-          description: Keyword matched against first name, last name, full name, email, and mobile number (case-insensitive; min 2 chars when provided)
+          description: >-
+            Keyword matched against first name, last name, full name, email, and mobile number (case-insensitive; min 2
+            chars when provided)
           example: alice
         - in: query
           name: type
@@ -5901,9 +5910,8 @@ paths:
             type: boolean
             default: false
           description: >-
-            When true, returns lightweight rows for admin typeahead (id, name, email,
-            mobileNumber, type, profileImage, isBlocked, kycStatus). Omits language
-            population and extra fields.
+            When true, returns lightweight rows for admin typeahead (id, name, email, mobileNumber, type, profileImage,
+            isBlocked, kycStatus). Omits language population and extra fields.
           example: true
       responses:
         '200':
@@ -9161,198 +9169,6 @@ paths:
           description: Config updated
         '400':
           description: Validation error
-  /platform-settings:
-    get:
-      summary: Get platform settings
-      tags:
-        - Platform Settings
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Platform settings returned
-          content:
-            application/json:
-              example:
-                success: true
-                message: Platform settings fetched successfully
-                data:
-                  maintenanceMode: false
-                  allowRegistrations: true
-                  defaultLanguage: en
-                  featureFlags: {}
-    put:
-      summary: Update platform settings
-      tags:
-        - Platform Settings
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                maintenanceMode:
-                  type: boolean
-                allowRegistrations:
-                  type: boolean
-                defaultLanguage:
-                  type: string
-                featureFlags:
-                  type: object
-            example:
-              maintenanceMode: false
-              allowRegistrations: true
-              defaultLanguage: en
-      responses:
-        '200':
-          description: Platform settings updated
-  /payment-gateways:
-    get:
-      summary: List payment gateways
-      tags:
-        - Payment Gateways
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Gateways listed (secrets masked)
-    post:
-      summary: Create payment gateway
-      tags:
-        - Payment Gateways
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - provider
-                - displayName
-              properties:
-                provider:
-                  type: string
-                  enum: [RAZORPAY, STRIPE, PAYPAL, CASHFREE, APPLE_PAY, GOOGLE_PAY]
-                displayName:
-                  type: string
-                mode:
-                  type: string
-                  enum: [sandbox, live]
-                isEnabled:
-                  type: boolean
-                isDefault:
-                  type: boolean
-                publicKey:
-                  type: string
-                secret:
-                  type: string
-                webhookSecret:
-                  type: string
-            example:
-              provider: RAZORPAY
-              displayName: Razorpay
-              mode: sandbox
-              isEnabled: true
-              isDefault: true
-              publicKey: rzp_test_xxx
-              secret: secret_xxx
-      responses:
-        '201':
-          description: Gateway created
-  /payment-gateways/{id}:
-    get:
-      summary: Get payment gateway by id
-      tags:
-        - Payment Gateways
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Gateway detail (secrets masked)
-    put:
-      summary: Update payment gateway
-      tags:
-        - Payment Gateways
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Gateway updated
-    delete:
-      summary: Soft-delete payment gateway
-      tags:
-        - Payment Gateways
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Gateway deleted
-  /payment-gateways/{id}/default:
-    patch:
-      summary: Set default payment gateway
-      tags:
-        - Payment Gateways
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Default gateway updated
-  /payment-gateways/{id}/status:
-    patch:
-      summary: Enable or disable payment gateway
-      tags:
-        - Payment Gateways
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - isEnabled
-              properties:
-                isEnabled:
-                  type: boolean
-      responses:
-        '200':
-          description: Status updated
   /anchor-levels/admin/stats:
     get:
       summary: Admin anchor-level stats

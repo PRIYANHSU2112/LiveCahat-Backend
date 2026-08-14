@@ -5,7 +5,7 @@ export { PERMISSIONS, PERMISSION_CODES, PERMISSION_CATALOG } from './permission.
 
 export const LISTENER_CATEGORIES = ['Friendly Talk', 'Relationship Advice', 'Motivation', 'Mental Wellness', 'Career Guidance', 'Casual Chat'];
 export const KYC_STATUSES = ['PENDING', 'UNDER_REVIEW', 'APPROVED', 'REJECTED'];
-export const AVAILABILITY_STATUSES = ['ONLINE', 'OFFLINE', 'BUSY'];
+export const AVAILABILITY_STATUSES = ['ONLINE', 'OFFLINE', 'BUSY', 'LIVE'];
 export const WALLET_STATUSES = ['ACTIVE', 'FROZEN', 'BLOCKED'];
 export const TRANSACTION_TYPES = ['RECHARGE', 'DEBIT', 'CREDIT', 'REFUND', 'WITHDRAWAL', 'BONUS', 'COMMISSION'];
 export const TRANSACTION_REFERENCE_TYPES = ['SESSION', 'PAYMENT', 'WITHDRAWAL', 'ADMIN', 'REFERRAL'];

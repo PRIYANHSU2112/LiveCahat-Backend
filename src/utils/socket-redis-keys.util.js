@@ -29,10 +29,16 @@ export const KEYS = {
   userSession: (userId) => `user_session:${userId}`,
 
   /**
-   * Chat request payload stored under listenerId & callerId (expires in 30s)
-   * Value: JSON { callerId, listenerId, callerInfo, chatRate }
+   * Chat request payload (expires via RING_REQUEST_TTL_SEC)
+   * Value: JSON { type:'CHAT', callerId, listenerId, callerInfo, chatRate }
    */
   chatRequest: (listenerId, callerId) => `chat_request:${listenerId}:${callerId}`,
+
+  /**
+   * Call ring request — separate from chat so they never overwrite each other
+   * Value: JSON { type:'CALL', callerId, listenerId, mode, ratePerMinute, callerInfo }
+   */
+  callRequest: (listenerId, callerId) => `call_request:${listenerId}:${callerId}`,
 
   /**
    * Redis key indicating that a user recently disconnected and is in their reconnection grace period
@@ -51,11 +57,23 @@ export const KEYS = {
   /** Reverse mapping: which live room a viewer is currently in. Value: String roomId */
   liveRoomViewer: (userId) => `live_room:viewer:${userId}`,
 
-  /** Running like counter (atomic INCR). Value: Integer string. */
+  /** Running like counter (atomic INCR/DECR or SCARD). Value: Integer string. */
   liveRoomLikeCount: (roomId) => `live_room:${roomId}:like_count`,
+
+  /** Set of userIds who liked the room for toggle like support (SCARD / SISMEMBER). */
+  liveRoomLikers: (roomId) => `live_room:${roomId}:likers`,
 
   /** Recent comments list (LPUSH + LTRIM to 50). Value: JSON strings, newest first. */
   liveRoomComments: (roomId) => `live_room:${roomId}:comments`,
+
+  /** Unpersisted comment buffer for bulk MongoDB persistence (Redis LIST). */
+  liveRoomCommentBuffer: (roomId) => `live_room:${roomId}:comment_buffer`,
+
+  /** Running total comments counter. Value: Integer string. */
+  liveRoomTotalComments: (roomId) => `live_room:${roomId}:total_comments`,
+
+  /** Peak concurrent viewer counter. Value: Integer string. */
+  liveRoomPeakViewers: (roomId) => `live_room:${roomId}:peak_viewers`,
 
   /** Grace-period key set on host disconnect (30s TTL). Value: String roomId */
   liveRoomDisconnectGrace: (hostId) => `live_room:disconnect_grace:${hostId}`,

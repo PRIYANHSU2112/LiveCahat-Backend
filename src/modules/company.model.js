@@ -72,20 +72,27 @@ const companySchema = new mongoose.Schema(
         trim: true,
       },
     },
-    // Legal & Company Policies
+    // Legal & Company Policies (per-audience privacy/terms/refund + shared about/contact)
+    // Legacy flat privacyPolicy/termsAndConditions/refundPolicy kept for read migration only.
     policies: {
-      privacyPolicy: {
-        type: String, // Text, HTML, Markdown or external URL
-        trim: true,
+      app: {
+        privacyPolicy: { type: String, trim: true },
+        termsAndConditions: { type: String, trim: true },
+        refundPolicy: { type: String, trim: true },
       },
-      termsAndConditions: {
-        type: String, // Text, HTML, Markdown or external URL
-        trim: true,
+      listener: {
+        privacyPolicy: { type: String, trim: true },
+        termsAndConditions: { type: String, trim: true },
+        refundPolicy: { type: String, trim: true },
       },
-      refundPolicy: {
-        type: String, // Text, HTML, Markdown or external URL
-        trim: true,
+      agent: {
+        privacyPolicy: { type: String, trim: true },
+        termsAndConditions: { type: String, trim: true },
       },
+      // @deprecated — migrated into policies.app by company.service normalizePolicies
+      privacyPolicy: { type: String, trim: true },
+      termsAndConditions: { type: String, trim: true },
+      refundPolicy: { type: String, trim: true },
       aboutUs: {
         type: String,
         trim: true,

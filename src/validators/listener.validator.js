@@ -8,8 +8,11 @@ export const updateListenerProfileSchema = Joi.object({
     categories: Joi.array().items(Joi.string().valid(...LISTENER_CATEGORIES)),
     languages: Joi.array().items(Joi.string().hex().length(24)), // Array of ObjectIds
     interests: Joi.array().items(Joi.string().trim().max(100)).optional(),
-    // profilePhotos: Joi.array().items(Joi.string()),
-    // introVideo: Joi.string().trim().allow('', null),
+    profilePhotos: Joi.array().items(Joi.string().trim().min(1).max(500)).max(9).optional(),
+    existingPhotos: Joi.alternatives()
+      .try(Joi.string().allow(''), Joi.array().items(Joi.string()))
+      .optional(),
+    introVideo: Joi.string().trim().allow('', null).optional(),
   })
 });
 

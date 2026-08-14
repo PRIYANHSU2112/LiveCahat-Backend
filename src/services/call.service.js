@@ -44,24 +44,36 @@ class CallService {
       throw new ApiError(400, 'You cannot call yourself.');
     }
 
-    // 3. Check listener status via presence service
-    const listenerStatus = await presenceService.getStatus(listenerId);
-    if (listenerStatus !== 'ONLINE') {
-      throw new ApiError(
-        400,
-        listenerStatus === 'BUSY'
-          ? 'Listener is currently busy in another session.'
-          : 'Listener is offline.'
-      );
+    // 3. Check active sessions to detect in-session upgrade vs new call
+    const existingCallerSession = await communicationSessionService.getActiveSessionForUser(callerId);
+    const existingListenerSession = await communicationSessionService.getActiveSessionForUser(listenerId);
+
+    let isUpgrade = false;
+    let sharedSessionId = null;
+
+    if (existingCallerSession && existingListenerSession && existingCallerSession === existingListenerSession) {
+      isUpgrade = true;
+      sharedSessionId = existingCallerSession;
+    } else {
+      const listenerStatus = await presenceService.getStatus(listenerId);
+      if (listenerStatus !== 'ONLINE' && listenerStatus !== 'LIVE') {
+        throw new ApiError(
+          400,
+          listenerStatus === 'BUSY'
+            ? 'Listener is currently busy in another session.'
+            : 'Listener is offline.'
+        );
+      }
+
+      if (existingCallerSession) {
+        throw new ApiError(409, 'You are already in an active session.');
+      }
+      if (existingListenerSession) {
+        throw new ApiError(409, 'Listener is currently busy.');
+      }
     }
 
-    // 4. Verify caller has no active session
-    const existingSession = await communicationSessionService.getActiveSessionForUser(callerId);
-    if (existingSession) {
-      throw new ApiError(409, 'You are already in an active session.');
-    }
-
-    // 5. Fetch listener profile for rate and KYC status
+    // 4. Fetch listener profile for rate and KYC status
     const listenerProfile = await ListenerProfile.findOne({ userId: listenerId }).lean();
     if (!listenerProfile) {
       throw new ApiError(404, 'Listener profile not found.');
@@ -78,24 +90,32 @@ class CallService {
       throw new ApiError(400, `Listener has not set a rate for ${mode} calls.`);
     }
 
-    // 6. Verify caller wallet balance ≥ 1 minute
+    // 5. Verify caller wallet balance ≥ 1 minute
     const callerWallet = await Wallet.findOne({ userId: callerId }).lean();
     const coinBalance = callerWallet ? callerWallet.coinBalance : 0;
     if (coinBalance < ratePerMinute) {
       throw new ApiError(402, `Insufficient balance. You need at least ${ratePerMinute} coins to start a ${mode} call.`);
     }
 
-    // 7. Create communication session & first segment via existing service
-    const session = await communicationSessionService.startSession(
-      callerId,
-      listenerId,
-      mode,
-      ratePerMinute
-    );
+    // 6. Switch segment if upgrade, otherwise start new session
+    let session;
+    let sessionId;
 
-    const sessionId = session._id.toString();
+    if (isUpgrade) {
+      sessionId = sharedSessionId;
+      const switched = await communicationSessionService.switchSessionSegment(sessionId, mode, ratePerMinute);
+      session = switched.session;
+    } else {
+      session = await communicationSessionService.startSession(
+        callerId,
+        listenerId,
+        mode,
+        ratePerMinute
+      );
+      sessionId = session._id.toString();
+    }
 
-    // 8. Generate Agora token for the caller
+    // 7. Generate Agora token for the caller
     const channelName = buildChannelName(sessionId);
     const agoraUid = stringToUid(callerId);
 
@@ -106,10 +126,12 @@ class CallService {
       3600
     );
 
-    logger.info(`[Call Service] Call initiated: caller=${callerId}, listener=${listenerId}, mode=${mode}, session=${sessionId}`);
+    logger.info(`[Call Service] Call initiated: caller=${callerId}, listener=${listenerId}, mode=${mode}, session=${sessionId}, isUpgrade=${isUpgrade}`);
 
     return {
       session,
+      sessionId,
+      isUpgrade,
       agoraToken,
       channelName,
       agoraUid,
@@ -185,7 +207,7 @@ class CallService {
    * @param {string} sessionId - The CommunicationSession ObjectId.
    * @returns {Object|null} The completed session document.
    */
-  async endCall(userId, sessionId) {
+  async endCall(userId, sessionId, revertToChat = true) {
     // 1. Validate session and membership
     let callerId, listenerId;
 
@@ -214,9 +236,16 @@ class CallService {
       ? 'CALLER_DISCONNECTED'
       : 'LISTENER_DISCONNECTED';
 
-    const result = await communicationSessionService.endSession(sessionId, disconnectReason);
+    if (revertToChat) {
+      const listenerProfile = await ListenerProfile.findOne({ userId: listenerId }).lean();
+      const chatRate = listenerProfile ? (listenerProfile.chatRate ?? 0) : 0;
+      const result = await communicationSessionService.switchSessionSegment(sessionId, 'CHAT', chatRate);
+      logger.info(`[Call Service] Call ended: session=${sessionId}, reverted to CHAT.`);
+      return { ...result, switchedToChat: true };
+    }
 
-    logger.info(`[Call Service] Call ended: session=${sessionId}, by=${userId}, reason=${disconnectReason}`);
+    const result = await communicationSessionService.endSession(sessionId, disconnectReason);
+    logger.info(`[Call Service] Call and session fully ended: session=${sessionId}, by=${userId}, reason=${disconnectReason}`);
     return result;
   }
 }

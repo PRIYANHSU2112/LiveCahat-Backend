@@ -4,6 +4,7 @@ import catchAsync from '../utils/catchAsync.util.js';
 import { uploadToS3 } from '../utils/aws.util.js';
 import { getSocketIo } from '../utils/socket.util.js';
 import communicationSessionService from '../services/communication-session.service.js';
+import { SERVER_EVENTS } from '../constants/socket-event.constant.js';
 
 class ChatController extends BaseController {
 
@@ -107,6 +108,53 @@ class ChatController extends BaseController {
     this.sendResponse(res, 201, 'Media message sent successfully', {
       message: savedMessage,
       fileUrl,
+    });
+  });
+
+  /**
+   * DELETE /chats/sessions/:sessionId/messages/:messageId
+   * Soft-delete own message and notify the session room.
+   */
+  deleteMessage = catchAsync(async (req, res) => {
+    const sessionId = (req.params.sessionId || '').replace(/^[:{}]|[:{}]$/g, '').trim();
+    const messageId = (req.params.messageId || '').replace(/^[:{}]|[:{}]$/g, '').trim();
+    if (!sessionId || !messageId) {
+      return this.sendError(res, 400, 'Session ID and message ID are required');
+    }
+
+    const deleted = await chatMessageService.deleteMessage(
+      sessionId,
+      messageId,
+      req.user._id,
+    );
+
+    const io = getSocketIo();
+    if (io) {
+      io.to(`session:${sessionId}`).emit(SERVER_EVENTS.MESSAGE_DELETED, {
+        sessionId,
+        messageId: deleted._id.toString(),
+        deletedBy: req.user._id.toString(),
+      });
+    }
+
+    this.sendResponse(res, 200, 'Message deleted successfully', {
+      messageId: deleted._id.toString(),
+    });
+  });
+
+  /**
+   * PATCH /chats/sessions/:sessionId/read
+   * Mark all unread incoming messages in a session as read.
+   */
+  markAsRead = catchAsync(async (req, res) => {
+    const sessionId = (req.params.sessionId || '').trim();
+    if (!sessionId) {
+      return this.sendError(res, 400, 'Session ID is required');
+    }
+
+    const result = await chatMessageService.markAsRead(sessionId, req.user._id);
+    this.sendResponse(res, 200, 'Messages marked as read successfully', {
+      markedCount: result.modifiedCount || 0,
     });
   });
 }

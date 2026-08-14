@@ -174,9 +174,21 @@ class ReferralService {
       await user.save(); // pre-save hook generates the code
     }
 
-    const [config, packs] = await Promise.all([
+    const [config, packs, referredUsers, activeReferralCount] = await Promise.all([
       this.getReferralConfig(),
       coinPackService.getAllCoinPacks({}, false), // cached active list
+      User.find({ referredBy: userId, isDeleted: false })
+        .select(
+          'firstName lastName profileImage type referralRewardAwarded createdAt gender',
+        )
+        .sort({ createdAt: -1 })
+        .limit(100)
+        .lean(),
+      User.countDocuments({
+        referredBy: userId,
+        isDeleted: false,
+        referralRewardAwarded: true,
+      }),
     ]);
 
     // Commission table — what both users earn per pack the friend buys first
@@ -192,10 +204,21 @@ class ReferralService {
     return {
       inviteCode: user.inviteCode,
       inviteLink: `${config.inviteLinkPrefix}${user.inviteCode}`,
-      referralCount: user.referralCount || 0,
+      referralCount: user.referralCount || referredUsers.length || 0,
       referralEarnings: user.referralEarnings || 0,
+      activeReferralCount,
       currentLevel: user.currentLevel || 1,
       commissionTable,
+      referredUsers: (referredUsers || []).map((u) => ({
+        id: String(u._id),
+        firstName: u.firstName || '',
+        lastName: u.lastName || '',
+        profileImage: u.profileImage || null,
+        type: u.type || 'CUSTOMER',
+        status: u.referralRewardAwarded ? 'active' : 'pending',
+        gender: u.gender || null,
+        joinedAt: u.createdAt || null,
+      })),
     };
   }
 

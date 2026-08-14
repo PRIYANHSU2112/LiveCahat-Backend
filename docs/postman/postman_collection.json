@@ -31081,7 +31081,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/search/admin?q=alice&type=LISTENER&country=IN&language=HI&gender=MALE&isBlocked=false&isDeleted=true&dateFrom=2025-01-01&dateTo=2026-12-31&kycStatus=APPROVED&availability=ONLINE&category=Friendly%20Talk&minEarnings=1000&maxEarnings=50000&minRating=4&page=1&limit=10&sortBy=createdAt&sortOrder=desc",
+              "raw": "{{baseUrl}}/search/admin?q=alice&type=LISTENER&country=IN&language=HI&gender=MALE&isBlocked=false&isDeleted=true&dateFrom=2025-01-01&dateTo=2026-12-31&kycStatus=APPROVED&availability=ONLINE&category=Friendly%20Talk&minEarnings=1000&maxEarnings=50000&minRating=4&page=1&limit=10&sortBy=createdAt&sortOrder=desc&compact=true",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -31093,7 +31093,7 @@
                 {
                   "key": "q",
                   "value": "alice",
-                  "description": "Keyword matched against first name, last name, full name, email, and mobile number (case-insensitive)",
+                  "description": "Keyword matched against first name, last name, full name, email, and mobile number (case-insensitive; min 2 chars when provided)",
                   "disabled": false
                 },
                 {
@@ -31202,6 +31202,12 @@
                   "key": "sortOrder",
                   "value": "desc",
                   "description": "Sort direction",
+                  "disabled": false
+                },
+                {
+                  "key": "compact",
+                  "value": "true",
+                  "description": "When true, returns lightweight rows for admin typeahead (id, name, email, mobileNumber, type, profileImage, isBlocked, kycStatus). Omits language population and extra fields.",
                   "disabled": false
                 }
               ]

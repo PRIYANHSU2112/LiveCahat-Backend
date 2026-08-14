@@ -7,6 +7,10 @@
   },
   "servers": [
     {
+      "url": "https://api.livechat.mbbsway.in/api/v1",
+      "description": "Production API Server (https://api.livechat.mbbsway.in)"
+    },
+    {
       "url": "/api/v1",
       "description": "Current Server (Relative Path)"
     },
@@ -361,7 +365,7 @@
                   },
                   "inviteCode": {
                     "type": "string",
-                    "description": "Optional referral code — credits bonus coins to both users immediately on signup"
+                    "description": "Optional invite/referral code. For CUSTOMER type: links referrer for coin bonuses on first purchase. For LISTENER type: links new listener to Agent (createdByAgentId) if code belongs to an Agent, or Direct Admin if code belongs to an Admin (or missing). Ignored for existing registered listeners."
                   },
                   "age": {
                     "type": "integer",
@@ -1605,7 +1609,8 @@
     },
     "/users/{id}": {
       "get": {
-        "summary": "Get user by ID (admin)",
+        "summary": "Get user by ID (admin or listener)",
+        "description": "Accessible by ADMIN (requires user.read) and LISTENER. Path id must be a MongoDB ObjectId.",
         "tags": [
           "Users"
         ],
@@ -3424,13 +3429,46 @@
     "/company/profile": {
       "get": {
         "summary": "Get primary company profile",
-        "description": "Retrieve the main company details, links, policy documents, and logos. Publicly accessible.",
+        "description": "Retrieve the main company details, links, policy documents, and logos. Publicly accessible. Policies are nested per audience (app, listener, agent) with shared aboutUs/contactUs.",
         "tags": [
           "Company"
         ],
         "responses": {
           "200": {
             "description": "Company profile details retrieved successfully"
+          }
+        }
+      }
+    },
+    "/company/legal/{audience}": {
+      "get": {
+        "summary": "Get legal documents by audience",
+        "description": "Public endpoint returning privacy policy, terms, and (for app/listener) refund policy for the given audience, plus shared aboutUs and contactUs.",
+        "tags": [
+          "Company"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "audience",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "app",
+                "listener",
+                "agent"
+              ]
+            },
+            "description": "Target client: app (customer), listener, or agent"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Legal documents fetched successfully"
+          },
+          "400": {
+            "description": "Invalid audience"
           }
         }
       }
@@ -3548,14 +3586,28 @@
                   "policies": {
                     "type": "object",
                     "properties": {
-                      "privacyPolicy": {
-                        "type": "string"
+                      "app": {
+                        "type": "object",
+                        "properties": {
+                          "privacyPolicy": { "type": "string" },
+                          "termsAndConditions": { "type": "string" },
+                          "refundPolicy": { "type": "string" }
+                        }
                       },
-                      "termsAndConditions": {
-                        "type": "string"
+                      "listener": {
+                        "type": "object",
+                        "properties": {
+                          "privacyPolicy": { "type": "string" },
+                          "termsAndConditions": { "type": "string" },
+                          "refundPolicy": { "type": "string" }
+                        }
                       },
-                      "refundPolicy": {
-                        "type": "string"
+                      "agent": {
+                        "type": "object",
+                        "properties": {
+                          "privacyPolicy": { "type": "string" },
+                          "termsAndConditions": { "type": "string" }
+                        }
                       },
                       "aboutUs": {
                         "type": "string"
@@ -3699,14 +3751,28 @@
                   "policies": {
                     "type": "object",
                     "properties": {
-                      "privacyPolicy": {
-                        "type": "string"
+                      "app": {
+                        "type": "object",
+                        "properties": {
+                          "privacyPolicy": { "type": "string" },
+                          "termsAndConditions": { "type": "string" },
+                          "refundPolicy": { "type": "string" }
+                        }
                       },
-                      "termsAndConditions": {
-                        "type": "string"
+                      "listener": {
+                        "type": "object",
+                        "properties": {
+                          "privacyPolicy": { "type": "string" },
+                          "termsAndConditions": { "type": "string" },
+                          "refundPolicy": { "type": "string" }
+                        }
                       },
-                      "refundPolicy": {
-                        "type": "string"
+                      "agent": {
+                        "type": "object",
+                        "properties": {
+                          "privacyPolicy": { "type": "string" },
+                          "termsAndConditions": { "type": "string" }
+                        }
                       },
                       "aboutUs": {
                         "type": "string"
@@ -14465,14 +14531,28 @@
                   "policies": {
                     "type": "object",
                     "properties": {
-                      "privacyPolicy": {
-                        "type": "string"
+                      "app": {
+                        "type": "object",
+                        "properties": {
+                          "privacyPolicy": { "type": "string" },
+                          "termsAndConditions": { "type": "string" },
+                          "refundPolicy": { "type": "string" }
+                        }
                       },
-                      "termsAndConditions": {
-                        "type": "string"
+                      "listener": {
+                        "type": "object",
+                        "properties": {
+                          "privacyPolicy": { "type": "string" },
+                          "termsAndConditions": { "type": "string" },
+                          "refundPolicy": { "type": "string" }
+                        }
                       },
-                      "refundPolicy": {
-                        "type": "string"
+                      "agent": {
+                        "type": "object",
+                        "properties": {
+                          "privacyPolicy": { "type": "string" },
+                          "termsAndConditions": { "type": "string" }
+                        }
                       },
                       "aboutUs": {
                         "type": "string"

@@ -2,8 +2,15 @@ import bcrypt from 'bcrypt';
 import userRepository from '../repositories/user.repository.js';
 import countryRepository from '../repositories/country.repository.js';
 import User from '../modules/user.model.js';
-import { generateToken } from '../utils/jwt.util.js';
-import { storeOtpSession, verifyAndConsumeOtpSession, deleteCache } from '../utils/redis.util.js';
+import { generateToken, generateAuthTokens, verifyRefreshToken } from '../utils/jwt.util.js';
+import {
+  storeOtpSession,
+  verifyAndConsumeOtpSession,
+  deleteCache,
+  storeRefreshTokenInRedis,
+  isRefreshTokenValidInRedis,
+  revokeRefreshTokenInRedis
+} from '../utils/redis.util.js';
 import ApiError from '../utils/ApiError.js';
 
 class AuthService {
@@ -13,20 +20,43 @@ class AuthService {
    */
   async _createUser(userData, inviteCode) {
     const code = (inviteCode || '').trim().toUpperCase();
-    if (!code) {
-      return await userRepository.create(userData);
+    let agentIdForListener = null;
+
+    if (code) {
+      const referrer = await User.findOne({ inviteCode: code, isDeleted: false }).select('_id type');
+      if (!referrer) throw new ApiError(400, 'Invalid referral or invite code.');
+
+      if (userData.type === 'CUSTOMER') {
+        // Link only — the bonus is paid on the friend's first coin purchase
+        userData.referredBy = referrer._id;
+      } else if (userData.type === 'LISTENER') {
+        // If referrer is AGENT, link listener to Agent.
+        // If referrer is ADMIN, agentIdForListener remains null (Direct Admin Listener).
+        if (referrer.type === 'AGENT') {
+          agentIdForListener = referrer._id;
+        }
+      }
     }
 
-    // Referral codes are customer-only (a listener cannot be referred)
-    if (userData.type !== 'CUSTOMER') {
-      throw new ApiError(400, 'Referral codes can only be used by customer accounts.');
+    const user = await userRepository.create(userData);
+
+    // Ensure a ListenerProfile exists when a new LISTENER account registers
+    if (userData.type === 'LISTENER') {
+      const ListenerProfile = (await import('../modules/listener-profile.model.js')).default;
+      const crypto = await import('crypto');
+      const magicLoginToken = crypto.randomBytes(32).toString('hex');
+
+      await ListenerProfile.create({
+        userId: user._id,
+        createdByAgentId: agentIdForListener,
+        profileStatus: 'incomplete',
+        kycStatus: 'PENDING',
+        magicLoginToken,
+        country: userData.country || null,
+      });
     }
 
-    const referrer = await User.findOne({ inviteCode: code, isDeleted: false }).select('_id');
-    if (!referrer) throw new ApiError(400, 'Invalid referral code.');
-
-    // Link only — the bonus is paid on the friend's first coin purchase
-    return await userRepository.create({ ...userData, referredBy: referrer._id });
+    return user;
   }
 
   _assertListenerGender(type, gender) {
@@ -124,8 +154,9 @@ class AuthService {
       await deleteCache(`auth:user:${user._id}`);
     }
 
-    const token = generateToken({ id: user._id, type: user.type });
-    return { token, user, isNewUser };
+    const { token, refreshToken } = generateAuthTokens({ id: user._id, type: user.type });
+    await storeRefreshTokenInRedis(user._id.toString(), refreshToken);
+    return { token, refreshToken, user, isNewUser };
   }
 
   async guestLogin({ deviceId, age, inviteCode }) {
@@ -153,8 +184,9 @@ class AuthService {
       await deleteCache(`auth:user:${user._id}`);
     }
 
-    const token = generateToken({ id: user._id, type: user.type });
-    return { token, user, isNewUser };
+    const { token, refreshToken } = generateAuthTokens({ id: user._id, type: user.type });
+    await storeRefreshTokenInRedis(user._id.toString(), refreshToken);
+    return { token, refreshToken, user, isNewUser };
   }
 
   async linkAccount({ userId, mobileNumber, otp, countryCode }) {
@@ -192,7 +224,7 @@ class AuthService {
       '+password',
       { path: 'roleId', select: 'name slug' },
     );
-    if (!user) {
+    if (!user || !user.password || !password) {
       throw new ApiError(401, 'Invalid email or password');
     }
 
@@ -204,12 +236,13 @@ class AuthService {
     if (user.isBlocked) throw new ApiError(403, 'Your account has been blocked.');
     if (user.isDeleted) throw new ApiError(403, 'Your account has been deleted.');
 
-    const token = generateToken({ id: user._id, type: user.type });
+    const { token, refreshToken } = generateAuthTokens({ id: user._id, type: user.type });
+    await storeRefreshTokenInRedis(user._id.toString(), refreshToken);
 
     // Remove password from response
     user.password = undefined;
 
-    return { token, user };
+    return { token, refreshToken, user };
   }
 
   async directLogin({ token }) {
@@ -225,8 +258,50 @@ class AuthService {
     if (user.isBlocked) throw new ApiError(403, 'Your account has been blocked.');
     if (user.isDeleted) throw new ApiError(403, 'Your account has been deleted.');
 
-    const jwtToken = generateToken({ id: user._id, type: user.type });
-    return { token: jwtToken, user };
+    const { token: jwtToken, refreshToken } = generateAuthTokens({ id: user._id, type: user.type });
+    await storeRefreshTokenInRedis(user._id.toString(), refreshToken);
+    return { token: jwtToken, refreshToken, user };
+  }
+
+  async refreshToken({ refreshToken }) {
+    if (!refreshToken) throw new ApiError(400, 'Refresh token is required');
+
+    let decoded;
+    try {
+      decoded = verifyRefreshToken(refreshToken);
+    } catch (err) {
+      throw new ApiError(401, 'Invalid or expired refresh token');
+    }
+
+    const userId = decoded.id;
+    const isValidInRedis = await isRefreshTokenValidInRedis(userId, refreshToken);
+    if (!isValidInRedis) {
+      throw new ApiError(401, 'Refresh token has been revoked or expired');
+    }
+
+    const user = await userRepository.findById(userId);
+    if (!user) throw new ApiError(404, 'User not found');
+    if (user.isBlocked) throw new ApiError(403, 'Your account has been blocked.');
+    if (user.isDeleted) throw new ApiError(403, 'Your account has been deleted.');
+
+    // Revoke old refresh token (token rotation)
+    await revokeRefreshTokenInRedis(userId, refreshToken);
+
+    // Generate new token pair
+    const { token: newAccessToken, refreshToken: newRefreshToken } = generateAuthTokens({ id: user._id, type: user.type });
+    await storeRefreshTokenInRedis(user._id.toString(), newRefreshToken);
+
+    return { token: newAccessToken, refreshToken: newRefreshToken, user };
+  }
+
+  async logout({ userId, refreshToken }) {
+    if (userId && refreshToken) {
+      await revokeRefreshTokenInRedis(userId, refreshToken);
+    }
+    if (userId) {
+      await deleteCache(`auth:user:${userId}`);
+    }
+    return { message: 'Logged out successfully' };
   }
 }
 

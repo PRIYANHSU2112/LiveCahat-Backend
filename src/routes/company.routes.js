@@ -3,12 +3,21 @@ import companyController from '../controllers/company.controller.js';
 import { authenticate, restrictTo, authorize } from '../middlewares/auth.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 import { requireObjectId } from '../middlewares/object-id.middleware.js';
-import { createCompanySchema, updateCompanySchema } from '../validators/company.validator.js';
+import {
+  createCompanySchema,
+  updateCompanySchema,
+  legalAudienceParamSchema,
+} from '../validators/company.validator.js';
 
 const router = express.Router();
 const adminOnly = restrictTo('ADMIN');
 
 router.get('/profile', companyController.getCompanyProfile);
+router.get(
+  '/legal/:audience',
+  validate(legalAudienceParamSchema),
+  companyController.getLegalByAudience
+);
 
 router.use(authenticate);
 

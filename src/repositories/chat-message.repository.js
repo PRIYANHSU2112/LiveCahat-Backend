@@ -118,6 +118,7 @@ class ChatMessageRepository extends BaseRepository {
                     { $in: ['$sessionId', '$$sids'] },
                     { $ne: ['$senderId', '$$me'] },
                     { $eq: [{ $ifNull: ['$readAt', null] }, null] },
+                    { $eq: [{ $ifNull: ['$deletedAt', null] }, null] },
                   ],
                 },
               },

@@ -10,8 +10,46 @@ class ListenerController extends BaseController {
   });
 
   updateProfile = catchAsync(async (req, res) => {
-    const profile = await listenerService.createOrUpdateProfile(req.user._id, req.body);
+    const body = { ...req.body };
+
+    // existingPhotos may arrive as JSON string when uploading gallery files
+    if (typeof body.existingPhotos === 'string' && body.existingPhotos.trim()) {
+      try {
+        const parsed = JSON.parse(body.existingPhotos);
+        if (Array.isArray(parsed) && !body.profilePhotos) {
+          body.profilePhotos = parsed;
+        } else if (Array.isArray(parsed) && Array.isArray(body.profilePhotos)) {
+          body.profilePhotos = [...parsed, ...body.profilePhotos];
+        }
+      } catch {
+        // ignore malformed JSON
+      }
+      delete body.existingPhotos;
+    } else {
+      delete body.existingPhotos;
+    }
+
+    // Multipart often sends single values as strings — normalize to arrays
+    ['profilePhotos', 'interests', 'categories', 'languages'].forEach((key) => {
+      if (typeof body[key] === 'string' && body[key].length) {
+        body[key] = [body[key]];
+      }
+    });
+
+    if (Array.isArray(body.profilePhotos)) {
+      body.profilePhotos = body.profilePhotos
+        .map((u) => (typeof u === 'string' ? u.trim() : ''))
+        .filter(Boolean)
+        .slice(0, 9);
+    }
+
+    const profile = await listenerService.createOrUpdateProfile(req.user._id, body);
     this.sendResponse(res, 200, 'Listener profile updated', profile);
+  });
+
+  getPublicProfile = catchAsync(async (req, res) => {
+    const profile = await listenerService.getPublicProfile(req.params.userId);
+    this.sendResponse(res, 200, 'Public listener profile fetched', profile);
   });
 
   submitKyc = catchAsync(async (req, res) => {
@@ -49,6 +87,11 @@ class ListenerController extends BaseController {
   getRecentSessions = catchAsync(async (req, res) => {
     const data = await listenerService.getRecentSessions(req.user._id, req.query);
     this.sendResponse(res, 200, 'Recent sessions fetched successfully', data);
+  });
+
+  getHostTasks = catchAsync(async (req, res) => {
+    const data = await listenerService.getHostTasks(req.user._id);
+    this.sendResponse(res, 200, 'Host tasks fetched successfully', data);
   });
 
   // --- ADMIN ONLY ROUTES ---

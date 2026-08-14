@@ -5,16 +5,16 @@ import 'dotenv/config';
 
 // Configure S3 Client for DigitalOcean Spaces / Linode Object Storage
 const s3Client = new S3Client({
-  endpoint: process.env.LINODE_OBJECT_STORAGE_ENDPOINT,
-  region: process.env.LINODE_OBJECT_STORAGE_REGION,
+  endpoint: process.env.LINODE_OBJECT_STORAGE_ENDPOINT || 'https://sgp1.digitaloceanspaces.com',
+  region: process.env.LINODE_OBJECT_STORAGE_REGION || 'sgp1',
   credentials: {
-    accessKeyId: process.env.LINODE_OBJECT_STORAGE_ACCESS_KEY_ID,
-    secretAccessKey: process.env.LINODE_OBJECT_STORAGE_SECRET_ACCESS_KEY,
+    accessKeyId: process.env.LINODE_OBJECT_STORAGE_ACCESS_KEY_ID || 'DO003NRRKMN4DTETPLGA',
+    secretAccessKey: process.env.LINODE_OBJECT_STORAGE_SECRET_ACCESS_KEY || 'M5kmv62vtYMFrOwv2duhltYAAHLo26BbGeckKaG1lfE',
   },
 });
 
-const BUCKET_NAME = process.env.LINODE_OBJECT_BUCKET;
-const FOLDER_PATH = process.env.BUCKET_FOLDER_PATH || '';
+const BUCKET_NAME = process.env.LINODE_OBJECT_BUCKET || 'satyakabir-bucket';
+const FOLDER_PATH = process.env.BUCKET_FOLDER_PATH || 'LiveChat/';
 
 
 export const uploadToS3 = async (buffer, originalName, mimetype) => {
@@ -36,7 +36,7 @@ export const uploadToS3 = async (buffer, originalName, mimetype) => {
   // Extract domain from endpoint
   const endpointUrl = new URL(process.env.LINODE_OBJECT_STORAGE_ENDPOINT);
   const fileUrl = `https://${BUCKET_NAME}.${endpointUrl.hostname}/${fileName}`;
-  
+
   return fileUrl;
 };
 

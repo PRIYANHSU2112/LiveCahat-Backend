@@ -22,6 +22,15 @@ router.get('/sessions', chatController.getMySessions);
 // Get messages for a specific session
 router.get('/sessions/:sessionId/messages', chatController.getSessionMessages);
 
+// Soft-delete a single message (own messages only)
+router.delete(
+  '/sessions/:sessionId/messages/:messageId',
+  chatController.deleteMessage,
+);
+
+// Mark all incoming messages in a session as read
+router.patch('/sessions/:sessionId/read', chatController.markAsRead);
+
 // Send media message (image, video, voice recording)
 router.post('/sessions/:sessionId/media', uploadChatAttachment, chatController.sendMediaMessage);
 

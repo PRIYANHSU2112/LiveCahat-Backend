@@ -3,7 +3,10 @@ import homeController from '../controllers/home.controller.js';
 import { authenticate, restrictTo } from '../middlewares/auth.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 import { homeListenersQuerySchema } from '../validators/listener.validator.js';
-import { listenerHomeQuerySchema } from '../validators/home.validator.js';
+import {
+  listenerHomeQuerySchema,
+  customerPublicProfileParamsSchema,
+} from '../validators/home.validator.js';
 
 const router = express.Router();
 
@@ -40,6 +43,18 @@ router.get(
   restrictTo('LISTENER'),
   validate(listenerHomeQuerySchema),
   homeController.getListenerHome
+);
+
+/**
+ * GET /api/v1/home/customer/:userId
+ *
+ * Listener-safe public customer profile (no email/mobile/wallet).
+ */
+router.get(
+  '/customer/:userId',
+  restrictTo('LISTENER'),
+  validate(customerPublicProfileParamsSchema),
+  homeController.getCustomerPublicProfile
 );
 
 export default router;

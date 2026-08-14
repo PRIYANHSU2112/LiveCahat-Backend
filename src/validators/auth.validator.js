@@ -68,3 +68,17 @@ export const linkAccountSchema = Joi.object({
     countryCode: Joi.string().default('+91'),
   }),
 });
+
+export const refreshTokenSchema = Joi.object({
+  body: Joi.object({
+    refreshToken: Joi.string().trim().required().messages({
+      'any.required': 'Refresh token is required',
+    }),
+  }),
+});
+
+export const logoutSchema = Joi.object({
+  body: Joi.object({
+    refreshToken: Joi.string().trim().optional(),
+  }),
+});

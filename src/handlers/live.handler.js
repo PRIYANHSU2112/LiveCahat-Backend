@@ -1,6 +1,7 @@
 import { CLIENT_EVENTS, SERVER_EVENTS } from '../constants/socket-event.constant.js';
 import liveRoomService from '../services/live-room.service.js';
 import agoraService from '../services/agora.service.js';
+import presenceService from '../services/presence.service.js';
 import { stringToUid } from '../utils/agora.util.js';
 import { joinLiveRoom, leaveLiveRoom, emitToLiveRoom } from '../utils/socket-room.util.js';
 import config from '../config/index.js';
@@ -11,7 +12,7 @@ import logger from '../utils/logger.util.js';
  *
  * Flow:
  *  1. Host (LISTENER) emits `live:start` → room created, host gets PUBLISHER token.
- *  2. Viewers (CUSTOMER) emit `live:join` → subscriber token + recent comments returned.
+ *  2. Viewers emit `live:join` → subscriber token + recent comments returned.
  *  3. Anyone in the room can emit `live:comment` or `live:like`.
  *  4. Host emits `live:end` (or disconnects) → room torn down, `live:ended` broadcast.
  *  5. Abrupt host disconnect → 30-second grace period before auto-end.
@@ -56,6 +57,9 @@ class LiveHandler {
       const token = agoraService.generateRtcToken(room.channelName, uid, 'PUBLISHER', 3600);
 
       joinLiveRoom(socket, roomId);
+
+      // Mark host LIVE so home/discover cards show LIVE badge
+      await presenceService.setLive(hostId);
 
       socket.emit(SERVER_EVENTS.LIVE_STARTED, {
         roomId,
@@ -122,32 +126,46 @@ class LiveHandler {
         return socket.emit(SERVER_EVENTS.ERROR, { message: 'Room ID is required.' });
       }
 
-      const room = await liveRoomService.getItemById(roomId);
+      const room = await liveRoomService.getLiveRoomWithHost(roomId);
       if (!room || room.status !== 'live') {
         return socket.emit(SERVER_EVENTS.ERROR, { message: 'Live room not found or has ended.' });
       }
 
+      const hostDoc =
+        room.hostId && typeof room.hostId === 'object' ? room.hostId : null;
+      const hostIdStr = hostDoc?._id?.toString?.() || room.hostId?.toString?.() || room.hostId;
+
       const uid = stringToUid(userId);
-      // Token generation is sync (CPU); fire all three Redis calls in parallel
-      const [token, [viewerCount, recentComments, likeCount]] = await Promise.all([
+
+      // Generate Agora token + add viewer + fetch recent comments + get like count + check if user liked in parallel
+      const [token, [viewerCount, recentComments, likeCount, hasLiked]] = await Promise.all([
         Promise.resolve(agoraService.generateRtcToken(room.channelName, uid, 'SUBSCRIBER', 3600)),
         Promise.all([
           liveRoomService.addViewer(roomId, userId),
           liveRoomService.getRecentComments(roomId),
           liveRoomService.getLikeCount(roomId),
+          liveRoomService.hasUserLiked(roomId, userId),
         ]),
       ]);
 
       joinLiveRoom(socket, roomId);
+
+      const hostName = hostDoc
+        ? `${hostDoc.firstName || ''} ${hostDoc.lastName || ''}`.trim()
+        : '';
 
       // Confirm join to the viewer
       socket.emit(SERVER_EVENTS.LIVE_VIEWER_JOINED, {
         roomId,
         channelName: room.channelName,
         title: room.title,
-        mode: room.mode,
+        mode: room.mode || 'VIDEO',
+        hostId: hostIdStr,
+        hostName: hostName || undefined,
+        hostImage: hostDoc?.profileImage || undefined,
         viewerCount,
         likeCount,
+        hasLiked,
         recentComments,
         agora: {
           appId: config.agora.appId || '',
@@ -157,8 +175,12 @@ class LiveHandler {
         },
       });
 
-      // Broadcast updated viewer count to the whole room
-      emitToLiveRoom(io, roomId, SERVER_EVENTS.LIVE_VIEWER_COUNT_UPDATE, { viewerCount });
+      // Broadcast updated viewer count to the whole room (Host + Viewers)
+      emitToLiveRoom(io, roomId, SERVER_EVENTS.LIVE_VIEWER_COUNT_UPDATE, {
+        roomId,
+        viewerCount,
+        userId,
+      });
 
       logger.info(`[Live Join] User ${userId} joined room ${roomId}. Viewers: ${viewerCount}`);
     } catch (err) {
@@ -183,7 +205,16 @@ class LiveHandler {
       const viewerCount = await liveRoomService.removeViewer(roomId, userId);
       leaveLiveRoom(socket, roomId);
 
-      emitToLiveRoom(io, roomId, SERVER_EVENTS.LIVE_VIEWER_LEFT, { viewerCount });
+      emitToLiveRoom(io, roomId, SERVER_EVENTS.LIVE_VIEWER_LEFT, {
+        roomId,
+        viewerCount,
+        userId,
+      });
+
+      emitToLiveRoom(io, roomId, SERVER_EVENTS.LIVE_VIEWER_COUNT_UPDATE, {
+        roomId,
+        viewerCount,
+      });
 
       logger.info(`[Live Leave] User ${userId} left room ${roomId}. Viewers: ${viewerCount}`);
     } catch (err) {
@@ -194,12 +225,15 @@ class LiveHandler {
   // ─── COMMENT ─────────────────────────────────────────────────────────────
 
   /**
-   * Any participant posts a comment.
+   * Any participant (Viewer or Host) posts a comment.
    * @param {Object} data - { roomId: string, text: string }
    */
   async sendComment(io, socket, data) {
     const userId = socket.user.id;
-    const userName = `${socket.user.firstName || ''} ${socket.user.lastName || ''}`.trim();
+    const userName =
+      `${socket.user.firstName || ''} ${socket.user.lastName || ''}`.trim() ||
+      socket.user.email?.split('@')[0] ||
+      'User';
 
     try {
       const { roomId, text } = data || {};
@@ -210,7 +244,20 @@ class LiveHandler {
         return socket.emit(SERVER_EVENTS.ERROR, { message: 'Comment must be 200 characters or fewer.' });
       }
 
-      const comment = await liveRoomService.addComment(roomId, userId, userName, text.trim());
+      // Check if commenter is host
+      const isHost = socket.user.type === 'LISTENER';
+
+      // Ensure socket is joined to live room
+      joinLiveRoom(socket, roomId);
+
+      const comment = await liveRoomService.addComment(
+        roomId,
+        userId,
+        userName,
+        text.trim(),
+        socket.user.profileImage || null,
+        isHost
+      );
 
       emitToLiveRoom(io, roomId, SERVER_EVENTS.LIVE_NEW_COMMENT, comment);
     } catch (err) {
@@ -222,17 +269,25 @@ class LiveHandler {
   // ─── LIKE ─────────────────────────────────────────────────────────────────
 
   /**
-   * Any participant taps a like (free-accumulating, no dedup).
+   * Any participant toggles a like (1 like per user: like / unlike).
    * @param {Object} data - { roomId: string }
    */
-  async sendLike(io, _socket, data) {
+  async sendLike(io, socket, data) {
     try {
       const { roomId } = data || {};
       if (!roomId) return;
 
-      const likeCount = await liveRoomService.incrementLike(roomId);
+      // Ensure socket is in room
+      joinLiveRoom(socket, roomId);
 
-      emitToLiveRoom(io, roomId, SERVER_EVENTS.LIVE_LIKE_UPDATE, { likeCount });
+      const result = await liveRoomService.toggleLike(roomId, socket.user.id);
+
+      emitToLiveRoom(io, roomId, SERVER_EVENTS.LIVE_LIKE_UPDATE, {
+        roomId,
+        likeCount: result.likeCount,
+        userId: socket.user.id,
+        liked: result.liked,
+      });
     } catch (err) {
       logger.error(`[Live Like Error] ${err.message}`);
     }
@@ -245,17 +300,22 @@ class LiveHandler {
     const userType = socket.user.type;
 
     try {
-      // Clean up viewer tracking on abrupt disconnect
-      if (userType === 'CUSTOMER') {
-        const roomId = await liveRoomService.getViewerRoom(userId);
-        if (roomId) {
-          const viewerCount = await liveRoomService.removeViewer(roomId, userId);
-          emitToLiveRoom(io, roomId, SERVER_EVENTS.LIVE_VIEWER_LEFT, { viewerCount });
-        }
-        return;
+      // 1. Clean up viewer tracking for any disconnected user (CUSTOMER, LISTENER, AGENT)
+      const viewerRoomId = await liveRoomService.getViewerRoom(userId);
+      if (viewerRoomId) {
+        const viewerCount = await liveRoomService.removeViewer(viewerRoomId, userId);
+        emitToLiveRoom(io, viewerRoomId, SERVER_EVENTS.LIVE_VIEWER_LEFT, {
+          roomId: viewerRoomId,
+          viewerCount,
+          userId,
+        });
+        emitToLiveRoom(io, viewerRoomId, SERVER_EVENTS.LIVE_VIEWER_COUNT_UPDATE, {
+          roomId: viewerRoomId,
+          viewerCount,
+        });
       }
 
-      // Host disconnect: start 30-second grace period
+      // 2. Host disconnect: start 30-second grace period
       if (userType === 'LISTENER') {
         const room = await liveRoomService.getActiveRoomByHost(userId);
         if (!room) return;
@@ -278,6 +338,13 @@ class LiveHandler {
   async _tearDownRoom(io, roomId, hostId) {
     await liveRoomService.endRoom(roomId, hostId);
     emitToLiveRoom(io, roomId, SERVER_EVENTS.LIVE_ENDED, { roomId });
+
+    // Restore ONLINE if socket still connected; otherwise leave OFFLINE as-is
+    const status = await presenceService.getStatus(hostId);
+    if (status === 'LIVE' || status === 'ONLINE' || status === 'BUSY') {
+      await presenceService.setAvailable(hostId);
+    }
+
     logger.info(`[Live End] Room ${roomId} ended by host ${hostId}`);
   }
 }
