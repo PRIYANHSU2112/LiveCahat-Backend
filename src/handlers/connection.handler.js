@@ -1,6 +1,7 @@
 import presenceService from '../services/presence.service.js';
 import communicationSessionService from '../services/communication-session.service.js';
 import agentDashboardService from '../services/agent-dashboard.service.js';
+import liveRoomService from '../services/live-room.service.js';
 import redisClient from '../config/redis.js';
 import { KEYS } from '../utils/socket-redis-keys.util.js';
 import { SERVER_EVENTS } from '../constants/socket-event.constant.js';
@@ -26,6 +27,13 @@ class ConnectionHandler {
       clearTimeout(pending);
       pendingSessionEnds.delete(userId);
       logger.info(`[Socket Connection] Cancelled pending session end for ${userId}`);
+    }
+
+    // Cancel any pending live room auto-end grace period on reconnect / auth success
+    try {
+      await liveRoomService.clearDisconnectGrace(userId);
+    } catch (graceErr) {
+      logger.error(`[Socket Connection] Failed to clear live disconnect grace for ${userId}: ${graceErr.message}`);
     }
 
     // Join user-specific private room

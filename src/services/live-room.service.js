@@ -342,7 +342,14 @@ class LiveRoomService extends BaseService {
   async getActiveRoomByHost(hostId) {
     if (redisClient.isRedisAvailable) {
       const roomId = await redisClient.get(KEYS.liveRoomHost(hostId));
-      if (roomId) return this.getItemById(roomId);
+      if (roomId) {
+        const room = await this.getItemById(roomId);
+        if (room && room.status === 'live') {
+          return room;
+        }
+        // Stale Redis key cleanup
+        await redisClient.del(KEYS.liveRoomHost(hostId));
+      }
     }
     return liveRoomRepository.findActiveByHostId(hostId);
   }

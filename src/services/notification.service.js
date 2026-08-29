@@ -1,11 +1,15 @@
+import mongoose from 'mongoose';
 import notificationRepository from '../repositories/notification.repository.js';
 import Notification from '../modules/notification.model.js';
 import User from '../modules/user.model.js';
+import Follow from '../modules/follow.model.js';
 import ApiError from '../utils/ApiError.js';
 import { getPaginationOptions, formatPaginatedResponse } from '../utils/pagination.util.js';
 import { getPeriodRange } from '../utils/date.util.js';
 import { buildUtcCreatedAtFilter } from '../utils/date-filter.util.js';
 import { getCache, setCache, deleteCache } from '../utils/redis.util.js';
+import { emitToUser } from '../utils/socket.util.js';
+import fcmService from './fcm.service.js';
 import logger from '../utils/logger.util.js';
 
 const ADMIN_STATS_CACHE_KEY = 'notifications:admin:stats';
@@ -125,6 +129,8 @@ class NotificationService {
                 body: 1,
                 type: 1,
                 status: 1,
+                pushSent: 1,
+                pushError: 1,
                 createdAt: 1,
                 recipient: {
                   id: '$recipient._id',
@@ -148,6 +154,8 @@ class NotificationService {
       body: row.body,
       type: row.type,
       status: row.status,
+      pushSent: row.pushSent,
+      pushError: row.pushError,
       recipient: row.recipient?.id
         ? {
             id: row.recipient.id.toString(),
@@ -196,7 +204,9 @@ class NotificationService {
    * Admin sends a notification to one specific recipient (user / listener / agent).
    */
   async sendToUser(senderId, { recipientId, title, body, type = 'SYSTEM', metadata = {} }) {
-    const recipient = await User.findById(recipientId).select('_id isDeleted').lean();
+    const recipient = await User.findById(recipientId)
+      .select('_id isDeleted fcmToken settings')
+      .lean();
     if (!recipient || recipient.isDeleted) {
       throw new ApiError(404, 'Recipient not found');
     }
@@ -209,6 +219,49 @@ class NotificationService {
       type,
       metadata,
     });
+
+    // Real-time socket delivery
+    try {
+      emitToUser(recipientId.toString(), 'notification:new', {
+        id: notification._id,
+        title: notification.title,
+        body: notification.body,
+        type: notification.type,
+        metadata: notification.metadata,
+        createdAt: notification.createdAt,
+      });
+    } catch (err) {
+      logger.warn(`[NotificationService] Socket emit failed for user ${recipientId}: ${err.message}`);
+    }
+
+    // Firebase Cloud Messaging Push delivery (fire-and-forget / recorded)
+    const canSendPush = recipient.settings?.notifications !== false && Boolean(recipient.fcmToken);
+    if (canSendPush) {
+      try {
+        const pushResult = await fcmService.sendToToken(recipient.fcmToken, {
+          title,
+          body,
+          data: {
+            ...metadata,
+            notificationId: notification._id.toString(),
+            type,
+          },
+        });
+
+        if (pushResult.success) {
+          notification.pushSent = true;
+          await Notification.findByIdAndUpdate(notification._id, { pushSent: true });
+        } else if (pushResult.error) {
+          notification.pushError = pushResult.error;
+          await Notification.findByIdAndUpdate(notification._id, {
+            pushSent: false,
+            pushError: pushResult.error,
+          });
+        }
+      } catch (fcmErr) {
+        logger.error(`[NotificationService] FCM push error for user ${recipientId}: ${fcmErr.message}`);
+      }
+    }
 
     await this.bustAdminStatsCache();
     return notification;
@@ -229,27 +282,197 @@ class NotificationService {
       filter.type = { $in: ['CUSTOMER', 'LISTENER', 'AGENT'] };
     }
 
-    const recipients = await User.find(filter).select('_id').lean();
+    const recipients = await User.find(filter)
+      .select('_id fcmToken settings')
+      .lean();
     if (recipients.length === 0) {
       return { sent: 0, audience };
     }
 
     const base = { senderId, title, body, type, metadata };
     let sent = 0;
+    const tokens = [];
 
     for (let i = 0; i < recipients.length; i += BROADCAST_CHUNK) {
-      const chunk = recipients.slice(i, i + BROADCAST_CHUNK).map((u) => ({
-        ...base,
-        recipientId: u._id,
-      }));
+      const batch = recipients.slice(i, i + BROADCAST_CHUNK);
+      const chunk = batch.map((u) => {
+        if (u.fcmToken && u.settings?.notifications !== false) {
+          tokens.push(u.fcmToken);
+        }
+        // Real-time socket broadcast
+        try {
+          emitToUser(u._id.toString(), 'notification:new', {
+            title,
+            body,
+            type,
+            metadata,
+            createdAt: new Date(),
+          });
+        } catch (_) {}
+
+        return {
+          ...base,
+          recipientId: u._id,
+        };
+      });
+
       // ordered:false → one bad row won't abort the whole batch.
       const inserted = await Notification.insertMany(chunk, { ordered: false });
       sent += inserted.length;
     }
 
-    logger.info(`Broadcast "${title}" sent to ${sent} ${audience} recipient(s)`);
+    // Multicast push notifications if tokens are available
+    if (tokens.length > 0) {
+      fcmService.sendMulticast(tokens, {
+        title,
+        body,
+        data: {
+          ...metadata,
+          type,
+        },
+      }).catch((err) => {
+        logger.error(`[NotificationService] FCM broadcast error: ${err.message}`);
+      });
+    }
+
+    logger.info(`[NotificationService] Broadcast "${title}" sent to ${sent} ${audience} recipient(s)`);
     await this.bustAdminStatsCache();
     return { sent, audience };
+  }
+
+  // ─── Live Stream Follower Alerts (Background Worker) ───────────
+
+  /**
+   * High-performance background worker to notify all followers when a listener starts live.
+   *
+   * Scalability & Performance Highlights (Optimized for 10,000+ Followers):
+   * 1. Non-blocking Background Job: Zero latency impact on listener's live room response.
+   * 2. Low Memory Cursor: Streams followers in batches of 500 without loading all records into RAM.
+   * 3. Batch Multicast Push: Sends FCM payloads in 500-token batches (Firebase max batch size).
+   * 4. Batched In-App Persistence: Uses `Notification.insertMany` with `ordered: false`.
+   * 5. Real-time Socket Event: Pushes `notification:new` to active sockets.
+   *
+   * @param {string} hostId - Listener / Host User ID
+   * @param {object} liveData - { roomId, hostName, title, mode }
+   */
+  async notifyFollowersLiveStarted(hostId, { roomId, hostName, title, mode = 'VIDEO' }) {
+    const FCM_BATCH_SIZE = 500;
+    const notificationTitle = `${hostName || 'A host you follow'} is now LIVE! 🔴`;
+    const notificationBody = title
+      ? `"${title}" - Tap to join the live room now.`
+      : `Tap to join the ${mode.toLowerCase()} live stream now.`;
+
+    const metadata = {
+      type: 'LIVE_STARTED',
+      roomId: roomId?.toString?.() || roomId,
+      hostId: hostId?.toString?.() || hostId,
+      hostName: hostName || '',
+      mode: mode || 'VIDEO',
+    };
+
+    const hostObjectId = new mongoose.Types.ObjectId(hostId);
+
+    // Stream followers with their FCM token and settings using MongoDB aggregation cursor
+    const cursor = Follow.aggregate([
+      { $match: { followingId: hostObjectId } },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'followerId',
+          foreignField: '_id',
+          as: 'user',
+          pipeline: [
+            { $match: { isDeleted: false, isBlocked: false } },
+            { $project: { _id: 1, fcmToken: 1, 'settings.notifications': 1 } },
+          ],
+        },
+      },
+      { $unwind: '$user' },
+      {
+        $project: {
+          followerId: '$user._id',
+          fcmToken: '$user.fcmToken',
+          notificationsEnabled: '$user.settings.notifications',
+        },
+      },
+    ]).cursor({ batchSize: FCM_BATCH_SIZE });
+
+    let currentBatchTokens = [];
+    let currentInAppDocs = [];
+    let totalNotified = 0;
+
+    const processBatch = async (tokens, inAppDocs) => {
+      // 1. Bulk insert in-app notifications
+      if (inAppDocs.length > 0) {
+        Notification.insertMany(inAppDocs, { ordered: false }).catch((err) => {
+          logger.error(`[LiveNotification] Bulk insert in-app notification error: ${err.message}`);
+        });
+      }
+
+      // 2. Multicast FCM Push
+      if (tokens.length > 0) {
+        fcmService
+          .sendMulticast(tokens, {
+            title: notificationTitle,
+            body: notificationBody,
+            data: metadata,
+          })
+          .catch((err) => {
+            logger.error(`[LiveNotification] FCM multicast error for batch: ${err.message}`);
+          });
+      }
+    };
+
+    for await (const doc of cursor) {
+      const recipientId = doc.followerId;
+      const fcmToken = doc.fcmToken;
+      const isEnabled = doc.notificationsEnabled !== false;
+
+      // Real-time socket notification to online users
+      try {
+        emitToUser(recipientId.toString(), 'notification:new', {
+          title: notificationTitle,
+          body: notificationBody,
+          type: 'LIVE_STARTED',
+          metadata,
+          createdAt: new Date(),
+        });
+      } catch (_) {}
+
+      // In-app notification record
+      currentInAppDocs.push({
+        recipientId,
+        senderId: hostId,
+        title: notificationTitle,
+        body: notificationBody,
+        type: 'LIVE_STARTED',
+        metadata,
+      });
+
+      // FCM token collection
+      if (fcmToken && isEnabled) {
+        currentBatchTokens.push(fcmToken);
+      }
+
+      totalNotified++;
+
+      // When batch reaches FCM_BATCH_SIZE (500), dispatch chunk
+      if (currentInAppDocs.length >= FCM_BATCH_SIZE) {
+        const tokensToFlush = [...currentBatchTokens];
+        const docsToFlush = [...currentInAppDocs];
+        currentBatchTokens = [];
+        currentInAppDocs = [];
+
+        await processBatch(tokensToFlush, docsToFlush);
+      }
+    }
+
+    // Flush remaining
+    if (currentInAppDocs.length > 0 || currentBatchTokens.length > 0) {
+      await processBatch(currentBatchTokens, currentInAppDocs);
+    }
+
+    logger.info(`[LiveNotification] Dispatched live notifications to ${totalNotified} follower(s) for host ${hostId} (Room: ${roomId})`);
   }
 }
 

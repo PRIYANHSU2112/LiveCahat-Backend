@@ -31,6 +31,10 @@ const envVarsSchema = Joi.object()
     RAZORPAY_KEY_ID: Joi.string().allow('').optional(),
     RAZORPAY_KEY_SECRET: Joi.string().allow('').optional(),
     RAZORPAY_WEBHOOK_SECRET: Joi.string().allow('').optional(),
+    FIREBASE_SERVICE_ACCOUNT_PATH: Joi.string().allow('').optional(),
+    FIREBASE_PROJECT_ID: Joi.string().allow('').optional(),
+    FIREBASE_CLIENT_EMAIL: Joi.string().allow('').optional(),
+    FIREBASE_PRIVATE_KEY: Joi.string().allow('').optional(),
   })
   .unknown();
 
@@ -63,6 +67,12 @@ const config = {
       ((envVars.AGORA_APP_CERTIFICATE || '').trim() ? 'secured' : 'testing'),
   },
   settingsEncryptionKey: (envVars.SETTINGS_ENCRYPTION_KEY || '').trim(),
+  firebase: {
+    serviceAccountPath: (envVars.FIREBASE_SERVICE_ACCOUNT_PATH || '').trim(),
+    projectId: (envVars.FIREBASE_PROJECT_ID || '').trim(),
+    clientEmail: (envVars.FIREBASE_CLIENT_EMAIL || '').trim(),
+    privateKey: (envVars.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n').trim(),
+  },
 };
 
 export default config;

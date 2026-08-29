@@ -7,6 +7,7 @@ export const updateUserProfileSchema = Joi.object({
     lastName: Joi.string().trim().min(2).max(50),
     email: Joi.string().email().allow(null, ''),
     gender: Joi.string().valid(...GENDERS),
+    fcmToken: Joi.string().trim().allow(null, ''),
     age: Joi.number().integer().min(18).max(120).messages({
       'number.min': 'You must be at least 18 years old',
     }),

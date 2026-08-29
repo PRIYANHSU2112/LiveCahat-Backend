@@ -63,8 +63,10 @@ class CallHandler {
       }
 
       // Check active sessions to detect if caller and listener are already in the SAME active session
-      const existingCallerSession = await communicationSessionService.getActiveSessionForUser(callerId);
-      const existingListenerSession = await communicationSessionService.getActiveSessionForUser(listenerId);
+      const [existingCallerSession, existingListenerSession] = await Promise.all([
+        communicationSessionService.getActiveSessionForUser(callerId),
+        communicationSessionService.getActiveSessionForUser(listenerId),
+      ]);
 
       let isUpgrade = false;
       let sharedSessionId = null;
@@ -90,7 +92,11 @@ class CallHandler {
         }
       }
 
-      const listenerProfile = await ListenerProfile.findOne({ userId: listenerId }).lean();
+      const [listenerProfile, callerWallet] = await Promise.all([
+        ListenerProfile.findOne({ userId: listenerId }).lean(),
+        Wallet.findOne({ userId: callerId }).lean(),
+      ]);
+
       if (!listenerProfile || listenerProfile.kycStatus !== 'APPROVED') {
         return socket.emit(SERVER_EVENTS.ERROR, { message: 'Listener is not verified.' });
       }
@@ -103,7 +109,6 @@ class CallHandler {
         return socket.emit(SERVER_EVENTS.ERROR, { message: `Listener has not set a rate for ${mode} calls.` });
       }
 
-      const callerWallet = await Wallet.findOne({ userId: callerId }).lean();
       const coinBalance = callerWallet ? callerWallet.coinBalance : 0;
       if (coinBalance < ratePerMinute) {
         return socket.emit(SERVER_EVENTS.ERROR, {
@@ -203,8 +208,10 @@ class CallHandler {
         return socket.emit(SERVER_EVENTS.ERROR, { message: 'Invalid call request.' });
       }
 
-      const existingListener = await communicationSessionService.getActiveSessionForUser(listenerId);
-      const existingCaller = await communicationSessionService.getActiveSessionForUser(callerId);
+      const [existingListener, existingCaller] = await Promise.all([
+        communicationSessionService.getActiveSessionForUser(listenerId),
+        communicationSessionService.getActiveSessionForUser(callerId),
+      ]);
 
       let session;
       const isSameActiveSession = (existingListener && existingCaller && existingListener === existingCaller);
@@ -331,15 +338,68 @@ class CallHandler {
         return socket.emit(SERVER_EVENTS.ERROR, { message: 'Listener ID is required.' });
       }
 
-      if (redisClient.isRedisAvailable) {
-        await redisClient.del(KEYS.callRequest(listenerId, callerId));
-        await redisClient.del(KEYS.chatRequest(listenerId, callerId));
+      // Step 1: Check active session for caller
+      const callerActiveSessionId = await communicationSessionService.getActiveSessionForUser(callerId);
+
+      let isSessionCancel = false;
+      let sessionTargetListener = null;
+
+      if (callerActiveSessionId) {
+        // Step 2 & 3: Verify listener ID and active session status
+        let sessionData = null;
+        if (redisClient.isRedisAvailable) {
+          sessionData = await redisClient.hgetall(KEYS.activeSession(callerActiveSessionId));
+        }
+
+        if (sessionData && sessionData.listenerId) {
+          sessionTargetListener = sessionData.listenerId;
+        } else {
+          const sessionDoc = await communicationSessionService.getItemById(callerActiveSessionId);
+          if (sessionDoc && sessionDoc.status === 'ONGOING') {
+            sessionTargetListener = sessionDoc.listenerId.toString();
+          }
+        }
+
+        if (sessionTargetListener === listenerId) {
+          isSessionCancel = true;
+        }
       }
 
-      io.to(listenerId).emit(SERVER_EVENTS.CALL_ENDED, {
-        reason: 'CALLER_CANCELLED',
-        callerId,
-      });
+      // Check if a pending ringing request existed in Redis
+      let hadPendingRequest = false;
+      if (redisClient.isRedisAvailable) {
+        const [deletedCall, deletedChat] = await Promise.all([
+          redisClient.del(KEYS.callRequest(listenerId, callerId)),
+          redisClient.del(KEYS.chatRequest(listenerId, callerId)),
+        ]);
+        if (deletedCall > 0 || deletedChat > 0) {
+          hadPendingRequest = true;
+        }
+      }
+
+      // Step 4: Execute & broadcast CALL_ENDED only if active session matches OR pending request existed
+      if (!isSessionCancel && !hadPendingRequest) {
+        logger.info(
+          `[Socket Cancel Call] Safely ignored cancelCall from ${callerId} to ${listenerId} — no active session or pending request found.`
+        );
+        return;
+      }
+
+      if (isSessionCancel && callerActiveSessionId) {
+        const { emitToSession } = await import('../utils/socket-room.util.js');
+        emitToSession(io, callerActiveSessionId, SERVER_EVENTS.CALL_ENDED, {
+          sessionId: callerActiveSessionId,
+          reason: 'CALLER_CANCELLED',
+          callerId,
+        });
+        await communicationSessionService.endSession(callerActiveSessionId, 'CALLER_CANCELLED');
+      } else if (hadPendingRequest) {
+        io.to(listenerId).emit(SERVER_EVENTS.CALL_ENDED, {
+          sessionId: null,
+          reason: 'CALLER_CANCELLED',
+          callerId,
+        });
+      }
 
       logger.info(`[Socket Cancel Call] Caller ${callerId} cancelled call to ${listenerId}`);
     } catch (err) {
@@ -419,3 +479,6 @@ class CallHandler {
 }
 
 export default new CallHandler();
+
+
+

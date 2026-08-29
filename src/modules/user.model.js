@@ -144,6 +144,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    fcmToken: {
+      type: String,
+      trim: true,
+      default: null,
+    },
     ageVerified: {
       type: Boolean,
       default: false,

@@ -1,5 +1,8 @@
 import BaseController from './base.controller.js';
 import notificationService from '../services/notification.service.js';
+import fcmService from '../services/fcm.service.js';
+import User from '../modules/user.model.js';
+import ApiError from '../utils/ApiError.js';
 import catchAsync from '../utils/catchAsync.util.js';
 
 class NotificationController extends BaseController {
@@ -41,6 +44,13 @@ class NotificationController extends BaseController {
     this.sendResponse(res, 200, 'Notification deleted successfully', data);
   });
 
+  // PATCH /notifications/fcm-token
+  updateFcmToken = catchAsync(async (req, res) => {
+    const { fcmToken } = req.body;
+    await User.findByIdAndUpdate(req.user._id, { fcmToken });
+    this.sendResponse(res, 200, 'FCM token updated successfully', { fcmToken });
+  });
+
   // ─── Admin ───────────────────────────────────────────────────────
 
   // POST /notifications/admin/send — send to one user/listener/agent
@@ -65,6 +75,31 @@ class NotificationController extends BaseController {
   adminListNotifications = catchAsync(async (req, res) => {
     const data = await notificationService.adminListNotifications(req.query);
     this.sendResponse(res, 200, 'Notifications fetched successfully', data);
+  });
+
+  // POST /notifications/admin/test-push
+  testPush = catchAsync(async (req, res) => {
+    let token = req.body.token;
+    if (!token && req.body.userId) {
+      const user = await User.findById(req.body.userId).select('fcmToken').lean();
+      if (!user?.fcmToken) {
+        throw new ApiError(404, 'User does not have an FCM token registered');
+      }
+      token = user.fcmToken;
+    }
+
+    const result = await fcmService.sendToToken(token, {
+      title: req.body.title || 'Test Notification',
+      body: req.body.body || 'This is a test notification from Firebase Admin SDK',
+      data: req.body.data || {},
+    });
+
+    this.sendResponse(
+      res,
+      result.success ? 200 : 400,
+      result.success ? 'Test push sent successfully' : 'Failed to send test push',
+      result
+    );
   });
 }
 

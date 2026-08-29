@@ -45,8 +45,10 @@ class CallService {
     }
 
     // 3. Check active sessions to detect in-session upgrade vs new call
-    const existingCallerSession = await communicationSessionService.getActiveSessionForUser(callerId);
-    const existingListenerSession = await communicationSessionService.getActiveSessionForUser(listenerId);
+    const [existingCallerSession, existingListenerSession] = await Promise.all([
+      communicationSessionService.getActiveSessionForUser(callerId),
+      communicationSessionService.getActiveSessionForUser(listenerId),
+    ]);
 
     let isUpgrade = false;
     let sharedSessionId = null;
@@ -73,8 +75,12 @@ class CallService {
       }
     }
 
-    // 4. Fetch listener profile for rate and KYC status
-    const listenerProfile = await ListenerProfile.findOne({ userId: listenerId }).lean();
+    // 4. Fetch listener profile and caller wallet in parallel
+    const [listenerProfile, callerWallet] = await Promise.all([
+      ListenerProfile.findOne({ userId: listenerId }).lean(),
+      Wallet.findOne({ userId: callerId }).lean(),
+    ]);
+
     if (!listenerProfile) {
       throw new ApiError(404, 'Listener profile not found.');
     }
@@ -91,7 +97,6 @@ class CallService {
     }
 
     // 5. Verify caller wallet balance ≥ 1 minute
-    const callerWallet = await Wallet.findOne({ userId: callerId }).lean();
     const coinBalance = callerWallet ? callerWallet.coinBalance : 0;
     if (coinBalance < ratePerMinute) {
       throw new ApiError(402, `Insufficient balance. You need at least ${ratePerMinute} coins to start a ${mode} call.`);

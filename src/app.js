@@ -92,8 +92,65 @@ app.get('/test', (req, res) => {
   res.sendFile(path.resolve('public/test.html'));
 });
 
+// Android App Links / Deep Linking verification
+const assetLinksData = [
+  {
+    relation: ['delegate_permission/common.handle_all_urls'],
+    target: {
+      namespace: 'android_app',
+      package_name: 'com.chatcorner',
+      sha256_cert_fingerprints: [
+        "86:F9:BF:0C:6F:2E:E6:11:9C:C9:B1:01:04:56:E9:A4:5D:34:2F:E1:4C:CC:29:88:60:70:4A:5E:AE:96:0D:9A"
+      ],
+    },
+  },
+];
+
+app.get('/.well-known/assetlinks.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.json(assetLinksData);
+});
+
+// Deep link web landing & app redirect handler for /host, /invite, /register
+const deepLinkHandler = (req, res) => {
+  const pathName = req.path.replace(/^\//, ''); // 'host', 'invite', 'register'
+  const refCode = req.query.ref || req.query.code || '';
+  const type = req.query.type || '';
+  const appSchemeUrl = `chatcorner://${pathName}?ref=${encodeURIComponent(refCode)}${type ? `&type=${encodeURIComponent(type)}` : ''}`;
+
+  res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChatCorner - Welcome</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #fff; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; }
+    .card { background: #1e293b; border-radius: 20px; padding: 32px 24px; max-width: 400px; width: 100%; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+    h1 { font-size: 22px; margin-bottom: 8px; color: #f8fafc; }
+    p { font-size: 14px; color: #94a3b8; margin-bottom: 24px; line-height: 1.5; }
+    .btn { display: block; width: 100%; box-sizing: border-box; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; padding: 14px; border-radius: 12px; font-weight: 600; text-decoration: none; font-size: 16px; margin-bottom: 12px; }
+    .code { font-family: monospace; background: #334155; padding: 6px 12px; border-radius: 6px; color: #38bdf8; font-weight: bold; }
+  </style>
+  <script>
+    window.location.href = "${appSchemeUrl}";
+  </script>
+</head>
+<body>
+  <div class="card">
+    <h1>ChatCorner</h1>
+    <p>Opening in the app... ${refCode ? `<br><br>Referral Code: <span class="code">${refCode}</span>` : ''}</p>
+    <a class="btn" href="${appSchemeUrl}">Open App</a>
+  </div>
+</body>
+</html>`);
+};
+
+app.get(['/host', '/invite', '/register'], deepLinkHandler);
+
 // Static assets under /public (optional local scripts, images, etc.)
 app.use('/public', express.static(path.resolve('public')));
+app.use('/.well-known', express.static(path.resolve('public/.well-known')));
 
 // 4. ROUTES
 app.use('/api/v1/monitoring', monitoringRoutes);

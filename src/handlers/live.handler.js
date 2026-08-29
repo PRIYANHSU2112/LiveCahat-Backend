@@ -1,5 +1,6 @@
 import { CLIENT_EVENTS, SERVER_EVENTS } from '../constants/socket-event.constant.js';
 import liveRoomService from '../services/live-room.service.js';
+import { enqueueLiveStartedNotification } from '../queues/notification.queue.js';
 import agoraService from '../services/agora.service.js';
 import presenceService from '../services/presence.service.js';
 import { stringToUid } from '../utils/agora.util.js';
@@ -47,6 +48,12 @@ class LiveHandler {
         return socket.emit(SERVER_EVENTS.ERROR, { message: 'Mode must be AUDIO or VIDEO.' });
       }
 
+      // Check if host already has an active live room
+      const existingRoom = await liveRoomService.getActiveRoomByHost(hostId);
+      if (existingRoom) {
+        return socket.emit(SERVER_EVENTS.ERROR, { message: 'You already have an active live room.' });
+      }
+
       // If host reconnected mid-grace, cancel the pending auto-end
       await liveRoomService.clearDisconnectGrace(hostId);
 
@@ -75,6 +82,21 @@ class LiveHandler {
       });
 
       logger.info(`[Live Start] Host ${hostId} started live room ${roomId} (${mode})`);
+
+      // Enqueue BullMQ background job to notify followers (Zero impact on live streaming)
+      const hostName = socket.user.firstName
+        ? `${socket.user.firstName} ${socket.user.lastName || ''}`.trim()
+        : socket.user.email?.split('@')[0] || 'Host';
+
+      enqueueLiveStartedNotification({
+        hostId,
+        roomId,
+        hostName,
+        title: room.title,
+        mode: room.mode,
+      }).catch((err) => {
+        logger.error(`[BullMQ] Failed to enqueue live notification for host ${hostId}: ${err.message}`);
+      });
     } catch (err) {
       logger.error(`[Live Start Error] ${err.message}`);
       socket.emit(SERVER_EVENTS.ERROR, { message: 'Failed to start live room.' });
@@ -134,6 +156,11 @@ class LiveHandler {
       const hostDoc =
         room.hostId && typeof room.hostId === 'object' ? room.hostId : null;
       const hostIdStr = hostDoc?._id?.toString?.() || room.hostId?.toString?.() || room.hostId;
+
+      // Host cannot join their own live room as a viewer
+      if (userId === hostIdStr) {
+        return socket.emit(SERVER_EVENTS.ERROR, { message: 'Host cannot join own room as viewer.' });
+      }
 
       const uid = stringToUid(userId);
 
@@ -275,7 +302,15 @@ class LiveHandler {
   async sendLike(io, socket, data) {
     try {
       const { roomId } = data || {};
-      if (!roomId) return;
+      if (!roomId) {
+        return socket.emit(SERVER_EVENTS.ERROR, { message: 'Room ID is required.' });
+      }
+
+      // Verify room exists and is currently live
+      const room = await liveRoomService.getItemById(roomId);
+      if (!room || room.status !== 'live') {
+        return socket.emit(SERVER_EVENTS.ERROR, { message: 'Live room not found or has ended.' });
+      }
 
       // Ensure socket is in room
       joinLiveRoom(socket, roomId);
@@ -290,6 +325,7 @@ class LiveHandler {
       });
     } catch (err) {
       logger.error(`[Live Like Error] ${err.message}`);
+      socket.emit(SERVER_EVENTS.ERROR, { message: 'Failed to process like.' });
     }
   }
 

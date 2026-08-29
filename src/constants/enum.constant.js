@@ -35,7 +35,8 @@ export const NOTIFICATION_TYPES = [
   'PROMO_OFFER',
   'SYSTEM',
   'LEVEL_UP',
-  'USER_REPORT'
+  'USER_REPORT',
+  'LIVE_STARTED',
 ];
 
 export const NOTIFICATION_STATUSES = ['UNREAD', 'READ'];

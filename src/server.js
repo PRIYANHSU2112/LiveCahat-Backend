@@ -24,6 +24,9 @@ const DB_URI = process.env.DATABASE_URI || 'mongodb://localhost:27017/realtime_c
 import { initializeSockets } from './sockets/index.js';
 import { initializeBillingJob } from './jobs/billing.job.js';
 import { initializeSettlementJob } from './jobs/settlement.job.js';
+import { initializeFirebase } from './config/firebase.js';
+import { initializeWorkers, closeAllWorkers } from './workers/index.js';
+import { closeAllQueues } from './queues/index.js';
 import dailyRewardService from './services/daily-reward.service.js';
 import settingsRuntime from './services/settings-runtime.service.js';
 
@@ -49,11 +52,17 @@ mongoose.connect(DB_URI)
   .then(async () => {
     logger.info('DB connection successful!');
 
+    // Initialize Firebase Admin SDK
+    initializeFirebase();
+
     // Seed default daily login reward configs and chests
     await dailyRewardService.seedDefaultConfig();
 
     // Attempt Redis connection after DB
     await connectRedis();
+
+    // Initialize BullMQ Background Workers
+    initializeWorkers();
 
     // Warm platform/payment settings into memory (O(1) hot-path reads)
     await settingsRuntime.warm();
@@ -74,6 +83,25 @@ mongoose.connect(DB_URI)
   .catch((err) => {
     logger.error('DB Connection Error:', err);
   });
+
+// Graceful Shutdown Management
+const gracefulShutdown = async (signal) => {
+  logger.info(`Received ${signal}. Shutting down gracefully...`);
+  try {
+    await closeAllWorkers();
+    await closeAllQueues();
+    httpServer.close(() => {
+      logger.info('HTTP server closed.');
+      process.exit(0);
+    });
+  } catch (err) {
+    logger.error(`Error during graceful shutdown: ${err.message}`);
+    process.exit(1);
+  }
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 process.on('unhandledRejection', err => {
   logger.error('UNHANDLED REJECTION! Shutting down...');

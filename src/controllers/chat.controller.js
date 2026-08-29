@@ -116,8 +116,7 @@ class ChatController extends BaseController {
    * Soft-delete own message and notify the session room.
    */
   deleteMessage = catchAsync(async (req, res) => {
-    const sessionId = (req.params.sessionId || '').replace(/^[:{}]|[:{}]$/g, '').trim();
-    const messageId = (req.params.messageId || '').replace(/^[:{}]|[:{}]$/g, '').trim();
+    const { sessionId, messageId } = req.params;
     if (!sessionId || !messageId) {
       return this.sendError(res, 400, 'Session ID and message ID are required');
     }

@@ -15,7 +15,7 @@ const referralConfigSchema = new mongoose.Schema(
     },
     inviteLinkPrefix: {
       type: String,
-      default: 'https://cornerchat.com/invite?code=',
+      default: 'https://api.livechat.mbbsway.in/invite?ref=',
       trim: true,
     },
   },

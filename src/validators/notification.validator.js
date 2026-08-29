@@ -59,3 +59,20 @@ export const broadcastNotificationSchema = {
     metadata,
   }),
 };
+
+export const updateFcmTokenSchema = {
+  body: Joi.object().keys({
+    fcmToken: Joi.string().trim().required(),
+  }),
+};
+
+export const testPushNotificationSchema = {
+  body: Joi.object().keys({
+    token: Joi.string().trim().optional(),
+    userId: objectId.optional(),
+    title: Joi.string().trim().default('Test Notification'),
+    body: Joi.string().trim().default('This is a test notification from Firebase Admin SDK'),
+    data: Joi.object().optional(),
+  }).or('token', 'userId'),
+};
+

@@ -8,6 +8,8 @@ import {
   idParamSchema,
   sendNotificationSchema,
   broadcastNotificationSchema,
+  updateFcmTokenSchema,
+  testPushNotificationSchema,
 } from '../validators/notification.validator.js';
 
 const router = express.Router();
@@ -20,6 +22,7 @@ router.get('/', validate(listNotificationQuerySchema), notificationController.ge
 router.get('/stats', notificationController.getMyStats);
 router.get('/unread-count', notificationController.getUnreadCount);
 router.patch('/read-all', notificationController.markAllAsRead);
+router.patch('/fcm-token', validate(updateFcmTokenSchema), notificationController.updateFcmToken);
 router.patch('/:id/read', validate(idParamSchema), notificationController.markAsRead);
 router.delete('/:id', validate(idParamSchema), notificationController.deleteNotification);
 
@@ -29,6 +32,8 @@ router.use(restrictTo('ADMIN'));
 router.post('/admin/send', authorize('notification.send'), validate(sendNotificationSchema), notificationController.sendToUser);
 // Broadcast to all users / all listeners / all agents / everyone
 router.post('/admin/broadcast', authorize('notification.broadcast'), validate(broadcastNotificationSchema), notificationController.broadcast);
+// Test push notification delivery
+router.post('/admin/test-push', authorize('notification.send'), validate(testPushNotificationSchema), notificationController.testPush);
 router.get('/admin/stats', authorize('notification.admin.stats.view'), notificationController.getAdminStats);
 router.get(
   '/admin',
