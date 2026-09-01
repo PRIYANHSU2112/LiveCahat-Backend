@@ -57,11 +57,12 @@ const buildDailyChartBuckets = (start, end) => {
 };
 
 // Whitelisted sort modes for the user home feed → Mongo sort spec.
-// `featured` (default) surfaces promoted listeners, then the most-followed/top-rated.
+// Primary sorting always prioritizes availability (ONLINE -> BUSY -> OFFLINE).
+// These provide deterministic secondary sorting within the same status tier.
 const HOME_SORTS = {
-  featured: { isFeatured: -1, followersCount: -1, avgRating: -1, _id: -1 },
-  popular: { followersCount: -1, totalSessions: -1, avgRating: -1, _id: -1 },
-  rating: { avgRating: -1, totalRatings: -1, _id: -1 },
+  featured: { isFeatured: -1, followersCount: -1, avgRating: -1, updatedAt: -1, _id: -1 },
+  popular: { followersCount: -1, totalSessions: -1, avgRating: -1, updatedAt: -1, _id: -1 },
+  rating: { avgRating: -1, totalRatings: -1, followersCount: -1, updatedAt: -1, _id: -1 },
   newest: { createdAt: -1, _id: -1 },
 };
 
@@ -1561,12 +1562,15 @@ class ListenerService extends BaseService {
   async updateListenerByAdmin(listenerId, updateData) {
     // Because repository.findById returns a lean object by default unless specified, 
     // we use updateById for simplicity.
+    const fieldsToSet = {};
+    if (updateData.chatRate !== undefined) fieldsToSet.chatRate = Number(updateData.chatRate);
+    if (updateData.voiceRate !== undefined) fieldsToSet.voiceRate = Number(updateData.voiceRate);
+    if (updateData.videoRate !== undefined) fieldsToSet.videoRate = Number(updateData.videoRate);
+    if (updateData.liveRate !== undefined) fieldsToSet.liveRate = Number(updateData.liveRate);
+    if (updateData.earningPercent !== undefined) fieldsToSet.earningPercent = Number(updateData.earningPercent);
+
     const updated = await this.repository.updateById(listenerId, {
-      $set: {
-        chatRate: updateData.chatRate,
-        voiceRate: updateData.voiceRate,
-        videoRate: updateData.videoRate
-      }
+      $set: fieldsToSet,
     });
 
     if (!updated) throw new ApiError(404, 'Listener profile not found');

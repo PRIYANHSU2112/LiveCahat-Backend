@@ -1,8 +1,12 @@
 import { CLIENT_EVENTS, SERVER_EVENTS } from '../constants/socket-event.constant.js';
 import liveRoomService from '../services/live-room.service.js';
+import liveBillingService from '../services/live-billing.service.js';
 import { enqueueLiveStartedNotification } from '../queues/notification.queue.js';
 import agoraService from '../services/agora.service.js';
 import presenceService from '../services/presence.service.js';
+import ListenerProfile from '../modules/listener-profile.model.js';
+import Wallet from '../modules/wallet.model.js';
+import CommunicationConfig from '../modules/communication-config.model.js';
 import { stringToUid } from '../utils/agora.util.js';
 import { joinLiveRoom, leaveLiveRoom, emitToLiveRoom } from '../utils/socket-room.util.js';
 import config from '../config/index.js';
@@ -57,7 +61,19 @@ class LiveHandler {
       // If host reconnected mid-grace, cancel the pending auto-end
       await liveRoomService.clearDisconnectGrace(hostId);
 
-      const room = await liveRoomService.createRoom(hostId, { title, mode });
+      // Snapshot billing rate and earning percent at room creation time
+      const [listenerProfile, commConfig] = await Promise.all([
+        ListenerProfile.findOne({ userId: hostId }).select('liveRate earningPercent').lean(),
+        CommunicationConfig.findOne().lean(),
+      ]);
+
+      const liveBillingEnabled = commConfig?.liveBillingEnabled !== false;
+      const liveRate = liveBillingEnabled
+        ? (listenerProfile?.liveRate || commConfig?.defaultLiveRate || 0)
+        : 0;
+      const earningPercent = listenerProfile?.earningPercent || 70;
+
+      const room = await liveRoomService.createRoom(hostId, { title, mode, liveRate, earningPercent });
       const roomId = room._id.toString();
 
       const uid = stringToUid(hostId);
@@ -73,6 +89,7 @@ class LiveHandler {
         channelName: room.channelName,
         title: room.title,
         mode: room.mode,
+        liveRate,
         agora: {
           appId: config.agora.appId || '',
           token,
@@ -81,7 +98,7 @@ class LiveHandler {
         },
       });
 
-      logger.info(`[Live Start] Host ${hostId} started live room ${roomId} (${mode})`);
+      logger.info(`[Live Start] Host ${hostId} started live room ${roomId} (${mode}, rate: ${liveRate} coins/min)`);
 
       // Enqueue BullMQ background job to notify followers (Zero impact on live streaming)
       const hostName = socket.user.firstName
@@ -162,6 +179,19 @@ class LiveHandler {
         return socket.emit(SERVER_EVENTS.ERROR, { message: 'Host cannot join own room as viewer.' });
       }
 
+      const liveRate = room.liveRate || 0;
+
+      // If room has a live rate, verify viewer has enough coins for at least 1 minute
+      if (liveRate > 0) {
+        const wallet = await Wallet.findOne({ userId }).select('coinBalance').lean();
+        const balance = wallet?.coinBalance ?? 0;
+        if (balance < liveRate) {
+          return socket.emit(SERVER_EVENTS.ERROR, {
+            message: `Insufficient balance. You need at least ${liveRate} coins to watch this live.`,
+          });
+        }
+      }
+
       const uid = stringToUid(userId);
 
       // Generate Agora token + add viewer + fetch recent comments + get like count + check if user liked in parallel
@@ -177,11 +207,22 @@ class LiveHandler {
 
       joinLiveRoom(socket, roomId);
 
+      // Start per-minute billing for this viewer (no-op if liveRate = 0 or reconnect)
+      if (liveRate > 0) {
+        await liveBillingService.startViewerBilling(
+          roomId,
+          userId,
+          hostIdStr,
+          liveRate,
+          room.earningPercent || 70
+        );
+      }
+
       const hostName = hostDoc
         ? `${hostDoc.firstName || ''} ${hostDoc.lastName || ''}`.trim()
         : '';
 
-      // Confirm join to the viewer
+      // Confirm join to the viewer (liveRate is additive, non-breaking)
       socket.emit(SERVER_EVENTS.LIVE_VIEWER_JOINED, {
         roomId,
         channelName: room.channelName,
@@ -193,6 +234,7 @@ class LiveHandler {
         viewerCount,
         likeCount,
         hasLiked,
+        liveRate,
         recentComments,
         agora: {
           appId: config.agora.appId || '',
@@ -209,7 +251,7 @@ class LiveHandler {
         userId,
       });
 
-      logger.info(`[Live Join] User ${userId} joined room ${roomId}. Viewers: ${viewerCount}`);
+      logger.info(`[Live Join] User ${userId} joined room ${roomId}. Viewers: ${viewerCount}, rate: ${liveRate}`);
     } catch (err) {
       logger.error(`[Live Join Error] ${err.message}`);
       socket.emit(SERVER_EVENTS.ERROR, { message: 'Failed to join live room.' });
@@ -228,6 +270,9 @@ class LiveHandler {
     try {
       const { roomId } = data || {};
       if (!roomId) return;
+
+      // Final billing for this viewer (ceil partial minutes)
+      await liveBillingService.stopViewerBilling(roomId, userId);
 
       const viewerCount = await liveRoomService.removeViewer(roomId, userId);
       leaveLiveRoom(socket, roomId);
@@ -336,9 +381,12 @@ class LiveHandler {
     const userType = socket.user.type;
 
     try {
-      // 1. Clean up viewer tracking for any disconnected user (CUSTOMER, LISTENER, AGENT)
+      // 1. Clean up viewer tracking + billing for any disconnected user
       const viewerRoomId = await liveRoomService.getViewerRoom(userId);
       if (viewerRoomId) {
+        // Final billing for this viewer on disconnect
+        await liveBillingService.stopViewerBilling(viewerRoomId, userId);
+
         const viewerCount = await liveRoomService.removeViewer(viewerRoomId, userId);
         emitToLiveRoom(io, viewerRoomId, SERVER_EVENTS.LIVE_VIEWER_LEFT, {
           roomId: viewerRoomId,
@@ -372,6 +420,9 @@ class LiveHandler {
   // ─── INTERNAL ─────────────────────────────────────────────────────────────
 
   async _tearDownRoom(io, roomId, hostId) {
+    // Settle all active viewer billing before ending the room
+    await liveBillingService.reconcileRoomBilling(roomId);
+
     await liveRoomService.endRoom(roomId, hostId);
     emitToLiveRoom(io, roomId, SERVER_EVENTS.LIVE_ENDED, { roomId });
 

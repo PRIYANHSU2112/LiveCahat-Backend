@@ -50,5 +50,8 @@ export const updateCommunicationConfigSchema = {
     hdVideoDefault: Joi.boolean(),
     noiseCancellationEnabled: Joi.boolean(),
     maxVideoParticipants: Joi.number().integer().min(2).max(10),
+    liveBillingEnabled: Joi.boolean(),
+    defaultLiveRate: Joi.number().min(0),
+    defaultEarningPercent: Joi.number().min(0).max(100),
   }).min(1),
 };

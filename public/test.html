@@ -442,9 +442,17 @@
     }
 
     @keyframes pulseBorder {
-      0% { border-color: var(--primary); }
-      50% { border-color: var(--success); }
-      100% { border-color: var(--primary); }
+      0% {
+        border-color: var(--primary);
+      }
+
+      50% {
+        border-color: var(--success);
+      }
+
+      100% {
+        border-color: var(--primary);
+      }
     }
 
     .banner-text {
@@ -504,10 +512,27 @@
       border-bottom-right-radius: 2px;
     }
 
-    .customer-panel .msg-bubble.sent { background-color: var(--primary); color: white; }
-    .customer-panel .msg-bubble.received { background-color: var(--customer-bubble); align-self: flex-start; border-bottom-left-radius: 2px; }
-    .listener-panel .msg-bubble.sent { background-color: var(--primary); color: white; }
-    .listener-panel .msg-bubble.received { background-color: var(--listener-bubble); align-self: flex-start; border-bottom-left-radius: 2px; }
+    .customer-panel .msg-bubble.sent {
+      background-color: var(--primary);
+      color: white;
+    }
+
+    .customer-panel .msg-bubble.received {
+      background-color: var(--customer-bubble);
+      align-self: flex-start;
+      border-bottom-left-radius: 2px;
+    }
+
+    .listener-panel .msg-bubble.sent {
+      background-color: var(--primary);
+      color: white;
+    }
+
+    .listener-panel .msg-bubble.received {
+      background-color: var(--listener-bubble);
+      align-self: flex-start;
+      border-bottom-left-radius: 2px;
+    }
 
     .msg-time {
       font-size: 9px;
@@ -548,8 +573,13 @@
       gap: 12px;
     }
 
-    .log-time { color: var(--text-muted); }
-    .log-content { flex: 1; }
+    .log-time {
+      color: var(--text-muted);
+    }
+
+    .log-content {
+      flex: 1;
+    }
 
     .test-helper-card {
       background: rgba(99, 102, 241, 0.05);
@@ -561,7 +591,9 @@
       line-height: 1.4;
     }
 
-    .test-helper-card strong { color: var(--text-main); }
+    .test-helper-card strong {
+      color: var(--text-main);
+    }
 
     .pulse-dot {
       width: 10px;
@@ -573,12 +605,24 @@
     }
 
     @keyframes recordingPulse {
-      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
-      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+      0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+      }
+
+      70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+      }
+
+      100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+      }
     }
 
-    .msg-bubble img, .msg-bubble video {
+    .msg-bubble img,
+    .msg-bubble video {
       max-width: 100%;
       max-height: 250px;
       border-radius: 8px;
@@ -589,7 +633,10 @@
       transition: transform 0.2s ease;
     }
 
-    .msg-bubble img:hover { transform: scale(1.02); cursor: zoom-in; }
+    .msg-bubble img:hover {
+      transform: scale(1.02);
+      cursor: zoom-in;
+    }
 
     .msg-bubble audio {
       width: 100%;
@@ -629,7 +676,7 @@
       width: 16px;
     }
 
-    .call-mode-selector input[type="radio"]:checked + span {
+    .call-mode-selector input[type="radio"]:checked+span {
       color: var(--primary);
     }
 
@@ -714,17 +761,53 @@
       animation: audioWave 1.2s ease-in-out infinite;
     }
 
-    .audio-wave-visual .bar:nth-child(1) { height: 20px; animation-delay: 0s; }
-    .audio-wave-visual .bar:nth-child(2) { height: 35px; animation-delay: 0.1s; }
-    .audio-wave-visual .bar:nth-child(3) { height: 50px; animation-delay: 0.2s; }
-    .audio-wave-visual .bar:nth-child(4) { height: 40px; animation-delay: 0.3s; }
-    .audio-wave-visual .bar:nth-child(5) { height: 25px; animation-delay: 0.4s; }
-    .audio-wave-visual .bar:nth-child(6) { height: 45px; animation-delay: 0.15s; }
-    .audio-wave-visual .bar:nth-child(7) { height: 30px; animation-delay: 0.35s; }
+    .audio-wave-visual .bar:nth-child(1) {
+      height: 20px;
+      animation-delay: 0s;
+    }
+
+    .audio-wave-visual .bar:nth-child(2) {
+      height: 35px;
+      animation-delay: 0.1s;
+    }
+
+    .audio-wave-visual .bar:nth-child(3) {
+      height: 50px;
+      animation-delay: 0.2s;
+    }
+
+    .audio-wave-visual .bar:nth-child(4) {
+      height: 40px;
+      animation-delay: 0.3s;
+    }
+
+    .audio-wave-visual .bar:nth-child(5) {
+      height: 25px;
+      animation-delay: 0.4s;
+    }
+
+    .audio-wave-visual .bar:nth-child(6) {
+      height: 45px;
+      animation-delay: 0.15s;
+    }
+
+    .audio-wave-visual .bar:nth-child(7) {
+      height: 30px;
+      animation-delay: 0.35s;
+    }
 
     @keyframes audioWave {
-      0%, 100% { transform: scaleY(0.5); opacity: 0.6; }
-      50% { transform: scaleY(1.2); opacity: 1; }
+
+      0%,
+      100% {
+        transform: scaleY(0.5);
+        opacity: 0.6;
+      }
+
+      50% {
+        transform: scaleY(1.2);
+        opacity: 1;
+      }
     }
 
     .remote-video {
@@ -822,9 +905,17 @@
     }
 
     @keyframes callPulse {
-      0% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.4); }
-      70% { box-shadow: 0 0 0 12px rgba(124, 58, 237, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); }
+      0% {
+        box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.4);
+      }
+
+      70% {
+        box-shadow: 0 0 0 12px rgba(124, 58, 237, 0);
+      }
+
+      100% {
+        box-shadow: 0 0 0 0 rgba(124, 58, 237, 0);
+      }
     }
 
     .call-info-row {
@@ -834,7 +925,9 @@
       font-size: 13px;
     }
 
-    .call-info-row strong { color: var(--text-main); }
+    .call-info-row strong {
+      color: var(--text-main);
+    }
 
     /* ─── Live Room UI ───────────────────────────────────────── */
     .live-info-card {
@@ -853,7 +946,11 @@
       font-weight: 600;
     }
 
-    .live-stat-row span { display: flex; align-items: center; gap: 4px; }
+    .live-stat-row span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
 
     .live-comments-feed {
       flex: 1;
@@ -874,9 +971,18 @@
       word-break: break-word;
     }
 
-    .live-comment-user { font-weight: 700; color: #a5b4fc; margin-right: 5px; }
+    .live-comment-user {
+      font-weight: 700;
+      color: #a5b4fc;
+      margin-right: 5px;
+    }
 
-    .live-comment-time { font-size: 10px; color: var(--text-muted); float: right; margin-left: 8px; }
+    .live-comment-time {
+      font-size: 10px;
+      color: var(--text-muted);
+      float: right;
+      margin-left: 8px;
+    }
 
     .live-room-card {
       background: rgba(239, 68, 68, 0.06);
@@ -889,14 +995,34 @@
       transition: background 0.2s, border-color 0.2s;
     }
 
-    .live-room-card:hover { background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.4); }
+    .live-room-card:hover {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: rgba(239, 68, 68, 0.4);
+    }
 
-    .live-room-title { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+    .live-room-title {
+      font-weight: 600;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
 
-    .live-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--danger);
-      box-shadow: 0 0 6px var(--danger); animation: recordingPulse 1.2s infinite; }
+    .live-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--danger);
+      box-shadow: 0 0 6px var(--danger);
+      animation: recordingPulse 1.2s infinite;
+    }
 
-    .live-room-meta { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+    .live-room-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
 
     .live-video-box {
       border-radius: 10px;
@@ -922,19 +1048,50 @@
       border-radius: 3px;
       animation: audioWave 1.2s ease-in-out infinite;
     }
-    .live-audio-visual .bar:nth-child(1){ height:18px; animation-delay:0s; }
-    .live-audio-visual .bar:nth-child(2){ height:32px; animation-delay:0.1s; }
-    .live-audio-visual .bar:nth-child(3){ height:48px; animation-delay:0.2s; }
-    .live-audio-visual .bar:nth-child(4){ height:36px; animation-delay:0.3s; }
-    .live-audio-visual .bar:nth-child(5){ height:22px; animation-delay:0.4s; }
-    .live-audio-visual .bar:nth-child(6){ height:42px; animation-delay:0.15s; }
-    .live-audio-visual .bar:nth-child(7){ height:28px; animation-delay:0.35s; }
+
+    .live-audio-visual .bar:nth-child(1) {
+      height: 18px;
+      animation-delay: 0s;
+    }
+
+    .live-audio-visual .bar:nth-child(2) {
+      height: 32px;
+      animation-delay: 0.1s;
+    }
+
+    .live-audio-visual .bar:nth-child(3) {
+      height: 48px;
+      animation-delay: 0.2s;
+    }
+
+    .live-audio-visual .bar:nth-child(4) {
+      height: 36px;
+      animation-delay: 0.3s;
+    }
+
+    .live-audio-visual .bar:nth-child(5) {
+      height: 22px;
+      animation-delay: 0.4s;
+    }
+
+    .live-audio-visual .bar:nth-child(6) {
+      height: 42px;
+      animation-delay: 0.15s;
+    }
+
+    .live-audio-visual .bar:nth-child(7) {
+      height: 28px;
+      animation-delay: 0.35s;
+    }
 
     button.btn-live {
       background: linear-gradient(135deg, #dc2626 0%, #7c3aed 100%);
       box-shadow: 0 4px 15px rgba(220, 38, 38, 0.35);
     }
-    button.btn-live:hover { box-shadow: 0 4px 20px rgba(220, 38, 38, 0.55); }
+
+    button.btn-live:hover {
+      box-shadow: 0 4px 20px rgba(220, 38, 38, 0.55);
+    }
   </style>
 
   <!-- Socket.io client (CDN + local fallback if CDN blocked) -->
@@ -993,7 +1150,8 @@
           <div class="input-row">
             <input type="text" id="customerToken" placeholder="Paste customer token here...">
             <button id="btnConnectCustomer">Connect</button>
-            <button class="btn-success" id="btnInstantMatch" title="POST /match/instant — needs token only">⚡ Find Partner</button>
+            <button class="btn-success" id="btnInstantMatch" title="POST /match/instant — needs token only">⚡ Find
+              Partner</button>
           </div>
         </div>
 
@@ -1001,7 +1159,8 @@
           <div>
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <label style="font-size: 13px; font-weight: 600;">Listeners Directory</label>
-              <button class="btn-secondary" style="padding: 4px 8px; font-size: 11px;" id="btnLoadListeners">Refresh List</button>
+              <button class="btn-secondary" style="padding: 4px 8px; font-size: 11px;" id="btnLoadListeners">Refresh
+                List</button>
             </div>
             <div class="listeners-card-list" id="listenersList">
               <div style="text-align: center; font-size: 13px; color: var(--text-muted); padding: 20px;">
@@ -1011,9 +1170,11 @@
           </div>
 
           <div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; margin-top: 10px;">
+            <div
+              style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; margin-top: 10px;">
               <label style="font-size: 13px; font-weight: 600;">Recent Chats / History</label>
-              <button class="btn-secondary" style="padding: 4px 8px; font-size: 11px;" id="btnLoadCustomerHistory">Refresh History</button>
+              <button class="btn-secondary" style="padding: 4px 8px; font-size: 11px;"
+                id="btnLoadCustomerHistory">Refresh History</button>
             </div>
             <div class="listeners-card-list" id="customerHistoryList" style="max-height: 150px;">
               <div style="text-align: center; font-size: 13px; color: var(--text-muted); padding: 10px;">
@@ -1039,66 +1200,104 @@
           </div>
 
           <div id="customerSessionStatusBanner" class="request-banner" style="display: none;">
-            <div class="banner-text" id="customerBannerText">Request sent. Waiting for listener response... (30s timeout)</div>
+            <div class="banner-text" id="customerBannerText">Request sent. Waiting for listener response... (30s
+              timeout)</div>
             <div class="banner-actions">
-              <button class="btn-danger" style="width: 100%; font-size: 12px; padding: 6px 12px;" id="btnCancelRequest">Cancel</button>
+              <button class="btn-danger" style="width: 100%; font-size: 12px; padding: 6px 12px;"
+                id="btnCancelRequest">Cancel</button>
             </div>
           </div>
 
           <div class="chat-section" id="customerChatBox" style="display: none;">
-            <div class="chat-header" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(0, 0, 0, 0.35); border-bottom: 1px solid var(--panel-border);">
+            <div class="chat-header"
+              style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(0, 0, 0, 0.35); border-bottom: 1px solid var(--panel-border);">
               <div style="display: flex; align-items: center; gap: 10px;">
-                <button class="btn-secondary" style="padding: 4px 8px; font-size: 12px; border-radius: 8px;" id="btnCustomerEndChat" title="Back to inbox">⬅️</button>
+                <button class="btn-secondary" style="padding: 4px 8px; font-size: 12px; border-radius: 8px;"
+                  id="btnCustomerEndChat" title="Back to inbox">⬅️</button>
                 <div>
                   <div style="display: flex; align-items: center; gap: 6px;">
                     <strong id="customerChatPartnerTitle" style="font-size: 14px; color: #fff;">Chat Partner</strong>
                     <span id="customerActiveSegmentBadge" class="segment-badge segment-chat">💬 CHAT</span>
                   </div>
-                  <div style="font-size: 11px; color: var(--text-muted);">Session: <span id="customerSessionIdVal" style="color: #a5b4fc; font-family: monospace;"></span></div>
+                  <div style="font-size: 11px; color: var(--text-muted);">Session: <span id="customerSessionIdVal"
+                      style="color: #a5b4fc; font-family: monospace;"></span></div>
                 </div>
               </div>
               <div style="display: flex; gap: 8px; align-items: center;">
-                <button class="chat-top-call-btn" id="btnCustomerUpgradeAudio" title="Start Audio Call inside this session">📞 Audio Call</button>
-                <button class="chat-top-call-btn btn-video" id="btnCustomerUpgradeVideo" title="Start Video Call inside this session">📹 Video Call</button>
-                <button class="btn-danger" id="btnCustomerHangupCall" style="display: none; padding: 6px 12px; font-size: 12px; border-radius: 20px; font-weight: bold;" title="End Call and return to Chat">🔴 Return to Chat</button>
-                <button class="btn-danger" id="btnCustomerEndSessionFull" style="padding: 6px 10px; font-size: 11px; border-radius: 8px;" title="Completely finish session">❌ End Session</button>
+                <button class="chat-top-call-btn" id="btnCustomerUpgradeAudio"
+                  title="Start Audio Call inside this session">📞 Audio Call</button>
+                <button class="chat-top-call-btn btn-video" id="btnCustomerUpgradeVideo"
+                  title="Start Video Call inside this session">📹 Video Call</button>
+                <button class="btn-danger" id="btnCustomerHangupCall"
+                  style="display: none; padding: 6px 12px; font-size: 12px; border-radius: 20px; font-weight: bold;"
+                  title="End Call and return to Chat">🔴 Return to Chat</button>
+                <button class="btn-danger" id="btnCustomerEndSessionFull"
+                  style="padding: 6px 10px; font-size: 11px; border-radius: 8px;" title="Completely finish session">❌
+                  End Session</button>
               </div>
             </div>
-            <div id="customerCallStatusNotice" style="display: none; background: linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(99,102,241,0.15) 100%); border-bottom: 1px solid rgba(16,185,129,0.3); padding: 10px 16px; font-size: 12px; justify-content: space-between; align-items: center;">
-              <div>🟢 <strong id="customerCallStatusText">Audio Call Active</strong> | Channel: <span id="customerAgoraChannel" style="font-family: monospace; color: #34d399; font-weight: bold;"></span></div>
+            <div id="customerCallStatusNotice"
+              style="display: none; background: linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(99,102,241,0.15) 100%); border-bottom: 1px solid rgba(16,185,129,0.3); padding: 10px 16px; font-size: 12px; justify-content: space-between; align-items: center;">
+              <div>🟢 <strong id="customerCallStatusText">Audio Call Active</strong> | Channel: <span
+                  id="customerAgoraChannel" style="font-family: monospace; color: #34d399; font-weight: bold;"></span>
+              </div>
               <span style="font-size: 11px; color: #a5b4fc;">Connected via Agora RTC</span>
             </div>
 
             <!-- In-Session Live Video/Audio Call Screen -->
-            <div id="customerInCallMediaBox" style="display: none; position: relative; border-radius: 12px; overflow: hidden; margin: 8px; border: 1px solid rgba(99, 102, 241, 0.4); background: #050a14; min-height: 220px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);">
-              <div id="customerInCallVideoArea" class="call-video-area" style="min-height: 220px; height: 240px; position: relative; display: flex; align-items: center; justify-content: center; background: #050a14;">
-                <div id="customerInCallRemoteVideo" class="remote-video" style="width: 100%; height: 100%; object-fit: cover;"></div>
-                <div id="customerInCallLocalVideo" class="local-video-pip" style="position: absolute; bottom: 50px; right: 12px; width: 100px; height: 80px; border-radius: 8px; overflow: hidden; border: 2px solid #818cf8; z-index: 10; background: #1e1b4b;"></div>
-                <div id="customerInCallAudioWave" class="audio-wave-visual" style="display: none; width: 100%; justify-content: center; height: 100%; align-items: center;">
-                  <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+            <div id="customerInCallMediaBox"
+              style="display: none; position: relative; border-radius: 12px; overflow: hidden; margin: 8px; border: 1px solid rgba(99, 102, 241, 0.4); background: #050a14; min-height: 220px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);">
+              <div id="customerInCallVideoArea" class="call-video-area"
+                style="min-height: 220px; height: 240px; position: relative; display: flex; align-items: center; justify-content: center; background: #050a14;">
+                <div id="customerInCallRemoteVideo" class="remote-video"
+                  style="width: 100%; height: 100%; object-fit: cover;"></div>
+                <div id="customerInCallLocalVideo" class="local-video-pip"
+                  style="position: absolute; bottom: 50px; right: 12px; width: 100px; height: 80px; border-radius: 8px; overflow: hidden; border: 2px solid #818cf8; z-index: 10; background: #1e1b4b;">
+                </div>
+                <div id="customerInCallAudioWave" class="audio-wave-visual"
+                  style="display: none; width: 100%; justify-content: center; height: 100%; align-items: center;">
+                  <div class="bar"></div>
+                  <div class="bar"></div>
+                  <div class="bar"></div>
+                  <div class="bar"></div>
+                  <div class="bar"></div>
+                  <div class="bar"></div>
+                  <div class="bar"></div>
                 </div>
               </div>
-              <div style="position: absolute; bottom: 8px; left: 0; right: 0; display: flex; justify-content: center; gap: 10px; z-index: 20; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); padding: 6px 0;">
-                <button id="btnCustomerInCallMute" class="call-ctrl-btn mute-btn" style="width: 36px; height: 36px; font-size: 15px;" title="Mute Microphone">🎤</button>
-                <button id="btnCustomerInCallCamera" class="call-ctrl-btn camera-btn" style="width: 36px; height: 36px; font-size: 15px;" title="Toggle Camera">📹</button>
-                <button id="btnCustomerInCallHangup" class="call-ctrl-btn end-btn" style="width: 36px; height: 36px; font-size: 15px; background: #dc2626;" title="Return to Chat">🔴</button>
+              <div
+                style="position: absolute; bottom: 8px; left: 0; right: 0; display: flex; justify-content: center; gap: 10px; z-index: 20; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); padding: 6px 0;">
+                <button id="btnCustomerInCallMute" class="call-ctrl-btn mute-btn"
+                  style="width: 36px; height: 36px; font-size: 15px;" title="Mute Microphone">🎤</button>
+                <button id="btnCustomerInCallCamera" class="call-ctrl-btn camera-btn"
+                  style="width: 36px; height: 36px; font-size: 15px;" title="Toggle Camera">📹</button>
+                <button id="btnCustomerInCallHangup" class="call-ctrl-btn end-btn"
+                  style="width: 36px; height: 36px; font-size: 15px; background: #dc2626;"
+                  title="Return to Chat">🔴</button>
               </div>
             </div>
 
             <div class="chat-messages" id="customerMessages"></div>
             <div class="typing-indicator" id="customerTypingInd"></div>
             <div class="chat-input-row" style="position: relative; align-items: center;">
-              <button class="btn-secondary" style="padding: 10px; font-size: 16px; border-radius: 50%; min-width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;" onclick="document.getElementById('customerFileInput').click()" title="Attach File">📎</button>
+              <button class="btn-secondary"
+                style="padding: 10px; font-size: 16px; border-radius: 50%; min-width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;"
+                onclick="document.getElementById('customerFileInput').click()" title="Attach File">📎</button>
               <input type="file" id="customerFileInput" accept="image/*,video/*" style="display: none;">
-              <button class="btn-secondary" id="btnCustomerRecord" style="padding: 10px; font-size: 16px; border-radius: 50%; min-width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;" title="Record Voice">🎙️</button>
+              <button class="btn-secondary" id="btnCustomerRecord"
+                style="padding: 10px; font-size: 16px; border-radius: 50%; min-width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;"
+                title="Record Voice">🎙️</button>
               <input type="text" id="customerMsgInput" placeholder="Type a message..." style="flex: 1;">
-              <div id="customerRecordStatus" style="display: none; flex: 1; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.3); padding: 6px 12px; border-radius: 8px;">
+              <div id="customerRecordStatus"
+                style="display: none; flex: 1; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.3); padding: 6px 12px; border-radius: 8px;">
                 <div style="display: flex; align-items: center; gap: 8px;">
                   <div class="pulse-dot"></div>
-                  <span id="customerRecordTime" style="font-family: monospace; font-size: 14px; color: var(--danger); font-weight: bold;">00:00</span>
+                  <span id="customerRecordTime"
+                    style="font-family: monospace; font-size: 14px; color: var(--danger); font-weight: bold;">00:00</span>
                 </div>
                 <span style="font-size: 12px; color: var(--text-muted);">Recording voice message...</span>
-                <button class="btn-danger" id="btnCustomerCancelRecord" style="padding: 4px 8px; font-size: 11px;">🗑️ Delete</button>
+                <button class="btn-danger" id="btnCustomerCancelRecord" style="padding: 4px 8px; font-size: 11px;">🗑️
+                  Delete</button>
               </div>
               <button id="btnCustomerSend">Send</button>
             </div>
@@ -1132,19 +1331,23 @@
           </div>
 
           <div style="display: flex; gap: 10px; margin-top: -6px; margin-bottom: 6px;">
-            <button id="btnSetOnline" class="btn-success" style="flex: 1; padding: 8px 12px; font-size: 13px;">🟢 Go Online</button>
-            <button id="btnSetOffline" class="btn-danger" style="flex: 1; padding: 8px 12px; font-size: 13px;">🔴 Go Offline</button>
+            <button id="btnSetOnline" class="btn-success" style="flex: 1; padding: 8px 12px; font-size: 13px;">🟢 Go
+              Online</button>
+            <button id="btnSetOffline" class="btn-danger" style="flex: 1; padding: 8px 12px; font-size: 13px;">🔴 Go
+              Offline</button>
           </div>
 
           <div>
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <label style="font-size: 13px; font-weight: 600;">Listener Home (API)</label>
-              <button class="btn-secondary" style="padding: 4px 8px; font-size: 11px;" id="btnLoadListenerHome">Refresh</button>
+              <button class="btn-secondary" style="padding: 4px 8px; font-size: 11px;"
+                id="btnLoadListenerHome">Refresh</button>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; font-size: 12px;">
               <div>
                 <strong style="color: var(--success);">Online</strong>
-                <div class="listeners-card-list" id="listenerHomeOnline" style="max-height: 120px; margin-top: 4px;"></div>
+                <div class="listeners-card-list" id="listenerHomeOnline" style="max-height: 120px; margin-top: 4px;">
+                </div>
               </div>
               <div>
                 <strong style="color: var(--accent);">New</strong>
@@ -1152,15 +1355,18 @@
               </div>
               <div>
                 <strong style="color: var(--warning);">Popular</strong>
-                <div class="listeners-card-list" id="listenerHomePopular" style="max-height: 120px; margin-top: 4px;"></div>
+                <div class="listeners-card-list" id="listenerHomePopular" style="max-height: 120px; margin-top: 4px;">
+                </div>
               </div>
             </div>
           </div>
 
           <div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; margin-top: 10px;">
+            <div
+              style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; margin-top: 10px;">
               <label style="font-size: 13px; font-weight: 600;">Recent Chats / History</label>
-              <button class="btn-secondary" style="padding: 4px 8px; font-size: 11px;" id="btnLoadListenerHistory">Refresh History</button>
+              <button class="btn-secondary" style="padding: 4px 8px; font-size: 11px;"
+                id="btnLoadListenerHistory">Refresh History</button>
             </div>
             <div class="listeners-card-list" id="listenerHistoryList" style="max-height: 150px;">
               <div style="text-align: center; font-size: 13px; color: var(--text-muted); padding: 10px;">
@@ -1182,12 +1388,15 @@
             </div>
           </div>
 
-          <div id="incomingCallBanner" class="request-banner" style="display: none; border-color: #818cf8; background: linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(139, 92, 246, 0.15) 100%);">
+          <div id="incomingCallBanner" class="request-banner"
+            style="display: none; border-color: #818cf8; background: linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(139, 92, 246, 0.15) 100%);">
             <div class="banner-text">
               📞 <strong>Incoming <span id="incomingCallMode">AUDIO</span> Call Request!</strong><br>
               Caller Name: <strong id="incomingCallCallerName">Caller</strong><br>
               Caller ID: <strong id="incomingCallCallerId">--</strong><br>
-              Rate: <strong id="incomingCallRateVal">0</strong> coins/min <span id="incomingCallUpgradeBadge" style="background:#818cf8;color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;display:none;">IN-SESSION UPGRADE</span>
+              Rate: <strong id="incomingCallRateVal">0</strong> coins/min <span id="incomingCallUpgradeBadge"
+                style="background:#818cf8;color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;display:none;">IN-SESSION
+                UPGRADE</span>
             </div>
             <div class="banner-actions">
               <button class="btn-success" style="flex: 1;" id="btnAcceptCall">Accept Call</button>
@@ -1196,56 +1405,90 @@
           </div>
 
           <div class="chat-section" id="listenerChatBox" style="display: none;">
-            <div class="chat-header" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(0, 0, 0, 0.35); border-bottom: 1px solid var(--panel-border);">
+            <div class="chat-header"
+              style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(0, 0, 0, 0.35); border-bottom: 1px solid var(--panel-border);">
               <div style="display: flex; align-items: center; gap: 10px;">
-                <button class="btn-secondary" style="padding: 4px 8px; font-size: 12px; border-radius: 8px;" id="btnListenerEndChat" title="Back to inbox">⬅️</button>
+                <button class="btn-secondary" style="padding: 4px 8px; font-size: 12px; border-radius: 8px;"
+                  id="btnListenerEndChat" title="Back to inbox">⬅️</button>
                 <div>
                   <div style="display: flex; align-items: center; gap: 6px;">
                     <strong id="listenerChatPartnerTitle" style="font-size: 14px; color: #fff;">Customer</strong>
                     <span id="listenerActiveSegmentBadge" class="segment-badge segment-chat">💬 CHAT</span>
                   </div>
-                  <div style="font-size: 11px; color: var(--text-muted);">Session: <span id="listenerSessionIdVal" style="color: #a5b4fc; font-family: monospace;"></span></div>
+                  <div style="font-size: 11px; color: var(--text-muted);">Session: <span id="listenerSessionIdVal"
+                      style="color: #a5b4fc; font-family: monospace;"></span></div>
                 </div>
               </div>
               <div style="display: flex; gap: 8px; align-items: center;">
-                <button class="btn-danger" id="btnListenerHangupCall" style="display: none; padding: 6px 12px; font-size: 12px; border-radius: 20px; font-weight: bold;" title="End Call and return to Chat">🔴 Return to Chat</button>
-                <button class="btn-danger" id="btnListenerEndSessionFull" style="padding: 6px 10px; font-size: 11px; border-radius: 8px;" title="Completely finish session">❌ End Session</button>
+                <button class="btn-danger" id="btnListenerHangupCall"
+                  style="display: none; padding: 6px 12px; font-size: 12px; border-radius: 20px; font-weight: bold;"
+                  title="End Call and return to Chat">🔴 Return to Chat</button>
+                <button class="btn-danger" id="btnListenerEndSessionFull"
+                  style="padding: 6px 10px; font-size: 11px; border-radius: 8px;" title="Completely finish session">❌
+                  End Session</button>
               </div>
             </div>
-            <div id="listenerCallStatusNotice" style="display: none; background: linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(99,102,241,0.15) 100%); border-bottom: 1px solid rgba(16,185,129,0.3); padding: 10px 16px; font-size: 12px; justify-content: space-between; align-items: center;">
-              <div>🟢 <strong id="listenerCallStatusText">Audio Call Active</strong> | Channel: <span id="listenerAgoraChannel" style="font-family: monospace; color: #34d399; font-weight: bold;"></span></div>
+            <div id="listenerCallStatusNotice"
+              style="display: none; background: linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(99,102,241,0.15) 100%); border-bottom: 1px solid rgba(16,185,129,0.3); padding: 10px 16px; font-size: 12px; justify-content: space-between; align-items: center;">
+              <div>🟢 <strong id="listenerCallStatusText">Audio Call Active</strong> | Channel: <span
+                  id="listenerAgoraChannel" style="font-family: monospace; color: #34d399; font-weight: bold;"></span>
+              </div>
               <span style="font-size: 11px; color: #a5b4fc;">Connected via Agora RTC</span>
             </div>
 
             <!-- In-Session Live Video/Audio Call Screen -->
-            <div id="listenerInCallMediaBox" style="display: none; position: relative; border-radius: 12px; overflow: hidden; margin: 8px; border: 1px solid rgba(99, 102, 241, 0.4); background: #050a14; min-height: 220px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);">
-              <div id="listenerInCallVideoArea" class="call-video-area" style="min-height: 220px; height: 240px; position: relative; display: flex; align-items: center; justify-content: center; background: #050a14;">
-                <div id="listenerInCallRemoteVideo" class="remote-video" style="width: 100%; height: 100%; object-fit: cover;"></div>
-                <div id="listenerInCallLocalVideo" class="local-video-pip" style="position: absolute; bottom: 50px; right: 12px; width: 100px; height: 80px; border-radius: 8px; overflow: hidden; border: 2px solid #818cf8; z-index: 10; background: #1e1b4b;"></div>
-                <div id="listenerInCallAudioWave" class="audio-wave-visual" style="display: none; width: 100%; justify-content: center; height: 100%; align-items: center;">
-                  <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+            <div id="listenerInCallMediaBox"
+              style="display: none; position: relative; border-radius: 12px; overflow: hidden; margin: 8px; border: 1px solid rgba(99, 102, 241, 0.4); background: #050a14; min-height: 220px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);">
+              <div id="listenerInCallVideoArea" class="call-video-area"
+                style="min-height: 220px; height: 240px; position: relative; display: flex; align-items: center; justify-content: center; background: #050a14;">
+                <div id="listenerInCallRemoteVideo" class="remote-video"
+                  style="width: 100%; height: 100%; object-fit: cover;"></div>
+                <div id="listenerInCallLocalVideo" class="local-video-pip"
+                  style="position: absolute; bottom: 50px; right: 12px; width: 100px; height: 80px; border-radius: 8px; overflow: hidden; border: 2px solid #818cf8; z-index: 10; background: #1e1b4b;">
+                </div>
+                <div id="listenerInCallAudioWave" class="audio-wave-visual"
+                  style="display: none; width: 100%; justify-content: center; height: 100%; align-items: center;">
+                  <div class="bar"></div>
+                  <div class="bar"></div>
+                  <div class="bar"></div>
+                  <div class="bar"></div>
+                  <div class="bar"></div>
+                  <div class="bar"></div>
+                  <div class="bar"></div>
                 </div>
               </div>
-              <div style="position: absolute; bottom: 8px; left: 0; right: 0; display: flex; justify-content: center; gap: 10px; z-index: 20; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); padding: 6px 0;">
-                <button id="btnListenerInCallMute" class="call-ctrl-btn mute-btn" style="width: 36px; height: 36px; font-size: 15px;" title="Mute Microphone">🎤</button>
-                <button id="btnListenerInCallCamera" class="call-ctrl-btn camera-btn" style="width: 36px; height: 36px; font-size: 15px;" title="Toggle Camera">📹</button>
-                <button id="btnListenerInCallHangup" class="call-ctrl-btn end-btn" style="width: 36px; height: 36px; font-size: 15px; background: #dc2626;" title="Return to Chat">🔴</button>
+              <div
+                style="position: absolute; bottom: 8px; left: 0; right: 0; display: flex; justify-content: center; gap: 10px; z-index: 20; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); padding: 6px 0;">
+                <button id="btnListenerInCallMute" class="call-ctrl-btn mute-btn"
+                  style="width: 36px; height: 36px; font-size: 15px;" title="Mute Microphone">🎤</button>
+                <button id="btnListenerInCallCamera" class="call-ctrl-btn camera-btn"
+                  style="width: 36px; height: 36px; font-size: 15px;" title="Toggle Camera">📹</button>
+                <button id="btnListenerInCallHangup" class="call-ctrl-btn end-btn"
+                  style="width: 36px; height: 36px; font-size: 15px; background: #dc2626;"
+                  title="Return to Chat">🔴</button>
               </div>
             </div>
             <div class="chat-messages" id="listenerMessages"></div>
             <div class="typing-indicator" id="listenerTypingInd"></div>
             <div class="chat-input-row" style="position: relative; align-items: center;">
-              <button class="btn-secondary" style="padding: 10px; font-size: 16px; border-radius: 50%; min-width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;" onclick="document.getElementById('listenerFileInput').click()" title="Attach File">📎</button>
+              <button class="btn-secondary"
+                style="padding: 10px; font-size: 16px; border-radius: 50%; min-width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;"
+                onclick="document.getElementById('listenerFileInput').click()" title="Attach File">📎</button>
               <input type="file" id="listenerFileInput" accept="image/*,video/*" style="display: none;">
-              <button class="btn-secondary" id="btnListenerRecord" style="padding: 10px; font-size: 16px; border-radius: 50%; min-width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;" title="Record Voice">🎙️</button>
+              <button class="btn-secondary" id="btnListenerRecord"
+                style="padding: 10px; font-size: 16px; border-radius: 50%; min-width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;"
+                title="Record Voice">🎙️</button>
               <input type="text" id="listenerMsgInput" placeholder="Type a message..." style="flex: 1;">
-              <div id="listenerRecordStatus" style="display: none; flex: 1; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.3); padding: 6px 12px; border-radius: 8px;">
+              <div id="listenerRecordStatus"
+                style="display: none; flex: 1; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.3); padding: 6px 12px; border-radius: 8px;">
                 <div style="display: flex; align-items: center; gap: 8px;">
                   <div class="pulse-dot"></div>
-                  <span id="listenerRecordTime" style="font-family: monospace; font-size: 14px; color: var(--danger); font-weight: bold;">00:00</span>
+                  <span id="listenerRecordTime"
+                    style="font-family: monospace; font-size: 14px; color: var(--danger); font-weight: bold;">00:00</span>
                 </div>
                 <span style="font-size: 12px; color: var(--text-muted);">Recording voice message...</span>
-                <button class="btn-danger" id="btnListenerCancelRecord" style="padding: 4px 8px; font-size: 11px;">🗑️ Delete</button>
+                <button class="btn-danger" id="btnListenerCancelRecord" style="padding: 4px 8px; font-size: 11px;">🗑️
+                  Delete</button>
               </div>
               <button id="btnListenerSend">Send</button>
             </div>
@@ -1287,10 +1530,12 @@
           <div>
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <label style="font-size: 13px; font-weight: 600;">Listeners Directory</label>
-              <button class="btn-secondary" style="padding: 4px 8px; font-size: 11px;" id="btnLoadCallListeners">Refresh</button>
+              <button class="btn-secondary" style="padding: 4px 8px; font-size: 11px;"
+                id="btnLoadCallListeners">Refresh</button>
             </div>
             <div class="listeners-card-list" id="callListenersList">
-              <div style="text-align: center; font-size: 13px; color: var(--text-muted); padding: 20px;">Click 'Refresh' to load listeners.</div>
+              <div style="text-align: center; font-size: 13px; color: var(--text-muted); padding: 20px;">Click 'Refresh'
+                to load listeners.</div>
             </div>
           </div>
 
@@ -1299,7 +1544,8 @@
             <div class="test-helper-card">
               Selected: <strong id="callSelectedName">None</strong><br>
               ID: <strong id="callSelectedId">None</strong><br>
-              Voice Rate: <strong id="callSelectedVoiceRate">0</strong> / Video Rate: <strong id="callSelectedVideoRate">0</strong> coins/min
+              Voice Rate: <strong id="callSelectedVoiceRate">0</strong> / Video Rate: <strong
+                id="callSelectedVideoRate">0</strong> coins/min
             </div>
 
             <div class="call-mode-selector">
@@ -1313,7 +1559,8 @@
               </label>
             </div>
 
-            <button class="btn-call" style="width: 100%; margin-top: 12px; padding: 14px; font-size: 15px;" id="btnRequestCall">
+            <button class="btn-call" style="width: 100%; margin-top: 12px; padding: 14px; font-size: 15px;"
+              id="btnRequestCall">
               📞 Request Call
             </button>
           </div>
@@ -1344,8 +1591,13 @@
               <div class="local-video-pip" id="callerLocalVideo"></div>
               <!-- Audio-only visualiser (shown when mode=AUDIO) -->
               <div class="audio-wave-visual" id="callerAudioWave" style="display: none;">
-                <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
-                <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
               </div>
             </div>
 
@@ -1390,8 +1642,10 @@
             <div class="call-info-row">Mode: <strong id="incomingCallMode">--</strong></div>
             <div class="call-info-row">Rate: <strong id="incomingCallRate">0</strong> coins/min</div>
             <div class="banner-actions">
-              <button class="btn-success" style="flex: 1; padding: 12px; font-size: 14px;" id="btnAcceptCall">✅ Accept</button>
-              <button class="btn-danger" style="flex: 1; padding: 12px; font-size: 14px;" id="btnRejectCall">❌ Reject</button>
+              <button class="btn-success" style="flex: 1; padding: 12px; font-size: 14px;" id="btnAcceptCall">✅
+                Accept</button>
+              <button class="btn-danger" style="flex: 1; padding: 12px; font-size: 14px;" id="btnRejectCall">❌
+                Reject</button>
             </div>
           </div>
 
@@ -1412,8 +1666,13 @@
               <div id="receiverRemoteVideo" style="width: 100%; height: 100%;"></div>
               <div class="local-video-pip" id="receiverLocalVideo"></div>
               <div class="audio-wave-visual" id="receiverAudioWave" style="display: none;">
-                <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
-                <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
               </div>
             </div>
 
@@ -1447,7 +1706,8 @@
       <!-- HOST PANEL (Left – LISTENER goes live) -->
       <div class="console-column" id="liveHostPanel">
         <div class="console-header">
-          <h2>🎙️ Host Console <span style="font-size:12px;font-weight:400;color:var(--text-muted);">(Listener)</span></h2>
+          <h2>🎙️ Host Console <span style="font-size:12px;font-weight:400;color:var(--text-muted);">(Listener)</span>
+          </h2>
           <div class="badge" id="liveHostStatus"></div>
         </div>
 
@@ -1484,8 +1744,10 @@
 
             <div class="live-info-card">
               <div style="display:flex;justify-content:space-between;align-items:center;">
-                <span style="font-size:12px;color:var(--text-muted);">Room ID: <strong id="liveHostRoomIdVal" style="color:var(--text-main);">--</strong></span>
-                <span style="display:inline-flex;align-items:center;gap:5px;background:var(--danger);color:#fff;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;">
+                <span style="font-size:12px;color:var(--text-muted);">Room ID: <strong id="liveHostRoomIdVal"
+                    style="color:var(--text-main);">--</strong></span>
+                <span
+                  style="display:inline-flex;align-items:center;gap:5px;background:var(--danger);color:#fff;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;">
                   <span class="live-dot"></span> LIVE
                 </span>
               </div>
@@ -1500,14 +1762,20 @@
             <div id="liveHostMediaArea" class="live-video-box" style="display:none;">
               <div id="liveHostVideoEl" style="width:100%;height:160px;"></div>
               <div id="liveHostAudioWave" class="live-audio-visual" style="display:none;">
-                <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
-                <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
               </div>
             </div>
 
             <!-- Comments feed -->
             <div class="chat-section" style="flex:1;min-height:0;">
-              <div class="chat-header"><span>Live Comments</span><span id="liveHostCommentCount" style="color:var(--text-muted);font-size:11px;"></span></div>
+              <div class="chat-header"><span>Live Comments</span><span id="liveHostCommentCount"
+                  style="color:var(--text-muted);font-size:11px;"></span></div>
               <div class="live-comments-feed" id="liveHostCommentsFeed"></div>
             </div>
 
@@ -1530,7 +1798,8 @@
       <!-- VIEWER PANEL (Right – CUSTOMER watches) -->
       <div class="console-column" id="liveViewerPanel">
         <div class="console-header">
-          <h2>👁️ Viewer Console <span style="font-size:12px;font-weight:400;color:var(--text-muted);">(Customer)</span></h2>
+          <h2>👁️ Viewer Console <span style="font-size:12px;font-weight:400;color:var(--text-muted);">(Customer)</span>
+          </h2>
           <div class="badge" id="liveViewerStatus"></div>
         </div>
 
@@ -1545,10 +1814,27 @@
         <div class="workspace-area" id="liveViewerWorkspace" style="display:none;gap:14px;">
 
           <!-- Browse rooms (pre-join) -->
-          <div id="liveViewerBrowseArea">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <div id="liveViewerBrowseArea" style="display:flex;flex-direction:column;gap:10px;">
+            <!-- Direct Room ID Join for rapid testing -->
+            <div
+              style="background:var(--bg-card);padding:10px;border-radius:8px;border:1px solid var(--border-color);display:flex;flex-direction:column;gap:8px;">
+              <label style="font-size:11px;font-weight:700;color:var(--text-muted);">DIRECT ROOM ID JOIN</label>
+              <div style="display:flex;gap:6px;">
+                <input type="text" id="liveViewerDirectRoomId" placeholder="Paste live room ID..." style="flex:1;">
+                <button class="btn-primary" style="padding:7px 12px;font-size:12px;" id="btnJoinDirectRoom">Join
+                  ID</button>
+              </div>
+              <button class="btn-warning"
+                style="width:100%;padding:8px;font-size:12px;display:flex;align-items:center;justify-content:center;gap:6px;"
+                id="btnJoinActiveHostRoom">
+                ⚡ Join Host's Current Live Room
+              </button>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
               <label style="font-size:13px;font-weight:600;">Active Live Rooms</label>
-              <button class="btn-secondary" style="padding:4px 10px;font-size:11px;" id="btnRefreshLiveRooms">🔄 Refresh</button>
+              <button class="btn-secondary" style="padding:4px 10px;font-size:11px;" id="btnRefreshLiveRooms">🔄
+                Refresh</button>
             </div>
             <div class="listeners-card-list" id="liveRoomsList" style="gap:8px;">
               <div style="text-align:center;font-size:13px;color:var(--text-muted);padding:20px;">
@@ -1562,7 +1848,8 @@
 
             <div class="live-info-card">
               <div style="display:flex;justify-content:space-between;align-items:center;">
-                <span style="font-size:12px;color:var(--text-muted);">Room: <strong id="liveViewerRoomIdVal" style="color:var(--text-main);">--</strong></span>
+                <span style="font-size:12px;color:var(--text-muted);">Room: <strong id="liveViewerRoomIdVal"
+                    style="color:var(--text-main);">--</strong></span>
                 <span style="font-size:11px;color:var(--text-muted);" id="liveViewerRoomMode"></span>
               </div>
               <div class="live-stat-row">
@@ -1575,8 +1862,13 @@
             <div id="liveViewerMediaArea" class="live-video-box" style="display:none;">
               <div id="liveViewerRemoteVideoEl" style="width:100%;height:160px;"></div>
               <div id="liveViewerAudioWave" class="live-audio-visual" style="display:none;">
-                <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
-                <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
               </div>
             </div>
 
@@ -1593,7 +1885,8 @@
             </div>
 
             <div style="display:flex;gap:8px;">
-              <button class="btn-danger" style="flex:1;font-size:16px;padding:10px;letter-spacing:2px;" id="btnLiveLike" title="Tap to like">❤️</button>
+              <button class="btn-danger" style="flex:1;font-size:16px;padding:10px;letter-spacing:2px;" id="btnLiveLike"
+                title="Tap to like">❤️</button>
               <button class="btn-secondary" style="flex:2;" id="btnLiveLeave">⬅️ Leave Room</button>
             </div>
           </div>
@@ -2425,11 +2718,11 @@
         const res = await fetch(`${getBackendUrl()}/api/v1/chats/conversations?limit=20`, { headers: { 'Authorization': `Bearer ${token}` } });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message);
-        
+
         const conversations = data.data?.conversations || [];
-        if (!conversations.length) { 
-          listDiv.innerHTML = `<div style="text-align:center;color:var(--text-muted);font-size:12px;padding:15px;">No conversations yet.</div>`; 
-          return; 
+        if (!conversations.length) {
+          listDiv.innerHTML = `<div style="text-align:center;color:var(--text-muted);font-size:12px;padding:15px;">No conversations yet.</div>`;
+          return;
         }
 
         conversations.forEach(c => {
@@ -2463,8 +2756,8 @@
           });
           listDiv.appendChild(item);
         });
-      } catch (err) { 
-        appendLog(role, `❌ Conversations: ${err.message}`); 
+      } catch (err) {
+        appendLog(role, `❌ Conversations: ${err.message}`);
       }
     }
 
@@ -3049,6 +3342,15 @@
         document.getElementById('liveHostViewerCount').textContent = '0';
         document.getElementById('liveHostLikeCount').textContent = '0';
 
+        // Auto sync Room ID to Viewer Direct Join field
+        const directInput = document.getElementById('liveViewerDirectRoomId');
+        if (directInput) directInput.value = data.roomId;
+
+        // Auto refresh viewer rooms list if viewer is connected
+        if (liveViewerSocket) {
+          document.getElementById('btnRefreshLiveRooms').click();
+        }
+
         // Show media area
         const mediaArea = document.getElementById('liveHostMediaArea');
         mediaArea.style.display = 'flex';
@@ -3271,12 +3573,15 @@
           const card = document.createElement('div');
           card.className = 'live-room-card';
           card.innerHTML = `
-            <div>
+            <div style="overflow:hidden;">
               <div class="live-room-title">
                 <span class="live-dot"></span>
                 ${room.title || 'Untitled Live'}
               </div>
-              <div class="live-room-meta">${room.mode} · 👁️ ${room.viewerCount || 0} watching · ❤️ ${room.likeCount || 0}</div>
+              <div class="live-room-meta" style="font-size:11px;">
+                <code>ID: ${room._id}</code><br>
+                ${room.mode} · 👁️ ${room.viewerCount || 0} watching · ❤️ ${room.likeCount || 0}
+              </div>
             </div>
             <button class="btn-success" style="padding:7px 16px;font-size:12px;" data-id="${room._id}">Join</button>
           `;
@@ -3292,6 +3597,24 @@
         appendLog('LiveViewer', `❌ ${err.message}`);
         listDiv.innerHTML = `<div style="text-align:center;color:var(--danger);padding:16px;font-size:13px;">Error: ${err.message}</div>`;
       }
+    });
+
+    // Join by Direct Room ID Input
+    document.getElementById('btnJoinDirectRoom').addEventListener('click', () => {
+      if (!liveViewerSocket) return alert('Connect the viewer socket first.');
+      const roomId = document.getElementById('liveViewerDirectRoomId').value.trim();
+      if (!roomId) return alert('Please enter or paste a Room ID.');
+      appendLog('LiveViewer', `Joining room ${roomId}...`);
+      liveViewerSocket.emit('live:join', { roomId });
+    });
+
+    // Quick Join Host's Active Room (Instant testing button)
+    document.getElementById('btnJoinActiveHostRoom').addEventListener('click', () => {
+      if (!liveViewerSocket) return alert('Connect the viewer socket first.');
+      if (!liveCurrentHostRoomId) return alert('Host has not started a live room yet on this page.');
+      document.getElementById('liveViewerDirectRoomId').value = liveCurrentHostRoomId;
+      appendLog('LiveViewer', `Quick-joining host room ${liveCurrentHostRoomId}...`);
+      liveViewerSocket.emit('live:join', { roomId: liveCurrentHostRoomId });
     });
 
     document.getElementById('btnSendLiveComment').addEventListener('click', () => {
@@ -3397,6 +3720,7 @@
         if (mediaType === 'video') {
           document.getElementById('liveViewerRemoteVideoEl').style.display = 'block';
           document.getElementById('liveViewerAudioWave').style.display = 'none';
+          document.getElementById('liveViewerRemoteVideoEl').innerHTML = '';
           remoteUser.videoTrack.play('liveViewerRemoteVideoEl');
         }
         if (mediaType === 'audio') {

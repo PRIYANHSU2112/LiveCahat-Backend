@@ -58,6 +58,16 @@ const listenerProfileSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    liveRate: {
+      type: Number,
+      default: 0,
+    },
+    earningPercent: {
+      type: Number,
+      default: 70,
+      min: 0,
+      max: 100,
+    },
     avgRating: {
       type: Number,
       default: 0,
@@ -163,6 +173,7 @@ listenerProfileSchema.index({ availability: 1 });
 listenerProfileSchema.index({ isFeatured: 1 });
 // Home-feed: APPROVED listeners are filtered by status and sorted by popularity/rating.
 listenerProfileSchema.index({ kycStatus: 1, availability: 1 });
+listenerProfileSchema.index({ kycStatus: 1, availability: 1, isFeatured: -1, followersCount: -1 });
 listenerProfileSchema.index({ kycStatus: 1, isFeatured: -1, followersCount: -1 });
 listenerProfileSchema.index({ kycStatus: 1, avgRating: -1 });
 listenerProfileSchema.index({ kycStatus: 1, languages: 1 });

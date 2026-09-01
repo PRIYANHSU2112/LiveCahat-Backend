@@ -37,12 +37,41 @@ const liveRoomSchema = new mongoose.Schema(
     endedAt: {
       type: Date,
     },
+    endReason: {
+      type: String,
+      default: null,
+    },
     viewerCount: {
       type: Number,
       default: 0,
       min: 0,
     },
     likeCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    /** Coins charged per minute to each viewer — snapshot at room creation. */
+    liveRate: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    /** Host earning percentage snapshot (e.g. 70 = host gets 70%). */
+    earningPercent: {
+      type: Number,
+      default: 70,
+      min: 0,
+      max: 100,
+    },
+    /** Aggregate total coins collected from all viewers during this live. */
+    totalCoinsCollected: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    /** Aggregate host earnings (totalCoinsCollected × earningPercent). */
+    totalCoinsEarned: {
       type: Number,
       default: 0,
       min: 0,

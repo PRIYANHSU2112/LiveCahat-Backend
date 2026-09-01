@@ -39,6 +39,42 @@ class NotificationRepository extends BaseRepository {
       muted: pick('muted'),
     };
   }
+
+  /**
+   * Bulk insert notifications (ordered: false prevents single failure from blocking batch)
+   * @param {Array<Object>} docs
+   */
+  async bulkInsert(docs) {
+    return this.model.insertMany(docs, { ordered: false });
+  }
+
+  /**
+   * Mark all unread notifications as read for a recipient.
+   * @param {string|mongoose.Types.ObjectId} recipientId
+   */
+  async markAllAsRead(recipientId) {
+    return this.model.updateMany(
+      { recipientId, status: 'UNREAD' },
+      { $set: { status: 'READ', readAt: new Date() } }
+    );
+  }
+
+  /**
+   * Delete single notification scoped strictly to its owner.
+   * @param {string|mongoose.Types.ObjectId} id
+   * @param {string|mongoose.Types.ObjectId} recipientId
+   */
+  async deleteOneByRecipient(id, recipientId) {
+    return this.model.findOneAndDelete({ _id: id, recipientId });
+  }
+
+  /**
+   * Run custom aggregation pipelines on notification collection.
+   * @param {Array<Object>} pipeline
+   */
+  async aggregateLogs(pipeline) {
+    return this.model.aggregate(pipeline);
+  }
 }
 
 export default new NotificationRepository();

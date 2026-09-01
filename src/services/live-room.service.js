@@ -40,7 +40,7 @@ class LiveRoomService extends BaseService {
 
   // ─── Room lifecycle ─────────────────────────────────────────────────────────
 
-  async createRoom(hostId, { title, mode }) {
+  async createRoom(hostId, { title, mode, liveRate = 0, earningPercent = 70 }) {
     // Guard: host can only have one live room at a time
     const existing = await this.getActiveRoomByHost(hostId);
     if (existing) {
@@ -57,6 +57,8 @@ class LiveRoomService extends BaseService {
       channelName: buildLiveChannelName(hostId + '_' + Date.now()),
       title: title || '',
       mode,
+      liveRate: liveRate || 0,
+      earningPercent: earningPercent || 70,
       status: 'live',
       startedAt: new Date(),
     });
@@ -404,6 +406,28 @@ class LiveRoomService extends BaseService {
     if (timer) {
       clearTimeout(timer);
       disconnectTimers.delete(hostId);
+    }
+  }
+
+  /**
+   * Server Boot Reconciler:
+   * Flushes dangling live rooms in MongoDB, finalizes viewer billing, and removes lingering Redis live keys.
+   */
+  async reconcileStartupLiveRooms() {
+    try {
+      if (redisClient.isRedisAvailable) {
+        const activeRooms = await redisClient.smembers(KEYS.liveRoomBillingSet());
+        if (activeRooms && activeRooms.length > 0) {
+          const { default: liveBillingService } = await import('./live-billing.service.js');
+          for (const roomId of activeRooms) {
+            await liveBillingService.reconcileRoomBilling(roomId);
+          }
+        }
+      }
+      const result = await liveRoomRepository.cleanupOrphanedRooms({}, 'SERVER_REBOOT');
+      logger.info(`[LiveRoomService] Reconciled startup live rooms: ${result?.modifiedCount || 0} orphaned room(s) marked ended.`);
+    } catch (err) {
+      logger.error(`[LiveRoomService] Startup live room reconciliation error: ${err.message}`);
     }
   }
 }

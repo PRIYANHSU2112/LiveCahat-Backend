@@ -23,6 +23,15 @@ class UserRepository {
     return await query;
   }
 
+  async findMany(filter = {}, select = '', populate = '', sort = {}, limit = null, skip = null, lean = true) {
+    let query = User.find(filter).select(select).populate(populate);
+    if (sort && Object.keys(sort).length > 0) query = query.sort(sort);
+    if (skip != null) query = query.skip(skip);
+    if (limit != null) query = query.limit(limit);
+    if (lean) query = query.lean();
+    return await query;
+  }
+
   async updateById(id, data, options = { new: true, runValidators: true }) {
     return await User.findByIdAndUpdate(id, data, options);
   }

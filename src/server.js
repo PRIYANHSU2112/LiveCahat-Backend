@@ -24,6 +24,7 @@ const DB_URI = process.env.DATABASE_URI || 'mongodb://localhost:27017/realtime_c
 import { initializeSockets } from './sockets/index.js';
 import { initializeBillingJob } from './jobs/billing.job.js';
 import { initializeSettlementJob } from './jobs/settlement.job.js';
+import { initializePresenceSweeperJob } from './jobs/presence-sweeper.job.js';
 import { initializeFirebase } from './config/firebase.js';
 import { initializeWorkers, closeAllWorkers } from './workers/index.js';
 import { closeAllQueues } from './queues/index.js';
@@ -48,7 +49,10 @@ io.adapter(createAdapter(pubClient, subClient));
 initializeSockets(io);
 
 // Database Connection
-mongoose.connect(DB_URI)
+mongoose.connect(DB_URI, {
+  serverSelectionTimeoutMS: 30000,
+  connectTimeoutMS: 30000,
+})
   .then(async () => {
     logger.info('DB connection successful!');
 
@@ -61,6 +65,12 @@ mongoose.connect(DB_URI)
     // Attempt Redis connection after DB
     await connectRedis();
 
+    // Reconcile startup presence & clean up orphaned live rooms from past crashes/reboots
+    const { default: presenceService } = await import('./services/presence.service.js');
+    const { default: liveRoomService } = await import('./services/live-room.service.js');
+    await presenceService.reconcileStartupPresence();
+    await liveRoomService.reconcileStartupLiveRooms();
+
     // Initialize BullMQ Background Workers
     initializeWorkers();
 
@@ -71,6 +81,7 @@ mongoose.connect(DB_URI)
     // Start background cron jobs
     initializeBillingJob(io);
     initializeSettlementJob();
+    initializePresenceSweeperJob(io);
 
     httpServer.listen(PORT, () => {
       logger.info(`Server running on port ${PORT}...`);

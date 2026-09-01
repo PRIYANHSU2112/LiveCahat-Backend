@@ -109,8 +109,21 @@ export const KEYS = {
 
   /** Global SET of customer userIds currently online (socket connected) */
   onlineCustomers: () => 'presence:online:customers',
+
+  // ─── Live Room Billing ─────────────────────────────────────────────────────
+
+  /**
+   * Hash: per-viewer billing state in a live room.
+   * Fields: joinedAt, lastBilledAt, coinsCharged, liveRate, earningPercent, hostId
+   */
+  liveRoomViewerBilling: (roomId, userId) => `live_billing:${roomId}:${userId}`,
+
+  /** SET of roomIds with at least one actively-billed viewer. Used by cron scan. */
+  liveRoomBillingSet: () => 'live_billing:active_rooms',
 };
 
 export const PATTERNS = {
   allActiveSessions: 'active_session:*',
+  /** Pattern to find all viewer billing hashes for a given room. */
+  liveRoomBillingViewers: (roomId) => `live_billing:${roomId}:*`,
 };

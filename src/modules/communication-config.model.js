@@ -36,6 +36,24 @@ const communicationConfigSchema = new mongoose.Schema(
       min: 2,
       max: 10,
     },
+    /** Master toggle for live room per-minute viewer billing. */
+    liveBillingEnabled: {
+      type: Boolean,
+      default: true,
+    },
+    /** Fallback coins/minute rate if listener has not set liveRate. */
+    defaultLiveRate: {
+      type: Number,
+      default: 10,
+      min: 0,
+    },
+    /** Platform-wide default listener earning percentage (e.g. 70 = 70% to listener, 30% to platform). */
+    defaultEarningPercent: {
+      type: Number,
+      default: 70,
+      min: 0,
+      max: 100,
+    },
   },
   {
     timestamps: true,

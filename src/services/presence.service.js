@@ -347,6 +347,34 @@ class PresenceService {
         });
     }
   }
+
+  /**
+   * Server Boot Reconciler:
+   * Cleans up any stale presence records in DB and Redis on server restart.
+   */
+  async reconcileStartupPresence() {
+    try {
+      await Promise.all([
+        User.updateMany({ isOnline: true }, { isOnline: false }),
+        ListenerProfile.updateMany(
+          { availability: { $in: ['ONLINE', 'LIVE', 'BUSY'] } },
+          { availability: 'OFFLINE' }
+        ),
+      ]);
+
+      if (redisClient.isRedisAvailable) {
+        // Clear Redis online listener and customer sets on fresh boot
+        await Promise.all([
+          redisClient.del(KEYS.onlineCustomers()),
+          deleteCache('listeners'),
+        ]);
+      }
+
+      logger.info('[PresenceService] Startup presence successfully reconciled to clean state.');
+    } catch (err) {
+      logger.error(`[PresenceService] Startup presence reconciliation error: ${err.message}`);
+    }
+  }
 }
 
 export default new PresenceService();

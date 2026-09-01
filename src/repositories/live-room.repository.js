@@ -20,6 +20,22 @@ class LiveRoomRepository extends BaseRepository {
   async findActiveByHostId(hostId) {
     return this.findOne({ hostId, status: 'live' });
   }
+
+  /**
+   * Batch mark orphaned or rebooted live rooms as ended in MongoDB.
+   */
+  async cleanupOrphanedRooms(filter = {}, endReason = 'SERVER_REBOOT') {
+    return this.model.updateMany(
+      { status: 'live', ...filter },
+      {
+        $set: {
+          status: 'ended',
+          endedAt: new Date(),
+          endReason,
+        },
+      }
+    );
+  }
 }
 
 export default new LiveRoomRepository();

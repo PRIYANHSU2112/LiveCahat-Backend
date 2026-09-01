@@ -1,8 +1,7 @@
 import mongoose from 'mongoose';
 import notificationRepository from '../repositories/notification.repository.js';
-import Notification from '../modules/notification.model.js';
-import User from '../modules/user.model.js';
-import Follow from '../modules/follow.model.js';
+import userRepository from '../repositories/user.repository.js';
+import followRepository from '../repositories/follow.repository.js';
 import ApiError from '../utils/ApiError.js';
 import { getPaginationOptions, formatPaginatedResponse } from '../utils/pagination.util.js';
 import { getPeriodRange } from '../utils/date.util.js';
@@ -146,7 +145,7 @@ class NotificationService {
       },
     ];
 
-    const [result] = await Notification.aggregate(pipeline);
+    const [result] = await notificationRepository.aggregateLogs(pipeline);
     const total = result.metadata[0]?.total ?? 0;
     const docs = (result.data ?? []).map((row) => ({
       id: row._id.toString(),
@@ -182,18 +181,15 @@ class NotificationService {
   }
 
   async markAllAsRead(userId) {
-    const result = await Notification.updateMany(
-      { recipientId: userId, status: 'UNREAD' },
-      { $set: { status: 'READ' } }
-    );
+    const result = await notificationRepository.markAllAsRead(userId);
     return { modified: result.modifiedCount ?? 0 };
   }
 
   async deleteNotification(userId, notificationId) {
-    const notification = await Notification.findOneAndDelete({
-      _id: notificationId,
-      recipientId: userId,
-    });
+    const notification = await notificationRepository.deleteOneByRecipient(
+      notificationId,
+      userId
+    );
     if (!notification) throw new ApiError(404, 'Notification not found');
     return { deleted: true };
   }
@@ -204,9 +200,10 @@ class NotificationService {
    * Admin sends a notification to one specific recipient (user / listener / agent).
    */
   async sendToUser(senderId, { recipientId, title, body, type = 'SYSTEM', metadata = {} }) {
-    const recipient = await User.findById(recipientId)
-      .select('_id isDeleted fcmToken settings')
-      .lean();
+    const recipient = await userRepository.findById(
+      recipientId,
+      '_id isDeleted fcmToken settings'
+    );
     if (!recipient || recipient.isDeleted) {
       throw new ApiError(404, 'Recipient not found');
     }
@@ -250,10 +247,10 @@ class NotificationService {
 
         if (pushResult.success) {
           notification.pushSent = true;
-          await Notification.findByIdAndUpdate(notification._id, { pushSent: true });
+          await notificationRepository.updateById(notification._id, { pushSent: true });
         } else if (pushResult.error) {
           notification.pushError = pushResult.error;
-          await Notification.findByIdAndUpdate(notification._id, {
+          await notificationRepository.updateById(notification._id, {
             pushSent: false,
             pushError: pushResult.error,
           });
@@ -282,9 +279,10 @@ class NotificationService {
       filter.type = { $in: ['CUSTOMER', 'LISTENER', 'AGENT'] };
     }
 
-    const recipients = await User.find(filter)
-      .select('_id fcmToken settings')
-      .lean();
+    const recipients = await userRepository.findMany(
+      filter,
+      '_id fcmToken settings'
+    );
     if (recipients.length === 0) {
       return { sent: 0, audience };
     }
@@ -317,7 +315,7 @@ class NotificationService {
       });
 
       // ordered:false → one bad row won't abort the whole batch.
-      const inserted = await Notification.insertMany(chunk, { ordered: false });
+      const inserted = await notificationRepository.bulkInsert(chunk);
       sent += inserted.length;
     }
 
@@ -340,17 +338,11 @@ class NotificationService {
     return { sent, audience };
   }
 
-  // ─── Live Stream Follower Alerts (Background Worker) ───────────
+  // ─── Live Stream Follower Alerts (Background Service Method) ──
 
   /**
-   * High-performance background worker to notify all followers when a listener starts live.
-   *
-   * Scalability & Performance Highlights (Optimized for 10,000+ Followers):
-   * 1. Non-blocking Background Job: Zero latency impact on listener's live room response.
-   * 2. Low Memory Cursor: Streams followers in batches of 500 without loading all records into RAM.
-   * 3. Batch Multicast Push: Sends FCM payloads in 500-token batches (Firebase max batch size).
-   * 4. Batched In-App Persistence: Uses `Notification.insertMany` with `ordered: false`.
-   * 5. Real-time Socket Event: Pushes `notification:new` to active sockets.
+   * High-performance follower alert processor.
+   * Uses FollowRepository streaming cursor and NotificationRepository bulk insert.
    *
    * @param {string} hostId - Listener / Host User ID
    * @param {object} liveData - { roomId, hostName, title, mode }
@@ -370,41 +362,17 @@ class NotificationService {
       mode: mode || 'VIDEO',
     };
 
-    const hostObjectId = new mongoose.Types.ObjectId(hostId);
-
-    // Stream followers with their FCM token and settings using MongoDB aggregation cursor
-    const cursor = Follow.aggregate([
-      { $match: { followingId: hostObjectId } },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'followerId',
-          foreignField: '_id',
-          as: 'user',
-          pipeline: [
-            { $match: { isDeleted: false, isBlocked: false } },
-            { $project: { _id: 1, fcmToken: 1, 'settings.notifications': 1 } },
-          ],
-        },
-      },
-      { $unwind: '$user' },
-      {
-        $project: {
-          followerId: '$user._id',
-          fcmToken: '$user.fcmToken',
-          notificationsEnabled: '$user.settings.notifications',
-        },
-      },
-    ]).cursor({ batchSize: FCM_BATCH_SIZE });
+    // Stream followers with their FCM token and settings using FollowRepository cursor
+    const cursor = followRepository.getFollowersNotificationCursor(hostId, FCM_BATCH_SIZE);
 
     let currentBatchTokens = [];
     let currentInAppDocs = [];
     let totalNotified = 0;
 
     const processBatch = async (tokens, inAppDocs) => {
-      // 1. Bulk insert in-app notifications
+      // 1. Bulk insert in-app notifications via repository
       if (inAppDocs.length > 0) {
-        Notification.insertMany(inAppDocs, { ordered: false }).catch((err) => {
+        notificationRepository.bulkInsert(inAppDocs).catch((err) => {
           logger.error(`[LiveNotification] Bulk insert in-app notification error: ${err.message}`);
         });
       }

@@ -98,6 +98,8 @@ class ListenerRepository {
           isFeatured: 1,
           followersCount: 1,
           anchorLevel: 1,
+          createdAt: 1,
+          updatedAt: 1,
           'languageDetails._id': 1,
           'languageDetails.name': 1,
           'languageDetails.code': 1,
@@ -116,8 +118,35 @@ class ListenerRepository {
           'user.currentLevel': 1,
         },
       },
-      { $sort: sort },
-      // 5. Single round-trip for both the page and the total count.
+      // 5. Dynamic availability priority: ONLINE/LIVE (1) -> BUSY (2) -> OFFLINE (3) -> Other (4)
+      {
+        $addFields: {
+          statusPriority: {
+            $switch: {
+              branches: [
+                { case: { $in: ['$availability', ['ONLINE', 'LIVE']] }, then: 1 },
+                { case: { $eq: ['$availability', 'BUSY'] }, then: 2 },
+                { case: { $eq: ['$availability', 'OFFLINE'] }, then: 3 },
+              ],
+              default: 4,
+            },
+          },
+        },
+      },
+      // 6. Sort by status priority first, followed by secondary sort criteria
+      {
+        $sort: {
+          statusPriority: 1,
+          ...(sort || {}),
+        },
+      },
+      // 7. Strip internal statusPriority before output to preserve exact response schema
+      {
+        $project: {
+          statusPriority: 0,
+        },
+      },
+      // 8. Single round-trip for both the page and the total count.
       {
         $facet: {
           metadata: [{ $count: 'total' }],

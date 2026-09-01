@@ -317,6 +317,39 @@ class FollowRepository extends BaseRepository {
   async countFollowing(followerId) {
     return await this.model.countDocuments({ followerId });
   }
+
+  /**
+   * Streaming aggregation cursor for notification workers.
+   * Efficiently streams active followers with their FCM tokens and notification preferences.
+   * @param {string|mongoose.Types.ObjectId} followingId
+   * @param {number} [batchSize=500]
+   */
+  getFollowersNotificationCursor(followingId, batchSize = 500) {
+    const hostObjectId = new mongoose.Types.ObjectId(followingId);
+    return this.model.aggregate([
+      { $match: { followingId: hostObjectId } },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'followerId',
+          foreignField: '_id',
+          as: 'user',
+          pipeline: [
+            { $match: { isDeleted: false, isBlocked: false } },
+            { $project: { _id: 1, fcmToken: 1, 'settings.notifications': 1 } },
+          ],
+        },
+      },
+      { $unwind: '$user' },
+      {
+        $project: {
+          followerId: '$user._id',
+          fcmToken: '$user.fcmToken',
+          notificationsEnabled: '$user.settings.notifications',
+        },
+      },
+    ]).cursor({ batchSize });
+  }
 }
 
 export default new FollowRepository();
