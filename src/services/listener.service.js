@@ -15,6 +15,9 @@ import logger from '../utils/logger.util.js';
 import anchorLevelService from './anchor-level.service.js';
 import withdrawalService from './withdrawal.service.js';
 import Language from '../modules/language.model.js';
+import User from '../modules/user.model.js';
+import VisibilityBoost from '../modules/visibility-boost.model.js';
+import presenceService from './presence.service.js';
 import countryRepository from '../repositories/country.repository.js';
 import redisClient from '../config/redis.js';
 import { KEYS } from '../utils/socket-redis-keys.util.js';
@@ -125,8 +128,8 @@ class ListenerService extends BaseService {
       liveStatus: availability,
       languageDetails: Array.isArray(profile.languages)
         ? profile.languages
-            .filter((l) => l && typeof l === 'object' && l.name)
-            .map((l) => ({ _id: l._id, name: l.name, code: l.code, flagUrl: l.flagUrl }))
+          .filter((l) => l && typeof l === 'object' && l.name)
+          .map((l) => ({ _id: l._id, name: l.name, code: l.code, flagUrl: l.flagUrl }))
         : [],
       countryDetails: profile.countryDetails || null,
       user: {
@@ -266,12 +269,12 @@ class ListenerService extends BaseService {
   /**
    * USER HOME FEED — active listeners a customer can browse, with search + filters.
    *
-   * "Active" = KYC APPROVED listener whose user account is neither deleted nor
-   * blocked/disabled by an admin. Results are version-cached in Redis (60s); the
-   * `listeners` cache version is bumped whenever a profile or presence changes,
-   * so the feed self-invalidates without stale availability.
+  /**
+   * USER HOME FEED — active (KYC-approved, non-blocked, non-deleted) listeners.
    *
-   * @param {Object} queryParams
+   * Query parameters:
+   * @param {String} [queryParams.page=1]   Page number
+   * @param {String} [queryParams.limit=10] Items per page (max 50)
    * @param {String} [queryParams.q]        Name search (first/last/full name)
    * @param {String} [queryParams.language] Language ObjectId, name, or code
    * @param {String} [queryParams.country]  User countryCode (e.g. "IN")
@@ -286,11 +289,11 @@ class ListenerService extends BaseService {
     // ── Version-scoped cache key (auto-invalidates when `listeners` version bumps) ──
     const version = await getCacheVersion('listeners');
     const cacheKey = `listeners:home:v${version}:${JSON.stringify({
-      q: queryParams.q || '',
-      language: queryParams.language || '',
-      country: queryParams.country || '',
-      status: queryParams.status || '',
-      minRating: queryParams.minRating ?? '',
+      q: (queryParams.q || '').trim().toLowerCase(),
+      language: (queryParams.language || '').trim().toLowerCase(),
+      country: (queryParams.country || '').trim().toLowerCase(),
+      status: (queryParams.status || '').trim().toUpperCase(),
+      minRating: queryParams.minRating !== undefined && queryParams.minRating !== '' ? Number(queryParams.minRating) : '',
       sort: queryParams.sort || 'featured',
       page,
       limit,
@@ -344,29 +347,50 @@ class ListenerService extends BaseService {
       profileMatch.avgRating = { $gte: Number(queryParams.minRating) };
     }
 
-    // ── Joined-user match (active = not deleted, not blocked by admin) ──
-    const userMatch = { 'user.isDeleted': false, 'user.isBlocked': false };
+    // ── Fast User Search via Indexed User Collection ──
     if (queryParams.q) {
-      const regex = { $regex: queryParams.q.trim(), $options: 'i' };
-      userMatch.$or = [
-        { 'user.firstName': regex },
-        { 'user.lastName': regex },
-        {
-          $expr: {
-            $regexMatch: {
-              input: { $concat: [{ $ifNull: ['$user.firstName', ''] }, ' ', { $ifNull: ['$user.lastName', ''] }] },
-              regex: queryParams.q.trim(),
-              options: 'i',
-            },
-          },
-        },
-      ];
+      const searchTerm = queryParams.q.trim();
+      const regex = { $regex: searchTerm, $options: 'i' };
+      const matchedUsers = await User.find({
+        $or: [
+          { firstName: regex },
+          { lastName: regex },
+          { username: regex },
+        ],
+        isDeleted: false,
+        isBlocked: false,
+      })
+        .select('_id')
+        .lean();
+
+      const matchedIds = matchedUsers.map((u) => u._id);
+      profileMatch.userId = { $in: matchedIds };
     }
 
-    const { total, data } = await this.repository.getHomeListeners(profileMatch, userMatch, sort, skip, limit);
+    // ── Joined-user match (active = not deleted, not blocked by admin) ──
+    const userMatch = { 'user.isDeleted': false, 'user.isBlocked': false };
+
+    // ── Fast Active Boosts lookup (max 20 IDs) ──
+    const activeBoostDocs = await VisibilityBoost.find({
+      status: 'ACTIVE',
+      expiresAt: { $gt: new Date() },
+    })
+      .select('listenerId')
+      .lean();
+
+    const boostedUserIds = activeBoostDocs.map((b) => b.listenerId);
+
+    const { total, data } = await this.repository.getHomeListeners(
+      profileMatch,
+      userMatch,
+      sort,
+      skip,
+      limit,
+      boostedUserIds
+    );
 
     const response = formatPaginatedResponse(data, total, page, limit);
-    await setCache(cacheKey, response, 60); // cache without presence; overlay on every read
+    await setCache(cacheKey, response, 300); // 5 mins cache; presence dynamically overlaid per read
     return await this._overlayPresenceOnHomePage(response);
   }
 
@@ -377,7 +401,6 @@ class ListenerService extends BaseService {
     const docs = page?.docs ?? page?.data ?? [];
     if (!docs.length) return page;
 
-    const { default: presenceService } = await import('./presence.service.js');
     const ids = docs
       .map((doc) => {
         if (doc.user?._id) return doc.user._id.toString();
@@ -793,7 +816,7 @@ class ListenerService extends BaseService {
       this.repository.aggregate([{ $match: { kycStatus: 'APPROVED' } }, { $group: { _id: null, avg: { $avg: '$avgRating' } } }]),
       this.repository.aggregate([{ $match: { kycStatus: 'APPROVED' } }, { $group: { _id: null, total: { $sum: '$totalEarnings' } } }])
     ]);
-    
+
     const avgRating = avgRatingObj[0]?.avg || 0;
     const totalEarnings = totalEarningsObj[0]?.total || 0;
 
@@ -1260,13 +1283,13 @@ class ListenerService extends BaseService {
     await profile.save();
 
     if (data.mobileNumber !== undefined || data.email !== undefined || data.firstName !== undefined || data.lastName !== undefined) {
-       const userUpdate = {};
-       if (data.mobileNumber !== undefined) userUpdate.mobileNumber = data.mobileNumber;
-       if (data.email !== undefined) userUpdate.email = data.email;
-       if (data.firstName !== undefined) userUpdate.firstName = data.firstName;
-       if (data.lastName !== undefined) userUpdate.lastName = data.lastName;
-       await userRepository.updateById(profile.userId, userUpdate);
-       await deleteCache(`user:${profile.userId}`);
+      const userUpdate = {};
+      if (data.mobileNumber !== undefined) userUpdate.mobileNumber = data.mobileNumber;
+      if (data.email !== undefined) userUpdate.email = data.email;
+      if (data.firstName !== undefined) userUpdate.firstName = data.firstName;
+      if (data.lastName !== undefined) userUpdate.lastName = data.lastName;
+      await userRepository.updateById(profile.userId, userUpdate);
+      await deleteCache(`user:${profile.userId}`);
     }
 
     await Promise.all([
@@ -1402,11 +1425,11 @@ class ListenerService extends BaseService {
       tasks,
       anchor: anchor
         ? {
-            level: anchor.anchorLevel,
-            title: anchor.currentTitle,
-            totalEarnings: anchor.totalEarnings,
-            nextLevel: anchor.nextLevel,
-          }
+          level: anchor.anchorLevel,
+          title: anchor.currentTitle,
+          totalEarnings: anchor.totalEarnings,
+          nextLevel: anchor.nextLevel,
+        }
         : null,
     };
 
@@ -1554,7 +1577,7 @@ class ListenerService extends BaseService {
       { path: 'languages' },
       { path: 'country' }
     ]);
-      
+
     if (!profile) throw new ApiError(404, 'Listener profile not found');
     return profile;
   }

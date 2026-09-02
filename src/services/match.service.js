@@ -4,6 +4,8 @@ import communicationSessionService from './communication-session.service.js';
 import listenerRepository from '../repositories/listener.repository.js';
 import countryRepository from '../repositories/country.repository.js';
 import Language from '../modules/language.model.js';
+import User from '../modules/user.model.js';
+import VisibilityBoost from '../modules/visibility-boost.model.js';
 import MatchConfig from '../modules/match-config.model.js';
 import CoinTransaction from '../modules/coin-transaction.model.js';
 import Wallet from '../modules/wallet.model.js';
@@ -343,7 +345,6 @@ class MatchService {
 
     let result = await this._fetchDiscoverPage({
       filters: baseFilters,
-      userMatch: this._buildDiscoverUserMatch(queryParams.q),
       q: queryParams.q,
       sort,
       sortKey,
@@ -360,7 +361,6 @@ class MatchService {
       countryRelaxed = true;
       result = await this._fetchDiscoverPage({
         filters: { ...baseFilters, countryId: null },
-        userMatch: this._buildDiscoverUserMatch(queryParams.q),
         q: queryParams.q,
         sort,
         sortKey,
@@ -414,28 +414,30 @@ class MatchService {
     };
   }
 
-  _buildDiscoverUserMatch(q) {
+  async _buildDiscoverUserMatch(q, profileMatch) {
     const userMatch = { 'user.isDeleted': false, 'user.isBlocked': false };
     if (!q?.trim()) return userMatch;
 
-    const regex = { $regex: q.trim(), $options: 'i' };
-    userMatch.$or = [
-      { 'user.firstName': regex },
-      { 'user.lastName': regex },
-      {
-        $expr: {
-          $regexMatch: {
-            input: { $concat: [{ $ifNull: ['$user.firstName', ''] }, ' ', { $ifNull: ['$user.lastName', ''] }] },
-            regex: q.trim(),
-            options: 'i',
-          },
-        },
-      },
-    ];
+    const searchTerm = q.trim();
+    const regex = { $regex: searchTerm, $options: 'i' };
+    const matchedUsers = await User.find({
+      $or: [
+        { firstName: regex },
+        { lastName: regex },
+        { username: regex },
+      ],
+      isDeleted: false,
+      isBlocked: false,
+    })
+      .select('_id')
+      .lean();
+
+    const matchedIds = matchedUsers.map((u) => u._id);
+    profileMatch.userId = { $in: matchedIds };
     return userMatch;
   }
 
-  async _fetchDiscoverPage({ filters, userMatch, q, sort, sortKey, page, limit, skip }) {
+  async _fetchDiscoverPage({ filters, q, sort, sortKey, page, limit, skip }) {
     const version = await getCacheVersion('listeners');
     const cacheKey = `match:discover:v${version}:${JSON.stringify({ filters, q: q || '', sortKey, page, limit })}`;
 
@@ -444,9 +446,12 @@ class MatchService {
       return cached;
     }
 
-    const [languageId, countryId] = await Promise.all([
+    const [languageId, countryId, activeBoostDocs] = await Promise.all([
       this._resolveLanguageId(filters.language),
       this._resolveCountryId(filters.countryId),
+      VisibilityBoost.find({ status: 'ACTIVE', expiresAt: { $gt: new Date() } })
+        .select('listenerId')
+        .lean(),
     ]);
 
     const profileMatch = { kycStatus: 'APPROVED' };
@@ -477,12 +482,16 @@ class MatchService {
     }
     if (Object.keys(ratingRange).length) profileMatch.avgRating = ratingRange;
 
+    const userMatch = await this._buildDiscoverUserMatch(q, profileMatch);
+    const boostedUserIds = activeBoostDocs.map((b) => b.listenerId);
+
     const { total, data } = await listenerRepository.getHomeListeners(
       profileMatch,
       userMatch,
       sort,
       skip,
-      limit
+      limit,
+      boostedUserIds
     );
 
     const payload = { total, docs: data };
@@ -490,31 +499,47 @@ class MatchService {
     return payload;
   }
 
+  _langCache = new Map();
+  _countryCache = new Map();
+
   async _resolveLanguageId(language) {
     if (!language) return null;
-    if (mongoose.Types.ObjectId.isValid(language)) {
-      return new mongoose.Types.ObjectId(language);
+    const str = String(language).trim();
+    if (this._langCache.has(str)) return this._langCache.get(str);
+
+    if (mongoose.Types.ObjectId.isValid(str)) {
+      const id = new mongoose.Types.ObjectId(str);
+      this._langCache.set(str, id);
+      return id;
     }
     const lang = await Language.findOne({
       $or: [
-        { name: { $regex: `^${language}$`, $options: 'i' } },
-        { code: language.toUpperCase() },
+        { name: { $regex: `^${str}$`, $options: 'i' } },
+        { code: str.toUpperCase() },
       ],
     }).select('_id').lean();
-    return lang ? lang._id : new mongoose.Types.ObjectId();
+    const id = lang ? lang._id : new mongoose.Types.ObjectId();
+    this._langCache.set(str, id);
+    return id;
   }
 
   async _resolveCountryId(country) {
     if (!country) return null;
     const c = String(country).trim();
+    if (this._countryCache.has(c)) return this._countryCache.get(c);
+
     if (mongoose.Types.ObjectId.isValid(c)) {
-      return new mongoose.Types.ObjectId(c);
+      const id = new mongoose.Types.ObjectId(c);
+      this._countryCache.set(c, id);
+      return id;
     }
     const resolved =
       (await countryRepository.findByCode(c)) ||
       (await countryRepository.findByDialCode(c)) ||
       (await countryRepository.findOne({ name: { $regex: `^${c}$`, $options: 'i' } }));
-    return resolved ? resolved._id : new mongoose.Types.ObjectId();
+    const id = resolved ? resolved._id : new mongoose.Types.ObjectId();
+    this._countryCache.set(c, id);
+    return id;
   }
 
   async _overlayDiscoverPresence(docs) {

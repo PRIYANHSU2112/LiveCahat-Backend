@@ -7,6 +7,7 @@ const redisOptions = {
   port: config.redis.port,
   password: config.redis.password,
   maxRetriesPerRequest: null,
+  enableOfflineQueue: false,
   keepAlive: 10000,
   lazyConnect: true, // Do not connect automatically on boot
   showFriendlyErrorStack: config.env === 'development',
@@ -32,10 +33,10 @@ const createRedisClient = (clientName) => {
   // Patch common commands to fail silently and gracefully when Redis is offline
   const safeMethods = [
     'get', 'set', 'setex', 'del', 'keys', 'unlink', 'hget', 'hgetall', 'hset', 'hdel',
-    'getdel', 'eval',
+    'getdel', 'eval', 'incr', 'decr', 'sadd', 'srem', 'scard', 'smembers', 'expire',
     'publish', 'subscribe', 'psubscribe', 'unsubscribe', 'punsubscribe'
   ];
-  
+
   safeMethods.forEach(method => {
     if (typeof client[method] === 'function') {
       const original = client[method].bind(client);
@@ -57,16 +58,16 @@ const createRedisClient = (clientName) => {
     client.isRedisAvailable = true;
     logger.info(`Redis [${clientName}] - Connected successfully`);
   });
-  
+
   client.on('error', (err) => {
     client.isRedisAvailable = false;
     logger.warn(`Redis [${clientName}] - ${err.message}`);
   });
-  
+
   client.on('close', () => {
     client.isRedisAvailable = false;
   });
-  
+
   client.on('end', () => {
     client.isRedisAvailable = false;
     logger.warn(`Redis [${clientName}] - Connection ended. Caching disabled.`);

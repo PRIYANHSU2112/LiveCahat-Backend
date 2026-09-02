@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "LiveChat API",
-    "description": "# LiveChat API\n\nAuto-generated from `src/docs/swagger.json` — kept in sync with backend routes.\n\n## Auth flow\n1. Run **Auth → Unified login for Admin and Agent** (`POST /auth/login`) with admin/agent email + password.\n2. Tests save `data.token` into environment variable `accessToken`.\n3. Collection auth injects `Authorization: Bearer {{accessToken}}` on protected requests.\n4. Mobile users: use **request-otp** + **verify-otp** (also saves token).\n\n## Variables\nImport `postman_environment.json` and select **LiveChat Local**.\nReplace ObjectId placeholders with real IDs from your database when needed.\n\n**Total requests:** 319",
+    "description": "# LiveChat API\n\nAuto-generated from `src/docs/swagger.json` — kept in sync with backend routes.\n\n## Auth flow\n1. Run **Auth → Unified login for Admin and Agent** (`POST /auth/login`) with admin/agent email + password.\n2. Tests save `data.token` into environment variable `accessToken`.\n3. Collection auth injects `Authorization: Bearer {{accessToken}}` on protected requests.\n4. Mobile users: use **request-otp** + **verify-otp** (also saves token).\n\n## Variables\nImport `postman_environment.json` and select **LiveChat Local**.\nReplace ObjectId placeholders with real IDs from your database when needed.\n\n**Total requests:** 325",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_postman_id": "livechat-api-collection"
   },
@@ -1482,7 +1482,7 @@
           ]
         },
         {
-          "name": "Get user by ID (admin)",
+          "name": "Get user by ID (admin or listener)",
           "request": {
             "method": "GET",
             "header": [
@@ -1501,7 +1501,7 @@
                 "{{resourceId}}"
               ]
             },
-            "description": "Get user by ID (admin)\n**OpenAPI path:** `GET /users/{id}`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: User fetched successfully\n### Path params (environment variables)\n- `{{resourceId}}` — sample `507f1f77bcf86cd799439011` (replace with a real Mongo ObjectId)"
+            "description": "Accessible by ADMIN (requires user.read) and LISTENER. Path id must be a MongoDB ObjectId.\n**OpenAPI path:** `GET /users/{id}`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: User fetched successfully\n### Path params (environment variables)\n- `{{resourceId}}` — sample `507f1f77bcf86cd799439011` (replace with a real Mongo ObjectId)"
           },
           "response": [
             {
@@ -4112,6 +4112,521 @@
               ]
             },
             "description": "Approve or Reject Listener KYC (admin)\n**OpenAPI path:** `POST /listeners/{id}/kyc`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: KYC status updated\n### Path params (environment variables)\n- `{{resourceId}}` — sample `507f1f77bcf86cd799439011` (replace with a real Mongo ObjectId)"
+          },
+          "response": [
+            {
+              "name": "401 Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Invalid token! Please log in again.\"\n}"
+            },
+            {
+              "name": "400 Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Validation error\",\n  \"errors\": [\n    {\n      \"field\": \"example\",\n      \"message\": \"is required\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Resource not found\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is successful or expected client error\", function () {",
+                  "  const ok = pm.response.code === 200 || (pm.response.code >= 200 && pm.response.code < 300);",
+                  "  const clientErr = [400, 401, 403, 404].includes(pm.response.code);",
+                  "  pm.expect(ok || clientErr).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response time < 5000ms\", function () {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "if (pm.response.headers.get(\"Content-Type\")?.includes(\"application/json\")) {",
+                  "  pm.test(\"JSON body parses\", function () {",
+                  "    pm.response.to.be.json;",
+                  "  });",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json && (json.status !== undefined || json.message !== undefined || json.data !== undefined)) {",
+                  "      pm.test(\"Common envelope fields present\", function () {",
+                  "        pm.expect(json).to.be.an(\"object\");",
+                  "      });",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin: Get visibility boost configuration",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/listeners/admin/boost-config",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "listeners",
+                "admin",
+                "boost-config"
+              ]
+            },
+            "description": "Retrieves current visibility boost configuration including price in coins, boost duration in minutes, maximum active slots limit, and master toggle status.\n**OpenAPI path:** `GET /listeners/admin/boost-config`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Boost configuration fetched successfully\n- **401**: Unauthorized\n- **403**: Forbidden — ADMIN role required"
+          },
+          "response": [
+            {
+              "name": "401 Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Invalid token! Please log in again.\"\n}"
+            },
+            {
+              "name": "400 Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Validation error\",\n  \"errors\": [\n    {\n      \"field\": \"example\",\n      \"message\": \"is required\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Resource not found\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is successful or expected client error\", function () {",
+                  "  const ok = pm.response.code === 200 || (pm.response.code >= 200 && pm.response.code < 300);",
+                  "  const clientErr = [400, 401, 403, 404].includes(pm.response.code);",
+                  "  pm.expect(ok || clientErr).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response time < 5000ms\", function () {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "if (pm.response.headers.get(\"Content-Type\")?.includes(\"application/json\")) {",
+                  "  pm.test(\"JSON body parses\", function () {",
+                  "    pm.response.to.be.json;",
+                  "  });",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json && (json.status !== undefined || json.message !== undefined || json.data !== undefined)) {",
+                  "      pm.test(\"Common envelope fields present\", function () {",
+                  "        pm.expect(json).to.be.an(\"object\");",
+                  "      });",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin: Update visibility boost configuration",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isEnabled\": true,\n  \"priceCoins\": 500,\n  \"durationMinutes\": 60,\n  \"maxActiveSlots\": 20\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/listeners/admin/boost-config",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "listeners",
+                "admin",
+                "boost-config"
+              ]
+            },
+            "description": "Updates platform visibility boost rules (pricing, duration, active slot limit, enable/disable toggle). Automatically invalidates runtime Redis cache.\n**OpenAPI path:** `PUT /listeners/admin/boost-config`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Boost configuration updated successfully\n- **400**: Validation error\n- **401**: Unauthorized\n- **403**: Forbidden — ADMIN role required"
+          },
+          "response": [
+            {
+              "name": "401 Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Invalid token! Please log in again.\"\n}"
+            },
+            {
+              "name": "400 Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Validation error\",\n  \"errors\": [\n    {\n      \"field\": \"example\",\n      \"message\": \"is required\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Resource not found\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is successful or expected client error\", function () {",
+                  "  const ok = pm.response.code === 200 || (pm.response.code >= 200 && pm.response.code < 300);",
+                  "  const clientErr = [400, 401, 403, 404].includes(pm.response.code);",
+                  "  pm.expect(ok || clientErr).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response time < 5000ms\", function () {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "if (pm.response.headers.get(\"Content-Type\")?.includes(\"application/json\")) {",
+                  "  pm.test(\"JSON body parses\", function () {",
+                  "    pm.response.to.be.json;",
+                  "  });",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json && (json.status !== undefined || json.message !== undefined || json.data !== undefined)) {",
+                  "      pm.test(\"Common envelope fields present\", function () {",
+                  "        pm.expect(json).to.be.an(\"object\");",
+                  "      });",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin: Get all active boosted listeners queue",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/listeners/admin/active-boosts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "listeners",
+                "admin",
+                "active-boosts"
+              ]
+            },
+            "description": "Retrieves the real-time queue of all currently active boosted listeners, ordered by slot sequence ascending (Slot 1, Slot 2, ...).\n**OpenAPI path:** `GET /listeners/admin/active-boosts`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Active boosts queue fetched successfully"
+          },
+          "response": [
+            {
+              "name": "401 Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Invalid token! Please log in again.\"\n}"
+            },
+            {
+              "name": "400 Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Validation error\",\n  \"errors\": [\n    {\n      \"field\": \"example\",\n      \"message\": \"is required\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Resource not found\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is successful or expected client error\", function () {",
+                  "  const ok = pm.response.code === 200 || (pm.response.code >= 200 && pm.response.code < 300);",
+                  "  const clientErr = [400, 401, 403, 404].includes(pm.response.code);",
+                  "  pm.expect(ok || clientErr).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response time < 5000ms\", function () {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "if (pm.response.headers.get(\"Content-Type\")?.includes(\"application/json\")) {",
+                  "  pm.test(\"JSON body parses\", function () {",
+                  "    pm.response.to.be.json;",
+                  "  });",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json && (json.status !== undefined || json.message !== undefined || json.data !== undefined)) {",
+                  "      pm.test(\"Common envelope fields present\", function () {",
+                  "        pm.expect(json).to.be.an(\"object\");",
+                  "      });",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listener: Purchase visibility boost",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idempotencyKey\": \"boost_req_987654\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/listeners/visibility-boost",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "listeners",
+                "visibility-boost"
+              ]
+            },
+            "description": "Allows a KYC-approved listener to purchase a visibility boost using coins. Priority placement in Home API for the configured duration (default 1 hour). Max active slots limit (default 20) is strictly enforced. Idempotent requests supported via idempotencyKey.\n**OpenAPI path:** `POST /listeners/visibility-boost`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **201**: Visibility boost purchased successfully\n- **400**: Insufficient coin balance\n- **403**: Boost disabled or listener not KYC approved\n- **409**: All slots occupied (BOOST_SLOTS_FULL) or listener already has an active boost"
+          },
+          "response": [
+            {
+              "name": "401 Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Invalid token! Please log in again.\"\n}"
+            },
+            {
+              "name": "400 Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Validation error\",\n  \"errors\": [\n    {\n      \"field\": \"example\",\n      \"message\": \"is required\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Resource not found\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is successful or expected client error\", function () {",
+                  "  const ok = pm.response.code === 201 || (pm.response.code >= 200 && pm.response.code < 300);",
+                  "  const clientErr = [400, 401, 403, 404].includes(pm.response.code);",
+                  "  pm.expect(ok || clientErr).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response time < 5000ms\", function () {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "if (pm.response.headers.get(\"Content-Type\")?.includes(\"application/json\")) {",
+                  "  pm.test(\"JSON body parses\", function () {",
+                  "    pm.response.to.be.json;",
+                  "  });",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json && (json.status !== undefined || json.message !== undefined || json.data !== undefined)) {",
+                  "      pm.test(\"Common envelope fields present\", function () {",
+                  "        pm.expect(json).to.be.an(\"object\");",
+                  "      });",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listener: Get my active visibility boost",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/listeners/visibility-boost/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "listeners",
+                "visibility-boost",
+                "me"
+              ]
+            },
+            "description": "Returns the authenticated listener's current active visibility boost status, remaining time, and assigned slot sequence.\n**OpenAPI path:** `GET /listeners/visibility-boost/me`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Active boost fetched successfully"
           },
           "response": [
             {
@@ -23886,7 +24401,7 @@
       "name": "XP",
       "item": [
         {
-          "name": "Get current user's XP & level progression profile",
+          "name": "Get current user XP profile & level progress",
           "request": {
             "method": "GET",
             "header": [
@@ -23905,9 +24420,22 @@
                 "profile"
               ]
             },
-            "description": "Get current user's XP & level progression profile\n**OpenAPI path:** `GET /xp/profile`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: XP profile fetched successfully"
+            "description": "Get current user XP profile & level progress\n**OpenAPI path:** `GET /xp/profile`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: XP profile fetched successfully\n- **401**: Unauthorized — missing or invalid JWT"
           },
           "response": [
+            {
+              "name": "200 XP profile fetched successfully",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"XP profile fetched successfully\",\n  \"data\": {\n    \"userId\": \"6a80033fa6b0b2c0d9449b9c\",\n    \"currentLevel\": 5,\n    \"currentXp\": 1450,\n    \"totalXpEarned\": 2850,\n    \"nextLevel\": 6,\n    \"xpForNextLevel\": 2000,\n    \"xpProgressInLevel\": 450,\n    \"xpNeededForNextLevel\": 550,\n    \"progressPercentage\": 45,\n    \"levelName\": \"Rising Star\",\n    \"levelBadgeUrl\": \"https://cdn.livechat.com/badges/level_5.png\",\n    \"unclaimedRewardsCount\": 2\n  }\n}"
+            },
             {
               "name": "401 Unauthorized",
               "status": "Unauthorized",
@@ -24016,9 +24544,22 @@
                 }
               ]
             },
-            "description": "Get paginated personal XP transaction log\n**OpenAPI path:** `GET /xp/history`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: XP history fetched successfully"
+            "description": "Get paginated personal XP transaction log\n**OpenAPI path:** `GET /xp/history`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: XP history fetched successfully\n- **401**: Unauthorized"
           },
           "response": [
+            {
+              "name": "200 XP history fetched successfully",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"XP history fetched successfully\",\n  \"data\": {\n    \"page\": 1,\n    \"limit\": 20,\n    \"total\": 15,\n    \"totalPages\": 1,\n    \"docs\": [\n      {\n        \"_id\": \"6a911f77bcf86cd799439011\",\n        \"userId\": \"6a80033fa6b0b2c0d9449b9c\",\n        \"action\": \"VOICE_CALL\",\n        \"xpAmount\": 50,\n        \"balanceAfter\": 1450,\n        \"description\": \"Earned 50 XP for completed voice call (5 mins)\",\n        \"createdAt\": \"2026-08-29T10:30:00.000Z\"\n      },\n      {\n        \"_id\": \"6a911f77bcf86cd799439012\",\n        \"userId\": \"6a80033fa6b0b2c0d9449b9c\",\n        \"action\": \"DAILY_LOGIN\",\n        \"xpAmount\": 20,\n        \"balanceAfter\": 1400,\n        \"description\": \"Daily login streak bonus\",\n        \"createdAt\": \"2026-08-29T08:00:00.000Z\"\n      }\n    ]\n  }\n}"
+            },
             {
               "name": "401 Unauthorized",
               "status": "Unauthorized",
@@ -24094,7 +24635,7 @@
           ]
         },
         {
-          "name": "Get top users by XP",
+          "name": "Get top users by XP leaderboard",
           "request": {
             "method": "GET",
             "header": [
@@ -24121,9 +24662,22 @@
                 }
               ]
             },
-            "description": "Get top users by XP\n**OpenAPI path:** `GET /xp/leaderboard`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Leaderboard fetched successfully"
+            "description": "Get top users by XP leaderboard\n**OpenAPI path:** `GET /xp/leaderboard`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Leaderboard fetched successfully"
           },
           "response": [
+            {
+              "name": "200 Leaderboard fetched successfully",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Leaderboard fetched successfully\",\n  \"data\": [\n    {\n      \"rank\": 1,\n      \"userId\": \"6a696b80eac94d0709376e71\",\n      \"firstName\": \"Rinki\",\n      \"lastName\": \"Sharma\",\n      \"profileImage\": \"https://cdn.livechat.com/avatars/rinki.jpg\",\n      \"currentLevel\": 12,\n      \"totalXpEarned\": 15400,\n      \"levelBadgeUrl\": \"https://cdn.livechat.com/badges/level_12.png\"\n    },\n    {\n      \"rank\": 2,\n      \"userId\": \"6a80033fa6b0b2c0d9449b9c\",\n      \"firstName\": \"Priyanshu\",\n      \"lastName\": \"Sahu\",\n      \"profileImage\": \"https://cdn.livechat.com/avatars/priyanshu.jpg\",\n      \"currentLevel\": 5,\n      \"totalXpEarned\": 2850,\n      \"levelBadgeUrl\": \"https://cdn.livechat.com/badges/level_5.png\"\n    }\n  ]\n}"
+            },
             {
               "name": "401 Unauthorized",
               "status": "Unauthorized",
@@ -24199,7 +24753,7 @@
           ]
         },
         {
-          "name": "Get my reward inventory (claimable level-up rewards)",
+          "name": "Get personal reward inventory (claimable level-up rewards)",
           "request": {
             "method": "GET",
             "header": [
@@ -24222,14 +24776,27 @@
                 {
                   "key": "status",
                   "value": "UNCLAIMED",
-                  "description": "Filter rewards by claim status. Omit for all.",
+                  "description": "",
                   "disabled": false
                 }
               ]
             },
-            "description": "Get my reward inventory (claimable level-up rewards)\n**OpenAPI path:** `GET /xp/rewards/inventory`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Reward inventory fetched successfully"
+            "description": "Get personal reward inventory (claimable level-up rewards)\n**OpenAPI path:** `GET /xp/rewards/inventory`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Reward inventory fetched successfully"
           },
           "response": [
+            {
+              "name": "200 Reward inventory fetched successfully",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Reward inventory fetched successfully\",\n  \"data\": [\n    {\n      \"_id\": \"6a933f77bcf86cd799439099\",\n      \"userId\": \"6a80033fa6b0b2c0d9449b9c\",\n      \"levelReached\": 5,\n      \"reward\": {\n        \"_id\": \"6a900a77bcf86cd799439001\",\n        \"rewardType\": \"COINS\",\n        \"rewardValue\": 100,\n        \"title\": \"Level 5 Coin Bonus\",\n        \"description\": \"100 Free Bonus Coins\",\n        \"iconUrl\": \"https://cdn.livechat.com/rewards/coins_100.png\"\n      },\n      \"status\": \"UNCLAIMED\",\n      \"unlockedAt\": \"2026-08-29T09:00:00.000Z\",\n      \"claimedAt\": null\n    }\n  ]\n}"
+            },
             {
               "name": "401 Unauthorized",
               "status": "Unauthorized",
@@ -24305,7 +24872,7 @@
           ]
         },
         {
-          "name": "Claim a single reward from the inventory",
+          "name": "Claim a single level-up reward by inventory ID",
           "request": {
             "method": "POST",
             "header": [
@@ -24326,9 +24893,22 @@
                 "claim"
               ]
             },
-            "description": "Applies the reward to the user's account (coins, avatar, gift, badge) and marks it CLAIMED. Claiming is idempotent — an already-claimed reward returns 400.\n**OpenAPI path:** `POST /xp/rewards/{inventoryId}/claim`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Reward claimed successfully\n- **400**: Reward already claimed or not found\n### Path params (environment variables)\n- `{{inventoryId}}` — sample `507f1f77bcf86cd799439011` (replace with a real Mongo ObjectId)"
+            "description": "Claim a single level-up reward by inventory ID\n**OpenAPI path:** `POST /xp/rewards/{inventoryId}/claim`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Reward claimed successfully\n### Path params (environment variables)\n- `{{inventoryId}}` — sample `507f1f77bcf86cd799439011` (replace with a real Mongo ObjectId)"
           },
           "response": [
+            {
+              "name": "200 Reward claimed successfully",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Reward claimed successfully\",\n  \"data\": {\n    \"inventoryId\": \"6a933f77bcf86cd799439099\",\n    \"rewardType\": \"COINS\",\n    \"rewardValue\": 100,\n    \"status\": \"CLAIMED\",\n    \"claimedAt\": \"2026-08-29T10:00:00.000Z\",\n    \"walletUpdated\": {\n      \"newCoinBalance\": 650\n    }\n  }\n}"
+            },
             {
               "name": "401 Unauthorized",
               "status": "Unauthorized",
@@ -24404,7 +24984,7 @@
           ]
         },
         {
-          "name": "Claim all unclaimed rewards",
+          "name": "Claim all unclaimed level-up rewards at once",
           "request": {
             "method": "POST",
             "header": [
@@ -24424,9 +25004,22 @@
                 "claim-all"
               ]
             },
-            "description": "Claim all unclaimed rewards\n**OpenAPI path:** `POST /xp/rewards/claim-all`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Rewards claimed successfully"
+            "description": "Claim all unclaimed level-up rewards at once\n**OpenAPI path:** `POST /xp/rewards/claim-all`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Rewards claimed successfully"
           },
           "response": [
+            {
+              "name": "200 Rewards claimed successfully",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Rewards claimed successfully\",\n  \"data\": {\n    \"totalClaimed\": 2,\n    \"claimedRewards\": [\n      {\n        \"inventoryId\": \"6a933f77bcf86cd799439099\",\n        \"rewardType\": \"COINS\",\n        \"rewardValue\": 100\n      },\n      {\n        \"inventoryId\": \"6a933f77bcf86cd799439100\",\n        \"rewardType\": \"BADGE\",\n        \"rewardValue\": \"STAR_BADGE\"\n      }\n    ],\n    \"totalCoinsAdded\": 100\n  }\n}"
+            },
             {
               "name": "401 Unauthorized",
               "status": "Unauthorized",
@@ -24502,7 +25095,7 @@
           ]
         },
         {
-          "name": "List all level configurations (admin)",
+          "name": "Admin list all level tier configs",
           "request": {
             "method": "GET",
             "header": [
@@ -24522,9 +25115,22 @@
                 "level-configs"
               ]
             },
-            "description": "List all level configurations (admin)\n**OpenAPI path:** `GET /xp/admin/level-configs`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Level configs fetched successfully"
+            "description": "Admin list all level tier configs\n**OpenAPI path:** `GET /xp/admin/level-configs`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Level configs fetched successfully"
           },
           "response": [
+            {
+              "name": "200 Level configs fetched successfully",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Level configs fetched successfully\",\n  \"data\": [\n    {\n      \"_id\": \"6a900a77bcf86cd799439001\",\n      \"level\": 1,\n      \"xpRequired\": 0,\n      \"name\": \"Novice\",\n      \"badgeUrl\": \"https://cdn.livechat.com/badges/level_1.png\",\n      \"rewards\": []\n    },\n    {\n      \"_id\": \"6a900a77bcf86cd799439002\",\n      \"level\": 2,\n      \"xpRequired\": 100,\n      \"name\": \"Explorer\",\n      \"badgeUrl\": \"https://cdn.livechat.com/badges/level_2.png\",\n      \"rewards\": [\n        {\n          \"_id\": \"6a900a77bcf86cd799439003\",\n          \"rewardType\": \"COINS\",\n          \"rewardValue\": 20\n        }\n      ]\n    }\n  ]\n}"
+            },
             {
               "name": "401 Unauthorized",
               "status": "Unauthorized",
@@ -24600,7 +25206,7 @@
           ]
         },
         {
-          "name": "Create a new level configuration (admin)",
+          "name": "Admin create a new level tier config",
           "request": {
             "method": "POST",
             "header": [
@@ -24615,7 +25221,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"level\": 1,\n  \"xpRequired\": 0,\n  \"title\": \"\",\n  \"badge\": \"\",\n  \"rewards\": [],\n  \"isActive\": true\n}",
+              "raw": "{\n  \"level\": 6,\n  \"xpRequired\": 2000,\n  \"name\": \"Superstar\",\n  \"badgeUrl\": \"https://cdn.livechat.com/badges/level_6.png\",\n  \"rewards\": [\n    \"6a900a77bcf86cd799439003\"\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -24633,9 +25239,22 @@
                 "level-configs"
               ]
             },
-            "description": "Create a new level configuration (admin)\n**OpenAPI path:** `POST /xp/admin/level-configs`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **201**: Level config created successfully"
+            "description": "Admin create a new level tier config\n**OpenAPI path:** `POST /xp/admin/level-configs`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **201**: Level config created successfully"
           },
           "response": [
+            {
+              "name": "201 Level config created successfully",
+              "status": "OK",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Level config created successfully\",\n  \"data\": {\n    \"_id\": \"6a900a77bcf86cd799439006\",\n    \"level\": 6,\n    \"xpRequired\": 2000,\n    \"name\": \"Superstar\",\n    \"badgeUrl\": \"https://cdn.livechat.com/badges/level_6.png\",\n    \"rewards\": [\n      \"6a900a77bcf86cd799439003\"\n    ],\n    \"createdAt\": \"2026-08-29T12:00:00.000Z\"\n  }\n}"
+            },
             {
               "name": "401 Unauthorized",
               "status": "Unauthorized",
@@ -24711,7 +25330,7 @@
           ]
         },
         {
-          "name": "Update a level configuration (admin)",
+          "name": "Admin update an existing level tier config",
           "request": {
             "method": "PUT",
             "header": [
@@ -24726,7 +25345,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"level\": 1,\n  \"xpRequired\": 0,\n  \"title\": \"\",\n  \"badge\": \"\",\n  \"rewards\": [],\n  \"isActive\": true\n}",
+              "raw": "{\n  \"xpRequired\": 2200,\n  \"name\": \"Elite Superstar\",\n  \"badgeUrl\": \"https://cdn.livechat.com/badges/level_6_elite.png\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -24745,9 +25364,22 @@
                 "{{resourceId}}"
               ]
             },
-            "description": "Update a level configuration (admin)\n**OpenAPI path:** `PUT /xp/admin/level-configs/{id}`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Level config updated successfully\n### Path params (environment variables)\n- `{{resourceId}}` — sample `507f1f77bcf86cd799439011` (replace with a real Mongo ObjectId)"
+            "description": "Admin update an existing level tier config\n**OpenAPI path:** `PUT /xp/admin/level-configs/{id}`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Level config updated successfully\n### Path params (environment variables)\n- `{{resourceId}}` — sample `507f1f77bcf86cd799439011` (replace with a real Mongo ObjectId)"
           },
           "response": [
+            {
+              "name": "200 Level config updated successfully",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Level config updated successfully\",\n  \"data\": {\n    \"_id\": \"6a900a77bcf86cd799439006\",\n    \"level\": 6,\n    \"xpRequired\": 2200,\n    \"name\": \"Elite Superstar\",\n    \"badgeUrl\": \"https://cdn.livechat.com/badges/level_6_elite.png\"\n  }\n}"
+            },
             {
               "name": "401 Unauthorized",
               "status": "Unauthorized",
@@ -24823,7 +25455,7 @@
           ]
         },
         {
-          "name": "Delete a level configuration (admin)",
+          "name": "Admin delete a level tier config",
           "request": {
             "method": "DELETE",
             "header": [
@@ -24844,9 +25476,22 @@
                 "{{resourceId}}"
               ]
             },
-            "description": "Delete a level configuration (admin)\n**OpenAPI path:** `DELETE /xp/admin/level-configs/{id}`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Level config deleted successfully\n### Path params (environment variables)\n- `{{resourceId}}` — sample `507f1f77bcf86cd799439011` (replace with a real Mongo ObjectId)"
+            "description": "Admin delete a level tier config\n**OpenAPI path:** `DELETE /xp/admin/level-configs/{id}`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Level config deleted successfully\n### Path params (environment variables)\n- `{{resourceId}}` — sample `507f1f77bcf86cd799439011` (replace with a real Mongo ObjectId)"
           },
           "response": [
+            {
+              "name": "200 Level config deleted successfully",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Level config deleted successfully\",\n  \"data\": {\n    \"deleted\": true\n  }\n}"
+            },
             {
               "name": "401 Unauthorized",
               "status": "Unauthorized",
@@ -24922,7 +25567,7 @@
           ]
         },
         {
-          "name": "List all reward documents (admin)",
+          "name": "Admin list all level rewards",
           "request": {
             "method": "GET",
             "header": [
@@ -24942,9 +25587,22 @@
                 "rewards"
               ]
             },
-            "description": "List all reward documents (admin)\n**OpenAPI path:** `GET /xp/admin/rewards`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Rewards fetched successfully"
+            "description": "Admin list all level rewards\n**OpenAPI path:** `GET /xp/admin/rewards`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Rewards fetched successfully"
           },
           "response": [
+            {
+              "name": "200 Rewards fetched successfully",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Rewards fetched successfully\",\n  \"data\": [\n    {\n      \"_id\": \"6a900a77bcf86cd799439003\",\n      \"rewardType\": \"COINS\",\n      \"rewardValue\": 50,\n      \"title\": \"50 Coins Gift\",\n      \"description\": \"Bonus coin reward on level unlock\",\n      \"iconUrl\": \"https://cdn.livechat.com/rewards/coin_50.png\",\n      \"isActive\": true\n    }\n  ]\n}"
+            },
             {
               "name": "401 Unauthorized",
               "status": "Unauthorized",
@@ -25020,7 +25678,7 @@
           ]
         },
         {
-          "name": "Create a new reward document (admin)",
+          "name": "Admin create a new level reward",
           "request": {
             "method": "POST",
             "header": [
@@ -25035,7 +25693,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"type\": \"COINS\",\n  \"value\": 1,\n  \"referenceId\": \"\",\n  \"label\": \"\",\n  \"icon\": \"\",\n  \"isActive\": true\n}",
+              "raw": "{\n  \"rewardType\": \"COINS\",\n  \"rewardValue\": 100,\n  \"title\": \"100 Coins Pack\",\n  \"description\": \"Award 100 free coins on level advancement\",\n  \"iconUrl\": \"https://cdn.livechat.com/rewards/coin_100.png\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -25053,9 +25711,22 @@
                 "rewards"
               ]
             },
-            "description": "Create a new reward document (admin)\n**OpenAPI path:** `POST /xp/admin/rewards`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **201**: Reward created successfully"
+            "description": "Admin create a new level reward\n**OpenAPI path:** `POST /xp/admin/rewards`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **201**: Reward created successfully"
           },
           "response": [
+            {
+              "name": "201 Reward created successfully",
+              "status": "OK",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Reward created successfully\",\n  \"data\": {\n    \"_id\": \"6a900a77bcf86cd799439004\",\n    \"rewardType\": \"COINS\",\n    \"rewardValue\": 100,\n    \"title\": \"100 Coins Pack\",\n    \"description\": \"Award 100 free coins on level advancement\",\n    \"iconUrl\": \"https://cdn.livechat.com/rewards/coin_100.png\",\n    \"isActive\": true\n  }\n}"
+            },
             {
               "name": "401 Unauthorized",
               "status": "Unauthorized",
@@ -25131,7 +25802,7 @@
           ]
         },
         {
-          "name": "Update a reward document (admin)",
+          "name": "Admin update an existing reward",
           "request": {
             "method": "PUT",
             "header": [
@@ -25146,7 +25817,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"type\": \"COINS\",\n  \"value\": 1,\n  \"referenceId\": \"\",\n  \"label\": \"\",\n  \"icon\": \"\",\n  \"isActive\": true\n}",
+              "raw": "{\n  \"title\": \"200 Coins Mega Pack\",\n  \"rewardValue\": 200,\n  \"isActive\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -25165,9 +25836,22 @@
                 "{{resourceId}}"
               ]
             },
-            "description": "Update a reward document (admin)\n**OpenAPI path:** `PUT /xp/admin/rewards/{id}`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Reward updated successfully\n### Path params (environment variables)\n- `{{resourceId}}` — sample `507f1f77bcf86cd799439011` (replace with a real Mongo ObjectId)"
+            "description": "Admin update an existing reward\n**OpenAPI path:** `PUT /xp/admin/rewards/{id}`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Reward updated successfully\n### Path params (environment variables)\n- `{{resourceId}}` — sample `507f1f77bcf86cd799439011` (replace with a real Mongo ObjectId)"
           },
           "response": [
+            {
+              "name": "200 Reward updated successfully",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Reward updated successfully\",\n  \"data\": {\n    \"_id\": \"6a900a77bcf86cd799439004\",\n    \"rewardType\": \"COINS\",\n    \"rewardValue\": 200,\n    \"title\": \"200 Coins Mega Pack\",\n    \"isActive\": true\n  }\n}"
+            },
             {
               "name": "401 Unauthorized",
               "status": "Unauthorized",
@@ -25243,7 +25927,7 @@
           ]
         },
         {
-          "name": "Delete a reward document (admin)",
+          "name": "Admin delete a reward",
           "request": {
             "method": "DELETE",
             "header": [
@@ -25264,9 +25948,22 @@
                 "{{resourceId}}"
               ]
             },
-            "description": "Delete a reward document (admin)\n**OpenAPI path:** `DELETE /xp/admin/rewards/{id}`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Reward deleted successfully\n### Path params (environment variables)\n- `{{resourceId}}` — sample `507f1f77bcf86cd799439011` (replace with a real Mongo ObjectId)"
+            "description": "Admin delete a reward\n**OpenAPI path:** `DELETE /xp/admin/rewards/{id}`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Reward deleted successfully\n### Path params (environment variables)\n- `{{resourceId}}` — sample `507f1f77bcf86cd799439011` (replace with a real Mongo ObjectId)"
           },
           "response": [
+            {
+              "name": "200 Reward deleted successfully",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Reward deleted successfully\",\n  \"data\": {\n    \"deleted\": true\n  }\n}"
+            },
             {
               "name": "401 Unauthorized",
               "status": "Unauthorized",
@@ -25342,7 +26039,7 @@
           ]
         },
         {
-          "name": "List all XP action configurations (admin)",
+          "name": "Admin list all XP action configurations & values",
           "request": {
             "method": "GET",
             "header": [
@@ -25362,9 +26059,22 @@
                 "xp-actions"
               ]
             },
-            "description": "List all XP action configurations (admin)\n**OpenAPI path:** `GET /xp/admin/xp-actions`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: XP action configs fetched successfully"
+            "description": "Admin list all XP action configurations & values\n**OpenAPI path:** `GET /xp/admin/xp-actions`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: XP actions fetched successfully"
           },
           "response": [
+            {
+              "name": "200 XP actions fetched successfully",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"XP actions fetched successfully\",\n  \"data\": [\n    {\n      \"action\": \"DAILY_LOGIN\",\n      \"xpAmount\": 20,\n      \"dailyLimit\": 1,\n      \"description\": \"Login once daily\"\n    },\n    {\n      \"action\": \"VOICE_CALL\",\n      \"xpAmount\": 10,\n      \"dailyLimit\": 10,\n      \"description\": \"10 XP per minute of voice call\"\n    },\n    {\n      \"action\": \"VIDEO_CALL\",\n      \"xpAmount\": 15,\n      \"dailyLimit\": 10,\n      \"description\": \"15 XP per minute of video call\"\n    },\n    {\n      \"action\": \"GIFT_SENT\",\n      \"xpAmount\": 25,\n      \"dailyLimit\": 20,\n      \"description\": \"25 XP per gift sent\"\n    }\n  ]\n}"
+            },
             {
               "name": "401 Unauthorized",
               "status": "Unauthorized",
@@ -25440,7 +26150,7 @@
           ]
         },
         {
-          "name": "Update an XP action configuration (admin)",
+          "name": "Admin update XP reward amount and daily limits for a specific action",
           "request": {
             "method": "PUT",
             "header": [
@@ -25455,7 +26165,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"xp\": 0,\n  \"isActive\": true,\n  \"label\": \"\"\n}",
+              "raw": "{\n  \"xpAmount\": 15,\n  \"dailyLimit\": 20,\n  \"isActive\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -25474,9 +26184,22 @@
                 "{{action}}"
               ]
             },
-            "description": "Update an XP action configuration (admin)\n**OpenAPI path:** `PUT /xp/admin/xp-actions/{action}`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: XP action config updated successfully\n### Path params (environment variables)\n- `{{action}}` — sample `507f1f77bcf86cd799439011` (replace with a real Mongo ObjectId)"
+            "description": "Admin update XP reward amount and daily limits for a specific action\n**OpenAPI path:** `PUT /xp/admin/xp-actions/{action}`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: XP action updated successfully\n### Path params (environment variables)\n- `{{action}}` — sample `507f1f77bcf86cd799439011` (replace with a real Mongo ObjectId)"
           },
           "response": [
+            {
+              "name": "200 XP action updated successfully",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"XP action updated successfully\",\n  \"data\": {\n    \"action\": \"VOICE_CALL\",\n    \"xpAmount\": 15,\n    \"dailyLimit\": 20,\n    \"isActive\": true\n  }\n}"
+            },
             {
               "name": "401 Unauthorized",
               "status": "Unauthorized",
@@ -25552,7 +26275,7 @@
           ]
         },
         {
-          "name": "Manually grant XP to a user (admin)",
+          "name": "Admin manually grant XP to a user with audit reason",
           "request": {
             "method": "POST",
             "header": [
@@ -25567,7 +26290,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"userId\": \"\",\n  \"xpAmount\": 1,\n  \"reason\": \"Admin manual grant\"\n}",
+              "raw": "{\n  \"userId\": \"6a80033fa6b0b2c0d9449b9c\",\n  \"xpAmount\": 500,\n  \"reason\": \"Event contest winner bonus\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -25585,9 +26308,22 @@
                 "grant"
               ]
             },
-            "description": "Manually grant XP to a user (admin)\n**OpenAPI path:** `POST /xp/admin/grant`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: XP granted successfully"
+            "description": "Admin manually grant XP to a user with audit reason\n**OpenAPI path:** `POST /xp/admin/grant`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: XP granted successfully"
           },
           "response": [
+            {
+              "name": "200 XP granted successfully",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"XP granted successfully\",\n  \"data\": {\n    \"userId\": \"6a80033fa6b0b2c0d9449b9c\",\n    \"xpGranted\": 500,\n    \"newLevel\": 6,\n    \"newTotalXp\": 3350,\n    \"levelUpOccurred\": true,\n    \"unlockedRewards\": [\n      {\n        \"rewardType\": \"COINS\",\n        \"rewardValue\": 100\n      }\n    ]\n  }\n}"
+            },
             {
               "name": "401 Unauthorized",
               "status": "Unauthorized",
@@ -25663,7 +26399,7 @@
           ]
         },
         {
-          "name": "Admin list XP reward claims",
+          "name": "Admin list XP reward claim audit log",
           "request": {
             "method": "GET",
             "header": [
@@ -25673,7 +26409,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/xp/admin/reward-claims?page=1&limit=20&userId=507f1f77bcf86cd799439011&status=UNCLAIMED&level=5&sortOrder=desc",
+              "raw": "{{baseUrl}}/xp/admin/reward-claims?page=1&limit=20&userId=6a80033fa6b0b2c0d9449b9c&status=CLAIMED",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -25697,33 +26433,34 @@
                 },
                 {
                   "key": "userId",
-                  "value": "507f1f77bcf86cd799439011",
+                  "value": "6a80033fa6b0b2c0d9449b9c",
                   "description": "",
                   "disabled": false
                 },
                 {
                   "key": "status",
-                  "value": "UNCLAIMED",
-                  "description": "",
-                  "disabled": false
-                },
-                {
-                  "key": "level",
-                  "value": "5",
-                  "description": "",
-                  "disabled": false
-                },
-                {
-                  "key": "sortOrder",
-                  "value": "desc",
+                  "value": "CLAIMED",
                   "description": "",
                   "disabled": false
                 }
               ]
             },
-            "description": "Admin list XP reward claims\n**OpenAPI path:** `GET /xp/admin/reward-claims`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Success\n- **400**: Bad request / validation error\n- **401**: Unauthorized — missing or invalid JWT\n- **403**: Forbidden — insufficient role\n- **404**: Resource not found\n- **500**: Internal server error"
+            "description": "Admin list XP reward claim audit log\n**OpenAPI path:** `GET /xp/admin/reward-claims`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: XP reward claims fetched successfully"
           },
           "response": [
+            {
+              "name": "200 XP reward claims fetched successfully",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"XP reward claims fetched successfully\",\n  \"data\": {\n    \"page\": 1,\n    \"limit\": 20,\n    \"total\": 12500,\n    \"totalPages\": 625,\n    \"docs\": [\n      {\n        \"_id\": \"6a933f77bcf86cd799439099\",\n        \"userId\": {\n          \"_id\": \"6a80033fa6b0b2c0d9449b9c\",\n          \"firstName\": \"Priyanshu\",\n          \"lastName\": \"Sahu\"\n        },\n        \"levelReached\": 5,\n        \"rewardId\": {\n          \"title\": \"Level 5 Coin Bonus\",\n          \"rewardType\": \"COINS\",\n          \"rewardValue\": 100\n        },\n        \"status\": \"CLAIMED\",\n        \"unlockedAt\": \"2026-08-29T09:00:00.000Z\",\n        \"claimedAt\": \"2026-08-29T10:00:00.000Z\"\n      }\n    ]\n  }\n}"
+            },
             {
               "name": "401 Unauthorized",
               "status": "Unauthorized",
@@ -25799,7 +26536,7 @@
           ]
         },
         {
-          "name": "Admin XP stats",
+          "name": "Admin XP KPIs and platform summary",
           "request": {
             "method": "GET",
             "header": [
@@ -25819,9 +26556,22 @@
                 "stats"
               ]
             },
-            "description": "Admin XP stats\n**OpenAPI path:** `GET /xp/admin/stats`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Success\n- **400**: Bad request / validation error\n- **401**: Unauthorized — missing or invalid JWT\n- **403**: Forbidden — insufficient role\n- **404**: Resource not found\n- **500**: Internal server error"
+            "description": "Admin XP KPIs and platform summary\n**OpenAPI path:** `GET /xp/admin/stats`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: XP admin stats fetched successfully"
           },
           "response": [
+            {
+              "name": "200 XP admin stats fetched successfully",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"XP admin stats fetched successfully\",\n  \"data\": {\n    \"totalXpDistributed\": 2450000,\n    \"totalXpTransactions\": 84200,\n    \"totalRewardClaims\": 12500,\n    \"activeUsersWithXp\": 4320,\n    \"topAction\": \"VOICE_CALL\",\n    \"highestLevelReached\": 25,\n    \"unclaimedRewardsPending\": 340\n  }\n}"
+            },
             {
               "name": "401 Unauthorized",
               "status": "Unauthorized",
@@ -25897,7 +26647,7 @@
           ]
         },
         {
-          "name": "Admin list XP transactions",
+          "name": "Admin list global XP transactions ledger",
           "request": {
             "method": "GET",
             "header": [
@@ -25907,7 +26657,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/xp/admin/transactions?page=1&limit=20&userId=507f1f77bcf86cd799439011&action=DAILY_LOGIN&adminGrant=false&sortOrder=desc",
+              "raw": "{{baseUrl}}/xp/admin/transactions?page=1&limit=20&userId=6a80033fa6b0b2c0d9449b9c&action=VOICE_CALL&sortOrder=desc",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -25931,19 +26681,13 @@
                 },
                 {
                   "key": "userId",
-                  "value": "507f1f77bcf86cd799439011",
+                  "value": "6a80033fa6b0b2c0d9449b9c",
                   "description": "",
                   "disabled": false
                 },
                 {
                   "key": "action",
-                  "value": "DAILY_LOGIN",
-                  "description": "",
-                  "disabled": false
-                },
-                {
-                  "key": "adminGrant",
-                  "value": "false",
+                  "value": "VOICE_CALL",
                   "description": "",
                   "disabled": false
                 },
@@ -25955,9 +26699,22 @@
                 }
               ]
             },
-            "description": "Admin list XP transactions\n**OpenAPI path:** `GET /xp/admin/transactions`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: Success\n- **400**: Bad request / validation error\n- **401**: Unauthorized — missing or invalid JWT\n- **403**: Forbidden — insufficient role\n- **404**: Resource not found\n- **500**: Internal server error"
+            "description": "Admin list global XP transactions ledger\n**OpenAPI path:** `GET /xp/admin/transactions`\n**Auth:** Bearer JWT ({{accessToken}})\n### Expected responses\n- **200**: XP transactions fetched successfully"
           },
           "response": [
+            {
+              "name": "200 XP transactions fetched successfully",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"XP transactions fetched successfully\",\n  \"data\": {\n    \"page\": 1,\n    \"limit\": 20,\n    \"total\": 84200,\n    \"totalPages\": 4210,\n    \"docs\": [\n      {\n        \"_id\": \"6a911f77bcf86cd799439011\",\n        \"userId\": {\n          \"_id\": \"6a80033fa6b0b2c0d9449b9c\",\n          \"firstName\": \"Priyanshu\",\n          \"lastName\": \"Sahu\",\n          \"email\": \"user@livechat.com\"\n        },\n        \"action\": \"VOICE_CALL\",\n        \"xpAmount\": 50,\n        \"balanceAfter\": 1450,\n        \"description\": \"Earned 50 XP for completed voice call (5 mins)\",\n        \"createdAt\": \"2026-08-29T10:30:00.000Z\"\n      }\n    ]\n  }\n}"
+            },
             {
               "name": "401 Unauthorized",
               "status": "Unauthorized",
@@ -28840,7 +29597,108 @@
                 "profile"
               ]
             },
-            "description": "Retrieve the main company details, links, policy documents, and logos. Publicly accessible.\n**OpenAPI path:** `GET /company/profile`\n**Auth:** Public\n### Expected responses\n- **200**: Company profile details retrieved successfully"
+            "description": "Retrieve the main company details, links, policy documents, and logos. Publicly accessible. Policies are nested per audience (app, listener, agent) with shared aboutUs/contactUs.\n**OpenAPI path:** `GET /company/profile`\n**Auth:** Public\n### Expected responses\n- **200**: Company profile details retrieved successfully"
+          },
+          "response": [
+            {
+              "name": "401 Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Invalid token! Please log in again.\"\n}"
+            },
+            {
+              "name": "400 Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Validation error\",\n  \"errors\": [\n    {\n      \"field\": \"example\",\n      \"message\": \"is required\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"fail\",\n  \"message\": \"Resource not found\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is successful or expected client error\", function () {",
+                  "  const ok = pm.response.code === 200 || (pm.response.code >= 200 && pm.response.code < 300);",
+                  "  const clientErr = [400, 401, 403, 404].includes(pm.response.code);",
+                  "  pm.expect(ok || clientErr).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Response time < 5000ms\", function () {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "if (pm.response.headers.get(\"Content-Type\")?.includes(\"application/json\")) {",
+                  "  pm.test(\"JSON body parses\", function () {",
+                  "    pm.response.to.be.json;",
+                  "  });",
+                  "  try {",
+                  "    const json = pm.response.json();",
+                  "    if (json && (json.status !== undefined || json.message !== undefined || json.data !== undefined)) {",
+                  "      pm.test(\"Common envelope fields present\", function () {",
+                  "        pm.expect(json).to.be.an(\"object\");",
+                  "      });",
+                  "    }",
+                  "  } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get legal documents by audience",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/company/legal/{{audience}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "company",
+                "legal",
+                "{{audience}}"
+              ]
+            },
+            "description": "Public endpoint returning privacy policy, terms, and (for app/listener) refund policy for the given audience, plus shared aboutUs and contactUs.\n**OpenAPI path:** `GET /company/legal/{audience}`\n**Auth:** Public\n### Expected responses\n- **200**: Legal documents fetched successfully\n- **400**: Invalid audience\n### Path params (environment variables)\n- `{{audience}}` — sample `507f1f77bcf86cd799439011` (replace with a real Mongo ObjectId)"
           },
           "response": [
             {

@@ -45,7 +45,7 @@ export const homeListenersQuerySchema = Joi.object({
   query: Joi.object({
     q: Joi.string().trim().max(100).allow(''),
     language: Joi.string().trim().max(50), // ObjectId, name, or code
-    country: Joi.string().trim().max(5), // countryCode e.g. "IN"
+    country: Joi.string().trim().max(50), // ObjectId, ISO code (e.g. "IN"), dialCode, or name
     status: Joi.string().valid(...AVAILABILITY_STATUSES), // ONLINE | OFFLINE | BUSY
     minRating: Joi.number().min(0).max(5),
     sort: Joi.string().valid('featured', 'popular', 'rating', 'newest').default('featured'),

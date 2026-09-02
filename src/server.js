@@ -25,6 +25,7 @@ import { initializeSockets } from './sockets/index.js';
 import { initializeBillingJob } from './jobs/billing.job.js';
 import { initializeSettlementJob } from './jobs/settlement.job.js';
 import { initializePresenceSweeperJob } from './jobs/presence-sweeper.job.js';
+import { initializeVisibilityBoostJob } from './jobs/visibility-boost.job.js';
 import { initializeFirebase } from './config/firebase.js';
 import { initializeWorkers, closeAllWorkers } from './workers/index.js';
 import { closeAllQueues } from './queues/index.js';
@@ -82,6 +83,7 @@ mongoose.connect(DB_URI, {
     initializeBillingJob(io);
     initializeSettlementJob();
     initializePresenceSweeperJob(io);
+    initializeVisibilityBoostJob();
 
     httpServer.listen(PORT, () => {
       logger.info(`Server running on port ${PORT}...`);

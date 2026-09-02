@@ -7,6 +7,10 @@
   },
   "servers": [
     {
+      "url": "https://api.livechat.mbbsway.in/api/v1",
+      "description": "Production API Server (https://api.livechat.mbbsway.in)"
+    },
+    {
       "url": "/api/v1",
       "description": "Current Server (Relative Path)"
     },
@@ -1605,7 +1609,8 @@
     },
     "/users/{id}": {
       "get": {
-        "summary": "Get user by ID (admin)",
+        "summary": "Get user by ID (admin or listener)",
+        "description": "Accessible by ADMIN (requires user.read) and LISTENER. Path id must be a MongoDB ObjectId.",
         "tags": [
           "Users"
         ],
@@ -3424,13 +3429,46 @@
     "/company/profile": {
       "get": {
         "summary": "Get primary company profile",
-        "description": "Retrieve the main company details, links, policy documents, and logos. Publicly accessible.",
+        "description": "Retrieve the main company details, links, policy documents, and logos. Publicly accessible. Policies are nested per audience (app, listener, agent) with shared aboutUs/contactUs.",
         "tags": [
           "Company"
         ],
         "responses": {
           "200": {
             "description": "Company profile details retrieved successfully"
+          }
+        }
+      }
+    },
+    "/company/legal/{audience}": {
+      "get": {
+        "summary": "Get legal documents by audience",
+        "description": "Public endpoint returning privacy policy, terms, and (for app/listener) refund policy for the given audience, plus shared aboutUs and contactUs.",
+        "tags": [
+          "Company"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "audience",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "app",
+                "listener",
+                "agent"
+              ]
+            },
+            "description": "Target client: app (customer), listener, or agent"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Legal documents fetched successfully"
+          },
+          "400": {
+            "description": "Invalid audience"
           }
         }
       }
@@ -3548,14 +3586,44 @@
                   "policies": {
                     "type": "object",
                     "properties": {
-                      "privacyPolicy": {
-                        "type": "string"
+                      "app": {
+                        "type": "object",
+                        "properties": {
+                          "privacyPolicy": {
+                            "type": "string"
+                          },
+                          "termsAndConditions": {
+                            "type": "string"
+                          },
+                          "refundPolicy": {
+                            "type": "string"
+                          }
+                        }
                       },
-                      "termsAndConditions": {
-                        "type": "string"
+                      "listener": {
+                        "type": "object",
+                        "properties": {
+                          "privacyPolicy": {
+                            "type": "string"
+                          },
+                          "termsAndConditions": {
+                            "type": "string"
+                          },
+                          "refundPolicy": {
+                            "type": "string"
+                          }
+                        }
                       },
-                      "refundPolicy": {
-                        "type": "string"
+                      "agent": {
+                        "type": "object",
+                        "properties": {
+                          "privacyPolicy": {
+                            "type": "string"
+                          },
+                          "termsAndConditions": {
+                            "type": "string"
+                          }
+                        }
                       },
                       "aboutUs": {
                         "type": "string"
@@ -3699,14 +3767,44 @@
                   "policies": {
                     "type": "object",
                     "properties": {
-                      "privacyPolicy": {
-                        "type": "string"
+                      "app": {
+                        "type": "object",
+                        "properties": {
+                          "privacyPolicy": {
+                            "type": "string"
+                          },
+                          "termsAndConditions": {
+                            "type": "string"
+                          },
+                          "refundPolicy": {
+                            "type": "string"
+                          }
+                        }
                       },
-                      "termsAndConditions": {
-                        "type": "string"
+                      "listener": {
+                        "type": "object",
+                        "properties": {
+                          "privacyPolicy": {
+                            "type": "string"
+                          },
+                          "termsAndConditions": {
+                            "type": "string"
+                          },
+                          "refundPolicy": {
+                            "type": "string"
+                          }
+                        }
                       },
-                      "refundPolicy": {
-                        "type": "string"
+                      "agent": {
+                        "type": "object",
+                        "properties": {
+                          "privacyPolicy": {
+                            "type": "string"
+                          },
+                          "termsAndConditions": {
+                            "type": "string"
+                          }
+                        }
                       },
                       "aboutUs": {
                         "type": "string"
@@ -7906,7 +8004,7 @@
     },
     "/xp/profile": {
       "get": {
-        "summary": "Get current user's XP & level progression profile",
+        "summary": "Get current user XP profile & level progress",
         "tags": [
           "XP"
         ],
@@ -7920,70 +8018,29 @@
             "description": "XP profile fetched successfully",
             "content": {
               "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "XP profile fetched successfully"
-                    },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "currentLevel": {
-                          "type": "integer",
-                          "example": 4
-                        },
-                        "currentXp": {
-                          "type": "integer",
-                          "example": 620
-                        },
-                        "xpForCurrentLevel": {
-                          "type": "integer",
-                          "example": 500
-                        },
-                        "xpForNextLevel": {
-                          "type": "integer",
-                          "example": 1000
-                        },
-                        "xpToNextLevel": {
-                          "type": "integer",
-                          "example": 380
-                        },
-                        "progressPercent": {
-                          "type": "integer",
-                          "example": 24
-                        },
-                        "title": {
-                          "type": "string",
-                          "example": "Adventurer"
-                        },
-                        "badge": {
-                          "type": "string",
-                          "nullable": true,
-                          "example": "silver_badge"
-                        },
-                        "nextLevelTitle": {
-                          "type": "string",
-                          "nullable": true,
-                          "example": "Expert"
-                        },
-                        "badges": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        }
-                      }
-                    }
+                "example": {
+                  "success": true,
+                  "message": "XP profile fetched successfully",
+                  "data": {
+                    "userId": "6a80033fa6b0b2c0d9449b9c",
+                    "currentLevel": 5,
+                    "currentXp": 1450,
+                    "totalXpEarned": 2850,
+                    "nextLevel": 6,
+                    "xpForNextLevel": 2000,
+                    "xpProgressInLevel": 450,
+                    "xpNeededForNextLevel": 550,
+                    "progressPercentage": 45,
+                    "levelName": "Rising Star",
+                    "levelBadgeUrl": "https://cdn.livechat.com/badges/level_5.png",
+                    "unclaimedRewardsCount": 2
                   }
                 }
               }
             }
+          },
+          "401": {
+            "description": "Unauthorized — missing or invalid JWT"
           }
         }
       }
@@ -8006,7 +8063,8 @@
             "schema": {
               "type": "integer",
               "default": 1
-            }
+            },
+            "example": 1
           },
           {
             "in": "query",
@@ -8014,19 +8072,57 @@
             "schema": {
               "type": "integer",
               "default": 20
-            }
+            },
+            "example": 20
           }
         ],
         "responses": {
           "200": {
-            "description": "XP history fetched successfully"
+            "description": "XP history fetched successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "message": "XP history fetched successfully",
+                  "data": {
+                    "page": 1,
+                    "limit": 20,
+                    "total": 15,
+                    "totalPages": 1,
+                    "docs": [
+                      {
+                        "_id": "6a911f77bcf86cd799439011",
+                        "userId": "6a80033fa6b0b2c0d9449b9c",
+                        "action": "VOICE_CALL",
+                        "xpAmount": 50,
+                        "balanceAfter": 1450,
+                        "description": "Earned 50 XP for completed voice call (5 mins)",
+                        "createdAt": "2026-08-29T10:30:00.000Z"
+                      },
+                      {
+                        "_id": "6a911f77bcf86cd799439012",
+                        "userId": "6a80033fa6b0b2c0d9449b9c",
+                        "action": "DAILY_LOGIN",
+                        "xpAmount": 20,
+                        "balanceAfter": 1400,
+                        "description": "Daily login streak bonus",
+                        "createdAt": "2026-08-29T08:00:00.000Z"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
           }
         }
       }
     },
     "/xp/leaderboard": {
       "get": {
-        "summary": "Get top users by XP",
+        "summary": "Get top users by XP leaderboard",
         "tags": [
           "XP"
         ],
@@ -8042,19 +8138,50 @@
             "schema": {
               "type": "integer",
               "default": 20
-            }
+            },
+            "example": 20
           }
         ],
         "responses": {
           "200": {
-            "description": "Leaderboard fetched successfully"
+            "description": "Leaderboard fetched successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "message": "Leaderboard fetched successfully",
+                  "data": [
+                    {
+                      "rank": 1,
+                      "userId": "6a696b80eac94d0709376e71",
+                      "firstName": "Rinki",
+                      "lastName": "Sharma",
+                      "profileImage": "https://cdn.livechat.com/avatars/rinki.jpg",
+                      "currentLevel": 12,
+                      "totalXpEarned": 15400,
+                      "levelBadgeUrl": "https://cdn.livechat.com/badges/level_12.png"
+                    },
+                    {
+                      "rank": 2,
+                      "userId": "6a80033fa6b0b2c0d9449b9c",
+                      "firstName": "Priyanshu",
+                      "lastName": "Sahu",
+                      "profileImage": "https://cdn.livechat.com/avatars/priyanshu.jpg",
+                      "currentLevel": 5,
+                      "totalXpEarned": 2850,
+                      "levelBadgeUrl": "https://cdn.livechat.com/badges/level_5.png"
+                    }
+                  ]
+                }
+              }
+            }
           }
         }
       }
     },
     "/xp/rewards/inventory": {
       "get": {
-        "summary": "Get my reward inventory (claimable level-up rewards)",
+        "summary": "Get personal reward inventory (claimable level-up rewards)",
         "tags": [
           "XP"
         ],
@@ -8074,7 +8201,7 @@
                 "CLAIMED"
               ]
             },
-            "description": "Filter rewards by claim status. Omit for all."
+            "example": "UNCLAIMED"
           }
         ],
         "responses": {
@@ -8082,71 +8209,27 @@
             "description": "Reward inventory fetched successfully",
             "content": {
               "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "unclaimedCount": {
-                          "type": "integer",
-                          "example": 2
-                        },
-                        "rewards": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "_id": {
-                                "type": "string"
-                              },
-                              "level": {
-                                "type": "integer"
-                              },
-                              "rewardType": {
-                                "type": "string",
-                                "enum": [
-                                  "COINS",
-                                  "AVATAR",
-                                  "GIFT",
-                                  "BADGE",
-                                  "MYSTERY_BOX"
-                                ]
-                              },
-                              "value": {
-                                "type": "number"
-                              },
-                              "label": {
-                                "type": "string"
-                              },
-                              "icon": {
-                                "type": "string"
-                              },
-                              "status": {
-                                "type": "string",
-                                "enum": [
-                                  "UNCLAIMED",
-                                  "CLAIMED"
-                                ]
-                              },
-                              "claimedAt": {
-                                "type": "string",
-                                "format": "date-time",
-                                "nullable": true
-                              }
-                            }
-                          }
-                        }
-                      }
+                "example": {
+                  "success": true,
+                  "message": "Reward inventory fetched successfully",
+                  "data": [
+                    {
+                      "_id": "6a933f77bcf86cd799439099",
+                      "userId": "6a80033fa6b0b2c0d9449b9c",
+                      "levelReached": 5,
+                      "reward": {
+                        "_id": "6a900a77bcf86cd799439001",
+                        "rewardType": "COINS",
+                        "rewardValue": 100,
+                        "title": "Level 5 Coin Bonus",
+                        "description": "100 Free Bonus Coins",
+                        "iconUrl": "https://cdn.livechat.com/rewards/coins_100.png"
+                      },
+                      "status": "UNCLAIMED",
+                      "unlockedAt": "2026-08-29T09:00:00.000Z",
+                      "claimedAt": null
                     }
-                  }
+                  ]
                 }
               }
             }
@@ -8156,8 +8239,7 @@
     },
     "/xp/rewards/{inventoryId}/claim": {
       "post": {
-        "summary": "Claim a single reward from the inventory",
-        "description": "Applies the reward to the user's account (coins, avatar, gift, badge) and marks it CLAIMED. Claiming is idempotent — an already-claimed reward returns 400.",
+        "summary": "Claim a single level-up reward by inventory ID",
         "tags": [
           "XP"
         ],
@@ -8174,22 +8256,37 @@
             "schema": {
               "type": "string"
             },
-            "description": "The RewardHistory inventory item id"
+            "example": "6a933f77bcf86cd799439099"
           }
         ],
         "responses": {
           "200": {
-            "description": "Reward claimed successfully"
-          },
-          "400": {
-            "description": "Reward already claimed or not found"
+            "description": "Reward claimed successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "message": "Reward claimed successfully",
+                  "data": {
+                    "inventoryId": "6a933f77bcf86cd799439099",
+                    "rewardType": "COINS",
+                    "rewardValue": 100,
+                    "status": "CLAIMED",
+                    "claimedAt": "2026-08-29T10:00:00.000Z",
+                    "walletUpdated": {
+                      "newCoinBalance": 650
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
     },
     "/xp/rewards/claim-all": {
       "post": {
-        "summary": "Claim all unclaimed rewards",
+        "summary": "Claim all unclaimed level-up rewards at once",
         "tags": [
           "XP"
         ],
@@ -8200,14 +8297,38 @@
         ],
         "responses": {
           "200": {
-            "description": "Rewards claimed successfully"
+            "description": "Rewards claimed successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "message": "Rewards claimed successfully",
+                  "data": {
+                    "totalClaimed": 2,
+                    "claimedRewards": [
+                      {
+                        "inventoryId": "6a933f77bcf86cd799439099",
+                        "rewardType": "COINS",
+                        "rewardValue": 100
+                      },
+                      {
+                        "inventoryId": "6a933f77bcf86cd799439100",
+                        "rewardType": "BADGE",
+                        "rewardValue": "STAR_BADGE"
+                      }
+                    ],
+                    "totalCoinsAdded": 100
+                  }
+                }
+              }
+            }
           }
         }
       }
     },
     "/xp/admin/level-configs": {
       "get": {
-        "summary": "List all level configurations (admin)",
+        "summary": "Admin list all level tier configs",
         "tags": [
           "XP"
         ],
@@ -8218,12 +8339,44 @@
         ],
         "responses": {
           "200": {
-            "description": "Level configs fetched successfully"
+            "description": "Level configs fetched successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "message": "Level configs fetched successfully",
+                  "data": [
+                    {
+                      "_id": "6a900a77bcf86cd799439001",
+                      "level": 1,
+                      "xpRequired": 0,
+                      "name": "Novice",
+                      "badgeUrl": "https://cdn.livechat.com/badges/level_1.png",
+                      "rewards": []
+                    },
+                    {
+                      "_id": "6a900a77bcf86cd799439002",
+                      "level": 2,
+                      "xpRequired": 100,
+                      "name": "Explorer",
+                      "badgeUrl": "https://cdn.livechat.com/badges/level_2.png",
+                      "rewards": [
+                        {
+                          "_id": "6a900a77bcf86cd799439003",
+                          "rewardType": "COINS",
+                          "rewardValue": 20
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
           }
         }
       },
       "post": {
-        "summary": "Create a new level configuration (admin)",
+        "summary": "Admin create a new level tier config",
         "tags": [
           "XP"
         ],
@@ -8236,53 +8389,47 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "level",
-                  "xpRequired",
-                  "title"
-                ],
-                "properties": {
-                  "level": {
-                    "type": "integer",
-                    "minimum": 1
-                  },
-                  "xpRequired": {
-                    "type": "integer",
-                    "minimum": 0
-                  },
-                  "title": {
-                    "type": "string"
-                  },
-                  "badge": {
-                    "type": "string"
-                  },
-                  "rewards": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  },
-                  "isActive": {
-                    "type": "boolean",
-                    "default": true
-                  }
-                }
+              "example": {
+                "level": 6,
+                "xpRequired": 2000,
+                "name": "Superstar",
+                "badgeUrl": "https://cdn.livechat.com/badges/level_6.png",
+                "rewards": [
+                  "6a900a77bcf86cd799439003"
+                ]
               }
             }
           }
         },
         "responses": {
           "201": {
-            "description": "Level config created successfully"
+            "description": "Level config created successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "message": "Level config created successfully",
+                  "data": {
+                    "_id": "6a900a77bcf86cd799439006",
+                    "level": 6,
+                    "xpRequired": 2000,
+                    "name": "Superstar",
+                    "badgeUrl": "https://cdn.livechat.com/badges/level_6.png",
+                    "rewards": [
+                      "6a900a77bcf86cd799439003"
+                    ],
+                    "createdAt": "2026-08-29T12:00:00.000Z"
+                  }
+                }
+              }
+            }
           }
         }
       }
     },
     "/xp/admin/level-configs/{id}": {
       "put": {
-        "summary": "Update a level configuration (admin)",
+        "summary": "Admin update an existing level tier config",
         "tags": [
           "XP"
         ],
@@ -8298,52 +8445,45 @@
             "required": true,
             "schema": {
               "type": "string"
-            }
+            },
+            "example": "6a900a77bcf86cd799439006"
           }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "level": {
-                    "type": "integer",
-                    "minimum": 1
-                  },
-                  "xpRequired": {
-                    "type": "integer",
-                    "minimum": 0
-                  },
-                  "title": {
-                    "type": "string"
-                  },
-                  "badge": {
-                    "type": "string"
-                  },
-                  "rewards": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  },
-                  "isActive": {
-                    "type": "boolean"
-                  }
-                }
+              "example": {
+                "xpRequired": 2200,
+                "name": "Elite Superstar",
+                "badgeUrl": "https://cdn.livechat.com/badges/level_6_elite.png"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Level config updated successfully"
+            "description": "Level config updated successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "message": "Level config updated successfully",
+                  "data": {
+                    "_id": "6a900a77bcf86cd799439006",
+                    "level": 6,
+                    "xpRequired": 2200,
+                    "name": "Elite Superstar",
+                    "badgeUrl": "https://cdn.livechat.com/badges/level_6_elite.png"
+                  }
+                }
+              }
+            }
           }
         }
       },
       "delete": {
-        "summary": "Delete a level configuration (admin)",
+        "summary": "Admin delete a level tier config",
         "tags": [
           "XP"
         ],
@@ -8359,19 +8499,31 @@
             "required": true,
             "schema": {
               "type": "string"
-            }
+            },
+            "example": "6a900a77bcf86cd799439006"
           }
         ],
         "responses": {
           "200": {
-            "description": "Level config deleted successfully"
+            "description": "Level config deleted successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "message": "Level config deleted successfully",
+                  "data": {
+                    "deleted": true
+                  }
+                }
+              }
+            }
           }
         }
       }
     },
     "/xp/admin/rewards": {
       "get": {
-        "summary": "List all reward documents (admin)",
+        "summary": "Admin list all level rewards",
         "tags": [
           "XP"
         ],
@@ -8382,12 +8534,31 @@
         ],
         "responses": {
           "200": {
-            "description": "Rewards fetched successfully"
+            "description": "Rewards fetched successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "message": "Rewards fetched successfully",
+                  "data": [
+                    {
+                      "_id": "6a900a77bcf86cd799439003",
+                      "rewardType": "COINS",
+                      "rewardValue": 50,
+                      "title": "50 Coins Gift",
+                      "description": "Bonus coin reward on level unlock",
+                      "iconUrl": "https://cdn.livechat.com/rewards/coin_50.png",
+                      "isActive": true
+                    }
+                  ]
+                }
+              }
+            }
           }
         }
       },
       "post": {
-        "summary": "Create a new reward document (admin)",
+        "summary": "Admin create a new level reward",
         "tags": [
           "XP"
         ],
@@ -8400,56 +8571,43 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "type",
-                  "label"
-                ],
-                "properties": {
-                  "type": {
-                    "type": "string",
-                    "enum": [
-                      "COINS",
-                      "AVATAR",
-                      "GIFT",
-                      "BADGE",
-                      "MYSTERY_BOX"
-                    ]
-                  },
-                  "value": {
-                    "type": "number",
-                    "default": 1
-                  },
-                  "referenceId": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "label": {
-                    "type": "string"
-                  },
-                  "icon": {
-                    "type": "string"
-                  },
-                  "isActive": {
-                    "type": "boolean",
-                    "default": true
-                  }
-                }
+              "example": {
+                "rewardType": "COINS",
+                "rewardValue": 100,
+                "title": "100 Coins Pack",
+                "description": "Award 100 free coins on level advancement",
+                "iconUrl": "https://cdn.livechat.com/rewards/coin_100.png"
               }
             }
           }
         },
         "responses": {
           "201": {
-            "description": "Reward created successfully"
+            "description": "Reward created successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "message": "Reward created successfully",
+                  "data": {
+                    "_id": "6a900a77bcf86cd799439004",
+                    "rewardType": "COINS",
+                    "rewardValue": 100,
+                    "title": "100 Coins Pack",
+                    "description": "Award 100 free coins on level advancement",
+                    "iconUrl": "https://cdn.livechat.com/rewards/coin_100.png",
+                    "isActive": true
+                  }
+                }
+              }
+            }
           }
         }
       }
     },
     "/xp/admin/rewards/{id}": {
       "put": {
-        "summary": "Update a reward document (admin)",
+        "summary": "Admin update an existing reward",
         "tags": [
           "XP"
         ],
@@ -8465,55 +8623,45 @@
             "required": true,
             "schema": {
               "type": "string"
-            }
+            },
+            "example": "6a900a77bcf86cd799439004"
           }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "type": {
-                    "type": "string",
-                    "enum": [
-                      "COINS",
-                      "AVATAR",
-                      "GIFT",
-                      "BADGE",
-                      "MYSTERY_BOX"
-                    ]
-                  },
-                  "value": {
-                    "type": "number"
-                  },
-                  "referenceId": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "label": {
-                    "type": "string"
-                  },
-                  "icon": {
-                    "type": "string"
-                  },
-                  "isActive": {
-                    "type": "boolean"
-                  }
-                }
+              "example": {
+                "title": "200 Coins Mega Pack",
+                "rewardValue": 200,
+                "isActive": true
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Reward updated successfully"
+            "description": "Reward updated successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "message": "Reward updated successfully",
+                  "data": {
+                    "_id": "6a900a77bcf86cd799439004",
+                    "rewardType": "COINS",
+                    "rewardValue": 200,
+                    "title": "200 Coins Mega Pack",
+                    "isActive": true
+                  }
+                }
+              }
+            }
           }
         }
       },
       "delete": {
-        "summary": "Delete a reward document (admin)",
+        "summary": "Admin delete a reward",
         "tags": [
           "XP"
         ],
@@ -8529,19 +8677,31 @@
             "required": true,
             "schema": {
               "type": "string"
-            }
+            },
+            "example": "6a900a77bcf86cd799439004"
           }
         ],
         "responses": {
           "200": {
-            "description": "Reward deleted successfully"
+            "description": "Reward deleted successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "message": "Reward deleted successfully",
+                  "data": {
+                    "deleted": true
+                  }
+                }
+              }
+            }
           }
         }
       }
     },
     "/xp/admin/xp-actions": {
       "get": {
-        "summary": "List all XP action configurations (admin)",
+        "summary": "Admin list all XP action configurations & values",
         "tags": [
           "XP"
         ],
@@ -8552,14 +8712,48 @@
         ],
         "responses": {
           "200": {
-            "description": "XP action configs fetched successfully"
+            "description": "XP actions fetched successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "message": "XP actions fetched successfully",
+                  "data": [
+                    {
+                      "action": "DAILY_LOGIN",
+                      "xpAmount": 20,
+                      "dailyLimit": 1,
+                      "description": "Login once daily"
+                    },
+                    {
+                      "action": "VOICE_CALL",
+                      "xpAmount": 10,
+                      "dailyLimit": 10,
+                      "description": "10 XP per minute of voice call"
+                    },
+                    {
+                      "action": "VIDEO_CALL",
+                      "xpAmount": 15,
+                      "dailyLimit": 10,
+                      "description": "15 XP per minute of video call"
+                    },
+                    {
+                      "action": "GIFT_SENT",
+                      "xpAmount": 25,
+                      "dailyLimit": 20,
+                      "description": "25 XP per gift sent"
+                    }
+                  ]
+                }
+              }
+            }
           }
         }
       }
     },
     "/xp/admin/xp-actions/{action}": {
       "put": {
-        "summary": "Update an XP action configuration (admin)",
+        "summary": "Admin update XP reward amount and daily limits for a specific action",
         "tags": [
           "XP"
         ],
@@ -8575,41 +8769,46 @@
             "required": true,
             "schema": {
               "type": "string"
-            }
+            },
+            "example": "VOICE_CALL"
           }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "xp": {
-                    "type": "integer",
-                    "minimum": 0
-                  },
-                  "isActive": {
-                    "type": "boolean"
-                  },
-                  "label": {
-                    "type": "string"
-                  }
-                }
+              "example": {
+                "xpAmount": 15,
+                "dailyLimit": 20,
+                "isActive": true
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "XP action config updated successfully"
+            "description": "XP action updated successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "message": "XP action updated successfully",
+                  "data": {
+                    "action": "VOICE_CALL",
+                    "xpAmount": 15,
+                    "dailyLimit": 20,
+                    "isActive": true
+                  }
+                }
+              }
+            }
           }
         }
       }
     },
     "/xp/admin/grant": {
       "post": {
-        "summary": "Manually grant XP to a user (admin)",
+        "summary": "Admin manually grant XP to a user with audit reason",
         "tags": [
           "XP"
         ],
@@ -8622,32 +8821,38 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "userId",
-                  "xpAmount"
-                ],
-                "properties": {
-                  "userId": {
-                    "type": "string"
-                  },
-                  "xpAmount": {
-                    "type": "integer",
-                    "minimum": 1
-                  },
-                  "reason": {
-                    "type": "string",
-                    "default": "Admin manual grant"
-                  }
-                }
+              "example": {
+                "userId": "6a80033fa6b0b2c0d9449b9c",
+                "xpAmount": 500,
+                "reason": "Event contest winner bonus"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "XP granted successfully"
+            "description": "XP granted successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "message": "XP granted successfully",
+                  "data": {
+                    "userId": "6a80033fa6b0b2c0d9449b9c",
+                    "xpGranted": 500,
+                    "newLevel": 6,
+                    "newTotalXp": 3350,
+                    "levelUpOccurred": true,
+                    "unlockedRewards": [
+                      {
+                        "rewardType": "COINS",
+                        "rewardValue": 100
+                      }
+                    ]
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -9490,6 +9695,329 @@
           },
           "403": {
             "description": "Forbidden — ADMIN role required"
+          }
+        }
+      }
+    },
+    "/listeners/admin/boost-config": {
+      "get": {
+        "summary": "Admin: Get visibility boost configuration",
+        "description": "Retrieves current visibility boost configuration including price in coins, boost duration in minutes, maximum active slots limit, and master toggle status.",
+        "tags": [
+          "Listeners"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Boost configuration fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Boost configuration fetched"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "isEnabled": {
+                          "type": "boolean",
+                          "example": true
+                        },
+                        "priceCoins": {
+                          "type": "number",
+                          "example": 500
+                        },
+                        "durationMinutes": {
+                          "type": "number",
+                          "example": 60
+                        },
+                        "maxActiveSlots": {
+                          "type": "number",
+                          "example": 20
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden — ADMIN role required"
+          }
+        }
+      },
+      "put": {
+        "summary": "Admin: Update visibility boost configuration",
+        "description": "Updates platform visibility boost rules (pricing, duration, active slot limit, enable/disable toggle). Automatically invalidates runtime Redis cache.",
+        "tags": [
+          "Listeners"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "isEnabled": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "priceCoins": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "example": 500
+                  },
+                  "durationMinutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440,
+                    "example": 60
+                  },
+                  "maxActiveSlots": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100,
+                    "example": 20
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Boost configuration updated successfully"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden — ADMIN role required"
+          }
+        }
+      }
+    },
+    "/listeners/admin/active-boosts": {
+      "get": {
+        "summary": "Admin: Get all active boosted listeners queue",
+        "description": "Retrieves the real-time queue of all currently active boosted listeners, ordered by slot sequence ascending (Slot 1, Slot 2, ...).",
+        "tags": [
+          "Listeners"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active boosts queue fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Active boosts fetched"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "_id": {
+                            "type": "string"
+                          },
+                          "listenerId": {
+                            "type": "object",
+                            "properties": {
+                              "_id": {
+                                "type": "string"
+                              },
+                              "firstName": {
+                                "type": "string"
+                              },
+                              "lastName": {
+                                "type": "string"
+                              },
+                              "profileImage": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "sequence": {
+                            "type": "integer",
+                            "example": 1
+                          },
+                          "amountCoins": {
+                            "type": "number",
+                            "example": 500
+                          },
+                          "startedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "expiresAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/listeners/visibility-boost": {
+      "post": {
+        "summary": "Listener: Purchase visibility boost",
+        "description": "Allows a KYC-approved listener to purchase a visibility boost using coins. Priority placement in Home API for the configured duration (default 1 hour). Max active slots limit (default 20) is strictly enforced. Idempotent requests supported via idempotencyKey.",
+        "tags": [
+          "Listeners"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "idempotencyKey": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "example": "boost_req_987654"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Visibility boost purchased successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "integer",
+                      "example": 201
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Visibility boost purchased successfully"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "boostId": {
+                          "type": "string"
+                        },
+                        "sequence": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "startedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "expiresAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "amountCoins": {
+                          "type": "number",
+                          "example": 500
+                        },
+                        "remainingBalance": {
+                          "type": "number",
+                          "example": 1500
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Insufficient coin balance"
+          },
+          "403": {
+            "description": "Boost disabled or listener not KYC approved"
+          },
+          "409": {
+            "description": "All slots occupied (BOOST_SLOTS_FULL) or listener already has an active boost"
+          }
+        }
+      }
+    },
+    "/listeners/visibility-boost/me": {
+      "get": {
+        "summary": "Listener: Get my active visibility boost",
+        "description": "Returns the authenticated listener's current active visibility boost status, remaining time, and assigned slot sequence.",
+        "tags": [
+          "Listeners"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active boost fetched successfully"
           }
         }
       }
@@ -12277,169 +12805,486 @@
     "/roles": {
       "get": {
         "summary": "List admin roles",
-        "tags": ["Roles & Permissions"],
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [
-          { "in": "query", "name": "search", "schema": { "type": "string" } },
-          { "in": "query", "name": "isActive", "schema": { "type": "string", "enum": ["true", "false"] } }
+        "tags": [
+          "Roles & Permissions"
         ],
-        "responses": { "200": { "description": "Roles list" }, "403": { "description": "Forbidden" } }
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "isActive",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Roles list"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
       },
       "post": {
         "summary": "Create a role",
-        "tags": ["Roles & Permissions"],
-        "security": [{ "bearerAuth": [] }],
+        "tags": [
+          "Roles & Permissions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["name"],
+                "required": [
+                  "name"
+                ],
                 "properties": {
-                  "name": { "type": "string" },
-                  "slug": { "type": "string" },
-                  "description": { "type": "string" },
-                  "permissions": { "type": "array", "items": { "type": "string" } },
-                  "isActive": { "type": "boolean" }
+                  "name": {
+                    "type": "string"
+                  },
+                  "slug": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "permissions": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "isActive": {
+                    "type": "boolean"
+                  }
                 }
               }
             }
           }
         },
-        "responses": { "201": { "description": "Role created" }, "403": { "description": "Forbidden" } }
+        "responses": {
+          "201": {
+            "description": "Role created"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
       }
     },
     "/roles/stats": {
       "get": {
         "summary": "Role KPIs for admin panel",
-        "tags": ["Roles & Permissions"],
-        "security": [{ "bearerAuth": [] }],
-        "responses": { "200": { "description": "Role stats" } }
+        "tags": [
+          "Roles & Permissions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Role stats"
+          }
+        }
       }
     },
     "/roles/policies": {
       "get": {
         "summary": "Access policies derived from roles",
-        "tags": ["Roles & Permissions"],
-        "security": [{ "bearerAuth": [] }],
-        "responses": { "200": { "description": "Policy rows" } }
+        "tags": [
+          "Roles & Permissions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Policy rows"
+          }
+        }
       }
     },
     "/roles/{id}": {
       "get": {
         "summary": "Get role by id",
-        "tags": ["Roles & Permissions"],
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }],
-        "responses": { "200": { "description": "Role detail" } }
+        "tags": [
+          "Roles & Permissions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Role detail"
+          }
+        }
       },
       "patch": {
         "summary": "Update role",
-        "tags": ["Roles & Permissions"],
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }],
-        "responses": { "200": { "description": "Role updated" } }
+        "tags": [
+          "Roles & Permissions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Role updated"
+          }
+        }
       },
       "delete": {
         "summary": "Delete non-system role",
-        "tags": ["Roles & Permissions"],
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }],
-        "responses": { "200": { "description": "Role deleted" } }
+        "tags": [
+          "Roles & Permissions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Role deleted"
+          }
+        }
       }
     },
     "/roles/{id}/matrix": {
       "get": {
         "summary": "Permission matrix for a role",
-        "tags": ["Roles & Permissions"],
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }],
-        "responses": { "200": { "description": "Matrix" } }
+        "tags": [
+          "Roles & Permissions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matrix"
+          }
+        }
       },
       "put": {
         "summary": "Update permission matrix for a role",
-        "tags": ["Roles & Permissions"],
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }],
-        "responses": { "200": { "description": "Matrix updated" } }
+        "tags": [
+          "Roles & Permissions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matrix updated"
+          }
+        }
       }
     },
     "/roles/{id}/members": {
       "get": {
         "summary": "List admins assigned to a role",
-        "tags": ["Roles & Permissions"],
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }],
-        "responses": { "200": { "description": "Members" } }
+        "tags": [
+          "Roles & Permissions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Members"
+          }
+        }
       }
     },
     "/permissions": {
       "get": {
         "summary": "List permission catalog",
-        "tags": ["Roles & Permissions"],
-        "security": [{ "bearerAuth": [] }],
-        "responses": { "200": { "description": "Permissions" } }
+        "tags": [
+          "Roles & Permissions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Permissions"
+          }
+        }
       }
     },
     "/permissions/matrix-meta": {
       "get": {
         "summary": "UI matrix modules and actions",
-        "tags": ["Roles & Permissions"],
-        "security": [{ "bearerAuth": [] }],
-        "responses": { "200": { "description": "Matrix metadata" } }
+        "tags": [
+          "Roles & Permissions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matrix metadata"
+          }
+        }
       }
     },
     "/audit-logs": {
       "get": {
         "summary": "List audit logs",
-        "tags": ["Roles & Permissions"],
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [
-          { "in": "query", "name": "page", "schema": { "type": "integer" } },
-          { "in": "query", "name": "limit", "schema": { "type": "integer" } },
-          { "in": "query", "name": "search", "schema": { "type": "string" } }
+        "tags": [
+          "Roles & Permissions"
         ],
-        "responses": { "200": { "description": "Audit logs" } }
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Audit logs"
+          }
+        }
       }
     },
     "/users/admin/{id}/role": {
       "patch": {
         "summary": "Assign role to an admin user",
-        "tags": ["Roles & Permissions"],
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }],
+        "tags": [
+          "Roles & Permissions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["roleId"],
-                "properties": { "roleId": { "type": "string" } }
+                "required": [
+                  "roleId"
+                ],
+                "properties": {
+                  "roleId": {
+                    "type": "string"
+                  }
+                }
               }
             }
           }
         },
-        "responses": { "200": { "description": "Role assigned" } }
+        "responses": {
+          "200": {
+            "description": "Role assigned"
+          }
+        }
       }
     },
     "/admin/dashboard/summary": {
       "get": {
         "summary": "Admin dashboard KPI summary",
         "description": "Unified executive dashboard cards with period-over-period changePct plus realtime pulse counters",
-        "tags": ["Admin Dashboard"],
-        "security": [{ "bearerAuth": [] }],
+        "tags": [
+          "Admin Dashboard"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
-          { "in": "query", "name": "year", "schema": { "type": "integer", "minimum": 2020, "maximum": 2100 }, "example": 2026 },
-          { "in": "query", "name": "month", "schema": { "type": "integer", "minimum": 1, "maximum": 12 }, "example": 7 },
-          { "in": "query", "name": "day", "schema": { "type": "integer", "minimum": 1, "maximum": 31 }, "example": 10 },
-          { "in": "query", "name": "dateFrom", "schema": { "type": "string", "format": "date-time" }, "example": "2026-01-01T00:00:00.000Z" },
-          { "in": "query", "name": "dateTo", "schema": { "type": "string", "format": "date-time" }, "example": "2026-07-10T23:59:59.000Z" }
+          {
+            "in": "query",
+            "name": "year",
+            "schema": {
+              "type": "integer",
+              "minimum": 2020,
+              "maximum": 2100
+            },
+            "example": 2026
+          },
+          {
+            "in": "query",
+            "name": "month",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 12
+            },
+            "example": 7
+          },
+          {
+            "in": "query",
+            "name": "day",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 31
+            },
+            "example": 10
+          },
+          {
+            "in": "query",
+            "name": "dateFrom",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "example": "2026-01-01T00:00:00.000Z"
+          },
+          {
+            "in": "query",
+            "name": "dateTo",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "example": "2026-07-10T23:59:59.000Z"
+          }
         ],
         "responses": {
-          "200": { "description": "Dashboard summary returned" },
-          "403": { "description": "ADMIN role required" }
+          "200": {
+            "description": "Dashboard summary returned"
+          },
+          "403": {
+            "description": "ADMIN role required"
+          }
         }
       }
     },
@@ -12447,18 +13292,71 @@
       "get": {
         "summary": "Admin dashboard charts bundle",
         "description": "Revenue, registrations, sessions, channel split, and peak hours charts for the selected date filter",
-        "tags": ["Admin Dashboard"],
-        "security": [{ "bearerAuth": [] }],
+        "tags": [
+          "Admin Dashboard"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
-          { "in": "query", "name": "year", "schema": { "type": "integer", "minimum": 2020, "maximum": 2100 }, "example": 2026 },
-          { "in": "query", "name": "month", "schema": { "type": "integer", "minimum": 1, "maximum": 12 }, "example": 7 },
-          { "in": "query", "name": "day", "schema": { "type": "integer", "minimum": 1, "maximum": 31 }, "example": 10 },
-          { "in": "query", "name": "dateFrom", "schema": { "type": "string", "format": "date-time" }, "example": "2026-01-01T00:00:00.000Z" },
-          { "in": "query", "name": "dateTo", "schema": { "type": "string", "format": "date-time" }, "example": "2026-07-10T23:59:59.000Z" }
+          {
+            "in": "query",
+            "name": "year",
+            "schema": {
+              "type": "integer",
+              "minimum": 2020,
+              "maximum": 2100
+            },
+            "example": 2026
+          },
+          {
+            "in": "query",
+            "name": "month",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 12
+            },
+            "example": 7
+          },
+          {
+            "in": "query",
+            "name": "day",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 31
+            },
+            "example": 10
+          },
+          {
+            "in": "query",
+            "name": "dateFrom",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "example": "2026-01-01T00:00:00.000Z"
+          },
+          {
+            "in": "query",
+            "name": "dateTo",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "example": "2026-07-10T23:59:59.000Z"
+          }
         ],
         "responses": {
-          "200": { "description": "Dashboard charts returned" },
-          "403": { "description": "ADMIN role required" }
+          "200": {
+            "description": "Dashboard charts returned"
+          },
+          "403": {
+            "description": "ADMIN role required"
+          }
         }
       }
     },
@@ -12466,16 +13364,49 @@
       "get": {
         "summary": "Busy listeners board",
         "description": "Paginated list of approved listeners currently BUSY in an ongoing session",
-        "tags": ["Admin Dashboard"],
-        "security": [{ "bearerAuth": [] }],
+        "tags": [
+          "Admin Dashboard"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
-          { "in": "query", "name": "page", "schema": { "type": "integer", "minimum": 1, "default": 1 } },
-          { "in": "query", "name": "limit", "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 } },
-          { "in": "query", "name": "search", "schema": { "type": "string" } }
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
-          "200": { "description": "Busy listeners list returned" },
-          "403": { "description": "ADMIN role required" }
+          "200": {
+            "description": "Busy listeners list returned"
+          },
+          "403": {
+            "description": "ADMIN role required"
+          }
         }
       }
     },
@@ -12483,16 +13414,49 @@
       "get": {
         "summary": "Active chat sessions",
         "description": "Paginated list of ongoing CHAT mode communication sessions",
-        "tags": ["Admin Dashboard"],
-        "security": [{ "bearerAuth": [] }],
+        "tags": [
+          "Admin Dashboard"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
-          { "in": "query", "name": "page", "schema": { "type": "integer", "minimum": 1, "default": 1 } },
-          { "in": "query", "name": "limit", "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 } },
-          { "in": "query", "name": "search", "schema": { "type": "string" } }
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
-          "200": { "description": "Active chat sessions list returned" },
-          "403": { "description": "ADMIN role required" }
+          "200": {
+            "description": "Active chat sessions list returned"
+          },
+          "403": {
+            "description": "ADMIN role required"
+          }
         }
       }
     },
@@ -14465,14 +15429,44 @@
                   "policies": {
                     "type": "object",
                     "properties": {
-                      "privacyPolicy": {
-                        "type": "string"
+                      "app": {
+                        "type": "object",
+                        "properties": {
+                          "privacyPolicy": {
+                            "type": "string"
+                          },
+                          "termsAndConditions": {
+                            "type": "string"
+                          },
+                          "refundPolicy": {
+                            "type": "string"
+                          }
+                        }
                       },
-                      "termsAndConditions": {
-                        "type": "string"
+                      "listener": {
+                        "type": "object",
+                        "properties": {
+                          "privacyPolicy": {
+                            "type": "string"
+                          },
+                          "termsAndConditions": {
+                            "type": "string"
+                          },
+                          "refundPolicy": {
+                            "type": "string"
+                          }
+                        }
                       },
-                      "refundPolicy": {
-                        "type": "string"
+                      "agent": {
+                        "type": "object",
+                        "properties": {
+                          "privacyPolicy": {
+                            "type": "string"
+                          },
+                          "termsAndConditions": {
+                            "type": "string"
+                          }
+                        }
                       },
                       "aboutUs": {
                         "type": "string"
@@ -17616,7 +18610,7 @@
     },
     "/xp/admin/reward-claims": {
       "get": {
-        "summary": "Admin list XP reward claims",
+        "summary": "Admin list XP reward claim audit log",
         "tags": [
           "XP"
         ],
@@ -17631,7 +18625,6 @@
             "name": "page",
             "schema": {
               "type": "integer",
-              "minimum": 1,
               "default": 1
             },
             "example": 1
@@ -17641,8 +18634,6 @@
             "name": "limit",
             "schema": {
               "type": "integer",
-              "minimum": 1,
-              "maximum": 100,
               "default": 20
             },
             "example": 20
@@ -17653,7 +18644,7 @@
             "schema": {
               "type": "string"
             },
-            "example": "507f1f77bcf86cd799439011"
+            "example": "6a80033fa6b0b2c0d9449b9c"
           },
           {
             "in": "query",
@@ -17665,56 +18656,52 @@
                 "CLAIMED"
               ]
             },
-            "example": "UNCLAIMED"
-          },
-          {
-            "in": "query",
-            "name": "level",
-            "schema": {
-              "type": "integer",
-              "minimum": 1
-            },
-            "example": 5
-          },
-          {
-            "in": "query",
-            "name": "sortOrder",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "asc",
-                "desc"
-              ],
-              "default": "desc"
-            },
-            "example": "desc"
+            "example": "CLAIMED"
           }
         ],
         "responses": {
           "200": {
-            "description": "Success"
-          },
-          "400": {
-            "description": "Bad request / validation error"
-          },
-          "401": {
-            "description": "Unauthorized — missing or invalid JWT"
-          },
-          "403": {
-            "description": "Forbidden — insufficient role"
-          },
-          "404": {
-            "description": "Resource not found"
-          },
-          "500": {
-            "description": "Internal server error"
+            "description": "XP reward claims fetched successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "message": "XP reward claims fetched successfully",
+                  "data": {
+                    "page": 1,
+                    "limit": 20,
+                    "total": 12500,
+                    "totalPages": 625,
+                    "docs": [
+                      {
+                        "_id": "6a933f77bcf86cd799439099",
+                        "userId": {
+                          "_id": "6a80033fa6b0b2c0d9449b9c",
+                          "firstName": "Priyanshu",
+                          "lastName": "Sahu"
+                        },
+                        "levelReached": 5,
+                        "rewardId": {
+                          "title": "Level 5 Coin Bonus",
+                          "rewardType": "COINS",
+                          "rewardValue": 100
+                        },
+                        "status": "CLAIMED",
+                        "unlockedAt": "2026-08-29T09:00:00.000Z",
+                        "claimedAt": "2026-08-29T10:00:00.000Z"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
           }
         }
       }
     },
     "/xp/admin/stats": {
       "get": {
-        "summary": "Admin XP stats",
+        "summary": "Admin XP KPIs and platform summary",
         "tags": [
           "XP"
         ],
@@ -17725,29 +18712,31 @@
         ],
         "responses": {
           "200": {
-            "description": "Success"
-          },
-          "400": {
-            "description": "Bad request / validation error"
-          },
-          "401": {
-            "description": "Unauthorized — missing or invalid JWT"
-          },
-          "403": {
-            "description": "Forbidden — insufficient role"
-          },
-          "404": {
-            "description": "Resource not found"
-          },
-          "500": {
-            "description": "Internal server error"
+            "description": "XP admin stats fetched successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "message": "XP admin stats fetched successfully",
+                  "data": {
+                    "totalXpDistributed": 2450000,
+                    "totalXpTransactions": 84200,
+                    "totalRewardClaims": 12500,
+                    "activeUsersWithXp": 4320,
+                    "topAction": "VOICE_CALL",
+                    "highestLevelReached": 25,
+                    "unclaimedRewardsPending": 340
+                  }
+                }
+              }
+            }
           }
         }
       }
     },
     "/xp/admin/transactions": {
       "get": {
-        "summary": "Admin list XP transactions",
+        "summary": "Admin list global XP transactions ledger",
         "tags": [
           "XP"
         ],
@@ -17762,7 +18751,6 @@
             "name": "page",
             "schema": {
               "type": "integer",
-              "minimum": 1,
               "default": 1
             },
             "example": 1
@@ -17772,8 +18760,6 @@
             "name": "limit",
             "schema": {
               "type": "integer",
-              "minimum": 1,
-              "maximum": 100,
               "default": 20
             },
             "example": 20
@@ -17784,36 +18770,15 @@
             "schema": {
               "type": "string"
             },
-            "example": "507f1f77bcf86cd799439011"
+            "example": "6a80033fa6b0b2c0d9449b9c"
           },
           {
             "in": "query",
             "name": "action",
             "schema": {
-              "type": "string",
-              "enum": [
-                "DAILY_LOGIN",
-                "CHAT_MESSAGE",
-                "VOICE_CALL",
-                "VIDEO_CALL",
-                "PROFILE_COMPLETE",
-                "GIFT_SENT",
-                "DAILY_STREAK_BONUS",
-                "AVATAR_UNLOCK",
-                "FIRST_CALL",
-                "FOLLOW_USER",
-                "ADMIN_GRANT"
-              ]
+              "type": "string"
             },
-            "example": "DAILY_LOGIN"
-          },
-          {
-            "in": "query",
-            "name": "adminGrant",
-            "schema": {
-              "type": "boolean"
-            },
-            "example": false
+            "example": "VOICE_CALL"
           },
           {
             "in": "query",
@@ -17831,22 +18796,37 @@
         ],
         "responses": {
           "200": {
-            "description": "Success"
-          },
-          "400": {
-            "description": "Bad request / validation error"
-          },
-          "401": {
-            "description": "Unauthorized — missing or invalid JWT"
-          },
-          "403": {
-            "description": "Forbidden — insufficient role"
-          },
-          "404": {
-            "description": "Resource not found"
-          },
-          "500": {
-            "description": "Internal server error"
+            "description": "XP transactions fetched successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "message": "XP transactions fetched successfully",
+                  "data": {
+                    "page": 1,
+                    "limit": 20,
+                    "total": 84200,
+                    "totalPages": 4210,
+                    "docs": [
+                      {
+                        "_id": "6a911f77bcf86cd799439011",
+                        "userId": {
+                          "_id": "6a80033fa6b0b2c0d9449b9c",
+                          "firstName": "Priyanshu",
+                          "lastName": "Sahu",
+                          "email": "user@livechat.com"
+                        },
+                        "action": "VOICE_CALL",
+                        "xpAmount": 50,
+                        "balanceAfter": 1450,
+                        "description": "Earned 50 XP for completed voice call (5 mins)",
+                        "createdAt": "2026-08-29T10:30:00.000Z"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
           }
         }
       }

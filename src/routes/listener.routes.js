@@ -1,9 +1,11 @@
 import express from 'express';
 import listenerController from '../controllers/listener.controller.js';
+import visibilityBoostController from '../controllers/visibility-boost.controller.js';
 import { authenticate, restrictTo, authorize } from '../middlewares/auth.middleware.js';
 import { uploadKYCDocuments, uploadListenerProfileMedia, processAndUploadImage } from '../middlewares/upload.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 import { updateListenerProfileSchema, updateRatesSchema, updateAvailabilitySchema, updateKycStatusSchema, dashboardOverviewQuerySchema, dashboardSessionsQuerySchema, homeListenersQuerySchema, agentCreateListenerSchema, agentListenersQuerySchema, adminListenerPerformanceQuerySchema } from '../validators/listener.validator.js';
+import { purchaseBoostSchema, updateBoostConfigSchema } from '../validators/visibility-boost.validator.js';
 import adminExportController from '../controllers/admin-export.controller.js';
 
 const router = express.Router();
@@ -19,9 +21,12 @@ router.post('/agent', restrictTo('AGENT'), validate(agentCreateListenerSchema), 
 router.get('/admin/stats', restrictTo('ADMIN'), authorize('listener.stats.view'), listenerController.getAdminStats);
 router.get('/admin/performance', restrictTo('ADMIN'), authorize('listener.performance.view'), validate(adminListenerPerformanceQuerySchema), listenerController.getAdminListenerPerformance);
 router.get('/admin/availability-monitoring', restrictTo('ADMIN'), authorize('listener.availability.view'), listenerController.getAdminAvailabilityMonitoring);
+router.get('/admin/boost-config', restrictTo('ADMIN'), authorize('listener.read'), visibilityBoostController.getConfig);
+router.put('/admin/boost-config', restrictTo('ADMIN'), authorize('listener.update'), validate(updateBoostConfigSchema), visibilityBoostController.updateConfig);
+router.get('/admin/active-boosts', restrictTo('ADMIN'), authorize('listener.read'), visibilityBoostController.getActiveBoosts);
 router.get('/export', restrictTo('ADMIN'), authorize('listener.read'), adminExportController.exportListeners);
-router.get('/admin/:id', restrictTo('ADMIN'), authorize('listener.read'), listenerController.getListenerById);
-router.put('/admin/:id', restrictTo('ADMIN'), authorize('listener.update'), listenerController.updateListenerByAdmin);
+router.get('/admin/:id([0-9a-fA-F]{24})', restrictTo('ADMIN'), authorize('listener.read'), listenerController.getListenerById);
+router.put('/admin/:id([0-9a-fA-F]{24})', restrictTo('ADMIN'), authorize('listener.update'), listenerController.updateListenerByAdmin);
 router.get('/', restrictTo('ADMIN', 'CUSTOMER'), listenerController.getAllListeners);
 router.get(
   '/public/:userId',
@@ -50,6 +55,10 @@ router.put('/rates', restrictTo('LISTENER'), validate(updateRatesSchema), listen
 router.put('/availability', restrictTo('LISTENER'), validate(updateAvailabilitySchema), listenerController.updateAvailability);
 
 router.patch('/availability/toggle', restrictTo('LISTENER'), listenerController.toggleAvailability);
+
+// --- VISIBILITY BOOST (LISTENER ONLY) ---
+router.post('/visibility-boost', restrictTo('LISTENER'), validate(purchaseBoostSchema), visibilityBoostController.purchaseBoost);
+router.get('/visibility-boost/me', restrictTo('LISTENER'), visibilityBoostController.getMyBoost);
 
 // --- DASHBOARD (LISTENER ONLY) ---
 

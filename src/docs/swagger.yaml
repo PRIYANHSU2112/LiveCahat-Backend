@@ -57,7 +57,7 @@ components:
         docs:
           type: array
           items:
-            $ref: "#/components/schemas/ListenerHomeCustomerCard"
+            $ref: '#/components/schemas/ListenerHomeCustomerCard'
         total:
           type: integer
         page:
@@ -116,8 +116,7 @@ tags:
   - name: Notifications
     description: In-app notifications — recipient inbox (own only) and admin send/broadcast
   - name: Search
-    description: Global search — user-facing listener discovery and full admin-level
-      search across all users and listener profiles
+    description: Global search — user-facing listener discovery and full admin-level search across all users and listener profiles
   - name: Agent Revenue
     description: Agent commission revenue dashboard APIs
   - name: Agent Analytics
@@ -127,8 +126,7 @@ tags:
   - name: Agent Settlements
     description: Agent commission settlement history
   - name: Admin Dashboard
-    description: Unified admin executive dashboard summary, charts, busy listeners,
-      and active chat sessions
+    description: Unified admin executive dashboard summary, charts, busy listeners, and active chat sessions
   - name: Roles & Permissions
     description: Admin RBAC — roles, permission catalog, audit logs
   - name: Platform Analytics
@@ -186,7 +184,7 @@ paths:
                   example: 25
                   description: User age in years (must be 18+)
       responses:
-        "200":
+        '200':
           description: OTP sent successfully
   /auth/verify-otp:
     post:
@@ -221,15 +219,13 @@ paths:
                     - MALE
                     - FEMALE
                     - OTHER
-                  description: Optional; if sent must match request-otp. LISTENER type must be
-                    FEMALE only.
+                  description: Optional; if sent must match request-otp. LISTENER type must be FEMALE only.
                 inviteCode:
                   type: string
-                  description: "Optional invite/referral code. For CUSTOMER type: links referrer
-                    for coin bonuses on first purchase. For LISTENER type: links
-                    new listener to Agent (createdByAgentId) if code belongs to
-                    an Agent, or Direct Admin if code belongs to an Admin (or
-                    missing). Ignored for existing registered listeners."
+                  description: >-
+                    Optional invite/referral code. For CUSTOMER type: links referrer for coin bonuses on first purchase.
+                    For LISTENER type: links new listener to Agent (createdByAgentId) if code belongs to an Agent, or
+                    Direct Admin if code belongs to an Admin (or missing). Ignored for existing registered listeners.
                 age:
                   type: integer
                   minimum: 18
@@ -237,7 +233,7 @@ paths:
                   example: 25
                   description: Optional; if sent must match the age from request-otp (must be 18+)
       responses:
-        "200":
+        '200':
           description: Login successful
   /auth/login:
     post:
@@ -261,18 +257,18 @@ paths:
                   type: string
                   example: admin123
       responses:
-        "200":
+        '200':
           description: Login successful
-        "401":
+        '401':
           description: Invalid email or password
-        "403":
+        '403':
           description: Account is blocked or deleted
   /auth/guest-login:
     post:
       summary: Guest login with age verification and device ID
-      description: Creates a permanent guest account on first call. On subsequent
-        calls with the same deviceId, restores the existing session. User must
-        be 18+.
+      description: >-
+        Creates a permanent guest account on first call. On subsequent calls with the same deviceId, restores the
+        existing session. User must be 18+.
       tags:
         - Auth
       requestBody:
@@ -291,8 +287,7 @@ paths:
                   example: 550e8400-e29b-41d4-a716-446655440000
                 inviteCode:
                   type: string
-                  description: Optional referral code — credits bonus coins to both users
-                    immediately on signup
+                  description: Optional referral code — credits bonus coins to both users immediately on signup
                 age:
                   type: integer
                   minimum: 18
@@ -300,7 +295,7 @@ paths:
                   example: 25
                   description: User age in years (must be 18+)
       responses:
-        "200":
+        '200':
           description: Guest account created or session restored
           content:
             application/json:
@@ -322,14 +317,14 @@ paths:
                         type: object
                       isNewUser:
                         type: boolean
-        "403":
+        '403':
           description: User is under 18 or account is blocked
   /auth/link-account:
     post:
       summary: Link phone number to guest account
-      description: Verifies OTP and permanently links a phone number to the guest
-        account, upgrading it to a full account. Request OTP first via POST
-        /auth/request-otp.
+      description: >-
+        Verifies OTP and permanently links a phone number to the guest account, upgrading it to a full account. Request
+        OTP first via POST /auth/request-otp.
       tags:
         - Auth
       security:
@@ -347,28 +342,27 @@ paths:
                 mobileNumber:
                   type: string
                   pattern: ^[0-9]{10}$
-                  example: "9876543210"
+                  example: '9876543210'
                 otp:
                   type: string
                   minLength: 6
                   maxLength: 6
-                  example: "123456"
+                  example: '123456'
                 countryCode:
                   type: string
-                  default: "+91"
-                  example: "+91"
+                  default: '+91'
+                  example: '+91'
       responses:
-        "200":
+        '200':
           description: Phone number linked successfully
-        "401":
+        '401':
           description: Invalid or expired OTP
-        "409":
+        '409':
           description: Phone number already linked to another account
   /auth/direct-login:
     post:
       summary: Authenticate listener directly via magic link token
-      description: Exchanges a unique magic login token for a signed JWT access token
-        and user profile.
+      description: Exchanges a unique magic login token for a signed JWT access token and user profile.
       tags:
         - Auth
       requestBody:
@@ -384,11 +378,11 @@ paths:
                   type: string
                   example: 3a7b9c...
       responses:
-        "200":
+        '200':
           description: Magic link login successful
-        "401":
+        '401':
           description: Invalid token
-        "404":
+        '404':
           description: Token or user not found
   /users/me:
     get:
@@ -398,7 +392,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Profile fetched successfully
     put:
       summary: Update current user profile
@@ -431,7 +425,7 @@ paths:
                   example: 25
                   description: User age in years (must be 18+)
       responses:
-        "200":
+        '200':
           description: Profile updated successfully
     delete:
       summary: Soft delete current user account
@@ -440,7 +434,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Account deleted successfully
   /users/me/settings:
     get:
@@ -450,7 +444,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Settings fetched successfully
           content:
             application/json:
@@ -505,15 +499,14 @@ paths:
                 dndVideoCall:
                   type: boolean
       responses:
-        "200":
+        '200':
           description: Settings updated successfully
-        "400":
+        '400':
           description: No valid toggle provided
   /listeners/agent:
     get:
       summary: Get listeners created by agent
-      description: Returns a paginated list of listeners under the authenticated
-        agent's account.
+      description: Returns a paginated list of listeners under the authenticated agent's account.
       tags:
         - Listeners
       security:
@@ -521,28 +514,24 @@ paths:
       parameters:
         - name: search
           in: query
-          description: Free-text search across listener first/last name, username, email,
-            and mobile number.
+          description: Free-text search across listener first/last name, username, email, and mobile number.
           schema:
             type: string
         - name: dateFrom
           in: query
-          description: Filter listeners created on or after this date (ISO 8601). Matches
-            the profile createdAt.
+          description: Filter listeners created on or after this date (ISO 8601). Matches the profile createdAt.
           schema:
             type: string
             format: date-time
         - name: dateTo
           in: query
-          description: Filter listeners created on or before this date (ISO 8601). Matches
-            the profile createdAt.
+          description: Filter listeners created on or before this date (ISO 8601). Matches the profile createdAt.
           schema:
             type: string
             format: date-time
         - name: country
           in: query
-          description: 'Country filter: accepts a Country ObjectId, ISO code (e.g. "IN"),
-            or country name.'
+          description: 'Country filter: accepts a Country ObjectId, ISO code (e.g. "IN"), or country name.'
           schema:
             type: string
         - name: kycStatus
@@ -557,8 +546,9 @@ paths:
               - REJECTED
         - name: accountStatus
           in: query
-          description: "Account status filter: active (KYC approved & not blocked),
-            blocked (user blocked), or pending (KYC pending)."
+          description: >-
+            Account status filter: active (KYC approved & not blocked), blocked (user blocked), or pending (KYC
+            pending).
           schema:
             type: string
             enum:
@@ -630,12 +620,11 @@ paths:
             default: 10
             maximum: 100
       responses:
-        "200":
+        '200':
           description: Listeners fetched successfully
     post:
       summary: Create listener by agent
-      description: Agent creates a new listener profile (as a draft/incomplete or
-        submitted/completed status).
+      description: Agent creates a new listener profile (as a draft/incomplete or submitted/completed status).
       tags:
         - Listeners
       security:
@@ -675,21 +664,20 @@ paths:
                     - completed
                   default: completed
       responses:
-        "201":
+        '201':
           description: Listener created successfully
-        "400":
+        '400':
           description: Email, username, or phone already in use
   /listeners/agent/stats:
     get:
       summary: Get listener stats for agent dashboard
-      description: Returns aggregated statistics (total, active, online, pending) for
-        listeners managed by the authenticated agent.
+      description: Returns aggregated statistics (total, active, online, pending) for listeners managed by the authenticated agent.
       tags:
         - Listeners
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Agent stats fetched successfully
           content:
             application/json:
@@ -725,7 +713,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Listener profile fetched
     put:
       summary: Create or Update listener profile
@@ -778,7 +766,7 @@ paths:
                 videoRate:
                   type: number
       responses:
-        "200":
+        '200':
           description: Profile updated
   /listeners/kyc:
     post:
@@ -804,7 +792,7 @@ paths:
                   type: string
                   format: binary
       responses:
-        "200":
+        '200':
           description: KYC submitted
   /listeners/rates:
     put:
@@ -827,7 +815,7 @@ paths:
                 videoRate:
                   type: number
       responses:
-        "200":
+        '200':
           description: Rates updated
   /listeners/availability:
     put:
@@ -850,33 +838,33 @@ paths:
                     - OFFLINE
                     - BUSY
       responses:
-        "200":
+        '200':
           description: Availability updated
   /listeners/availability/toggle:
     patch:
       summary: Toggle availability ONLINE ⇄ OFFLINE
-      description: "Listener-only. Flips current availability: ONLINE → OFFLINE, any
-        other state → ONLINE. No request body. Syncs the presence service."
+      description: >-
+        Listener-only. Flips current availability: ONLINE → OFFLINE, any other state → ONLINE. No request body. Syncs
+        the presence service.
       tags:
         - Listeners
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Availability toggled (message reflects the new status)
-        "404":
+        '404':
           description: Listener profile not found
   /listeners/dashboard:
     get:
       summary: Listener quick dashboard (today)
-      description: Listener-only. Returns today's total earnings (session coins + gift
-        earnings) and active minutes.
+      description: Listener-only. Returns today's total earnings (session coins + gift earnings) and active minutes.
       tags:
         - Listeners
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Dashboard fetched successfully
           content:
             application/json:
@@ -894,14 +882,14 @@ paths:
                       activeMinutes:
                         type: number
                         example: 86
-        "403":
+        '403':
           description: Listener only
   /listeners/dashboard/overview:
     get:
       summary: Listener dashboard overview (period stats + growth chart)
-      description: Listener-only. Period-filtered stat cards — coins earned (sessions
-        + gifts), total coin (current wallet balance), minutes, gifts — plus an
-        earnings growth series (today→hourly, week→7 days, month→30 days).
+      description: >-
+        Listener-only. Period-filtered stat cards — coins earned (sessions + gifts), total coin (current wallet
+        balance), minutes, gifts — plus an earnings growth series (today→hourly, week→7 days, month→30 days).
       tags:
         - Listeners
       security:
@@ -917,7 +905,7 @@ paths:
               - month
             default: today
       responses:
-        "200":
+        '200':
           description: Dashboard overview fetched successfully
           content:
             application/json:
@@ -964,13 +952,12 @@ paths:
                             earnings:
                               type: number
                               example: 1240
-        "403":
+        '403':
           description: Listener only
   /listeners/dashboard/sessions:
     get:
       summary: Listener recent sessions (period-filtered, paginated)
-      description: Listener-only. Paginated communication sessions for the logged-in
-        listener within the selected period.
+      description: Listener-only. Paginated communication sessions for the logged-in listener within the selected period.
       tags:
         - Listeners
       security:
@@ -1007,9 +994,9 @@ paths:
               - desc
             default: desc
       responses:
-        "200":
+        '200':
           description: Recent sessions fetched successfully
-        "403":
+        '403':
           description: Listener only
   /users:
     get:
@@ -1040,13 +1027,12 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Users fetched successfully
-  "/users/{id}":
+  /users/{id}:
     get:
       summary: Get user by ID (admin or listener)
-      description: Accessible by ADMIN (requires user.read) and LISTENER. Path id must
-        be a MongoDB ObjectId.
+      description: Accessible by ADMIN (requires user.read) and LISTENER. Path id must be a MongoDB ObjectId.
       tags:
         - Users
       security:
@@ -1058,7 +1044,7 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: User fetched successfully
   /listeners:
     get:
@@ -1077,9 +1063,9 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Listeners fetched successfully
-  "/listeners/{id}/kyc":
+  /listeners/{id}/kyc:
     post:
       summary: Approve or Reject Listener KYC (admin)
       tags:
@@ -1109,9 +1095,9 @@ paths:
                 rejectionReason:
                   type: string
       responses:
-        "200":
+        '200':
           description: KYC status updated
-  "/users/{id}/block":
+  /users/{id}/block:
     post:
       summary: Block or unblock a user (admin)
       tags:
@@ -1136,7 +1122,7 @@ paths:
                 isBlocked:
                   type: boolean
       responses:
-        "200":
+        '200':
           description: User blocked status updated
   /users/admin:
     post:
@@ -1173,7 +1159,7 @@ paths:
                   type: string
                   description: MongoDB ObjectId of the assigned Role
       responses:
-        "201":
+        '201':
           description: Admin created successfully
   /users/listener:
     post:
@@ -1214,7 +1200,7 @@ paths:
                   example: 25
                   description: User age in years (must be 18+)
       responses:
-        "201":
+        '201':
           description: Listener created successfully
   /languages:
     get:
@@ -1229,7 +1215,7 @@ paths:
           schema:
             type: boolean
       responses:
-        "200":
+        '200':
           description: Languages fetched successfully
     post:
       summary: Create a new language (Admin)
@@ -1258,9 +1244,9 @@ paths:
                 isActive:
                   type: boolean
       responses:
-        "201":
+        '201':
           description: Language created successfully
-  "/languages/{id}":
+  /languages/{id}:
     get:
       summary: Get a language by ID
       tags:
@@ -1274,7 +1260,7 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Language fetched successfully
     put:
       summary: Update a language (Admin)
@@ -1306,7 +1292,7 @@ paths:
                 isActive:
                   type: boolean
       responses:
-        "200":
+        '200':
           description: Language updated successfully
     delete:
       summary: Delete a language (Admin)
@@ -1321,7 +1307,7 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Language deleted successfully
   /countries:
     get:
@@ -1329,7 +1315,7 @@ paths:
       tags:
         - Countries
       responses:
-        "200":
+        '200':
           description: Countries fetched successfully
           content:
             application/json:
@@ -1340,7 +1326,7 @@ paths:
                   - _id: 507f1f77bcf86cd799439011
                     name: India
                     code: IN
-                    dialCode: "+91"
+                    dialCode: '+91'
                     flagUrl: https://flagcdn.com/in.svg
                     isActive: true
     post:
@@ -1370,7 +1356,7 @@ paths:
                   maxLength: 2
                 dialCode:
                   type: string
-                  example: "+91"
+                  example: '+91'
                 flagUrl:
                   type: string
                   example: https://flagcdn.com/in.svg
@@ -1380,15 +1366,15 @@ paths:
             example:
               name: India
               code: IN
-              dialCode: "+91"
+              dialCode: '+91'
               flagUrl: https://flagcdn.com/in.svg
               isActive: true
       responses:
-        "201":
+        '201':
           description: Country created successfully
-        "400":
+        '400':
           description: Duplicate code/dialCode or validation error
-        "403":
+        '403':
           description: ADMIN role required
   /countries/admin/stats:
     get:
@@ -1398,7 +1384,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Country stats fetched successfully
           content:
             application/json:
@@ -1410,7 +1396,7 @@ paths:
                   inactive: 1
                   usersLinked: 120
                   listenersLinked: 40
-        "403":
+        '403':
           description: ADMIN role required
   /countries/admin:
     get:
@@ -1461,7 +1447,7 @@ paths:
               - desc
           example: asc
       responses:
-        "200":
+        '200':
           description: Countries fetched successfully
           content:
             application/json:
@@ -1472,15 +1458,15 @@ paths:
                     - _id: 507f1f77bcf86cd799439011
                       name: India
                       code: IN
-                      dialCode: "+91"
+                      dialCode: '+91'
                       isActive: true
                   meta:
                     totalDocuments: 1
                     currentPage: 1
                     totalPages: 1
-        "403":
+        '403':
           description: ADMIN role required
-  "/countries/{id}":
+  /countries/{id}:
     get:
       summary: Get country by ID (Admin)
       tags:
@@ -1496,9 +1482,9 @@ paths:
             example: 507f1f77bcf86cd799439011
           example: 507f1f77bcf86cd799439011
       responses:
-        "200":
+        '200':
           description: Country fetched successfully
-        "404":
+        '404':
           description: Country not found
     put:
       summary: Update country (Admin)
@@ -1529,7 +1515,7 @@ paths:
                   example: IN
                 dialCode:
                   type: string
-                  example: "+91"
+                  example: '+91'
                 flagUrl:
                   type: string
                   example: https://flagcdn.com/in.svg
@@ -1538,14 +1524,14 @@ paths:
                   example: true
             example:
               name: India
-              dialCode: "+91"
+              dialCode: '+91'
               isActive: true
       responses:
-        "200":
+        '200':
           description: Country updated successfully
-        "400":
+        '400':
           description: Validation error
-        "404":
+        '404':
           description: Country not found
     delete:
       summary: Delete country (Admin)
@@ -1562,13 +1548,13 @@ paths:
             example: 507f1f77bcf86cd799439011
           example: 507f1f77bcf86cd799439011
       responses:
-        "200":
+        '200':
           description: Country deleted successfully
-        "400":
+        '400':
           description: Cannot delete country linked to users or listeners
-        "404":
+        '404':
           description: Country not found
-  "/countries/{id}/toggle":
+  /countries/{id}/toggle:
     patch:
       summary: Toggle country active status (Admin)
       tags:
@@ -1584,7 +1570,7 @@ paths:
             example: 507f1f77bcf86cd799439011
           example: 507f1f77bcf86cd799439011
       responses:
-        "200":
+        '200':
           description: Country toggled successfully
           content:
             application/json:
@@ -1602,7 +1588,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: List of all coin packs
     post:
       summary: Create a new Coin Pack (Admin)
@@ -1637,15 +1623,14 @@ paths:
                 referralBonusCoins:
                   type: number
                   default: 0
-                  description: Free coins both referrer and referred friend get when the friend
-                    first buys this pack
+                  description: Free coins both referrer and referred friend get when the friend first buys this pack
                 isActive:
                   type: boolean
                   default: true
       responses:
-        "201":
+        '201':
           description: Coin pack created successfully
-  "/coin-packs/{id}":
+  /coin-packs/{id}:
     get:
       summary: Get Coin Pack by ID
       tags:
@@ -1659,7 +1644,7 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Coin pack details
     put:
       summary: Update Coin Pack (Admin)
@@ -1694,12 +1679,11 @@ paths:
                   type: string
                 referralBonusCoins:
                   type: number
-                  description: Free coins both referrer and referred friend get when the friend
-                    first buys this pack
+                  description: Free coins both referrer and referred friend get when the friend first buys this pack
                 isActive:
                   type: boolean
       responses:
-        "200":
+        '200':
           description: Coin pack updated successfully
     delete:
       summary: Delete Coin Pack (Admin)
@@ -1714,9 +1698,9 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Coin pack deleted successfully
-  "/coin-packs/{id}/toggle":
+  /coin-packs/{id}/toggle:
     patch:
       summary: Toggle Coin Pack status (Admin)
       tags:
@@ -1730,7 +1714,7 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Coin pack activated/deactivated successfully
   /wallets/me:
     get:
@@ -1740,7 +1724,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Wallet details fetched successfully
   /wallets/me/coin-transactions:
     get:
@@ -1777,7 +1761,7 @@ paths:
               - CREDIT
               - DEBIT
       responses:
-        "200":
+        '200':
           description: Coin transactions fetched successfully
   /wallets/me/payment-transactions:
     get:
@@ -1816,7 +1800,7 @@ paths:
               - FAILED
               - REFUNDED
       responses:
-        "200":
+        '200':
           description: Payment transactions fetched successfully
   /wallets/payments/create-order:
     post:
@@ -1837,7 +1821,7 @@ paths:
                 coinPackId:
                   type: string
       responses:
-        "201":
+        '201':
           description: Payment order created successfully
   /wallets/payments/webhook:
     post:
@@ -1851,7 +1835,7 @@ paths:
             schema:
               type: object
       responses:
-        "200":
+        '200':
           description: Webhook processed successfully
   /wallets/payments/webhook-mock:
     post:
@@ -1870,13 +1854,12 @@ paths:
                 orderId:
                   type: string
       responses:
-        "200":
+        '200':
           description: Mock webhook processed successfully
-  "/follows/{listenerId}":
+  /follows/{listenerId}:
     post:
       summary: Follow a listener
-      description: Follow a listener. Idempotent — duplicate follows are silently
-        acknowledged without error.
+      description: Follow a listener. Idempotent — duplicate follows are silently acknowledged without error.
       tags:
         - Follows
       security:
@@ -1889,7 +1872,7 @@ paths:
             type: string
           description: The User ObjectId of the listener to follow
       responses:
-        "200":
+        '200':
           description: Followed successfully
           content:
             application/json:
@@ -1907,9 +1890,9 @@ paths:
                         type: boolean
                       alreadyFollowing:
                         type: boolean
-        "400":
+        '400':
           description: Cannot follow yourself / Can only follow listeners
-        "404":
+        '404':
           description: Listener not found
     delete:
       summary: Unfollow a listener
@@ -1926,7 +1909,7 @@ paths:
             type: string
           description: The User ObjectId of the listener to unfollow
       responses:
-        "200":
+        '200':
           description: Unfollowed successfully
           content:
             application/json:
@@ -1942,13 +1925,12 @@ paths:
                     properties:
                       unfollowed:
                         type: boolean
-        "400":
+        '400':
           description: You are not following this listener
   /follows/following:
     get:
       summary: Get my following list
-      description: Get paginated list of listeners the current user is following, with
-        populated listener profile data.
+      description: Get paginated list of listeners the current user is following, with populated listener profile data.
       tags:
         - Follows
       security:
@@ -1974,13 +1956,12 @@ paths:
               - desc
             default: desc
       responses:
-        "200":
+        '200':
           description: Following list fetched successfully
   /follows/favorites:
     get:
       summary: Get my favourite listeners
-      description: Get paginated list of listeners the current user has marked as
-        favourite (subset of following list).
+      description: Get paginated list of listeners the current user has marked as favourite (subset of following list).
       tags:
         - Follows
       security:
@@ -2006,9 +1987,9 @@ paths:
               - desc
             default: desc
       responses:
-        "200":
+        '200':
           description: Favourites list fetched successfully
-  "/follows/followers/{listenerId}":
+  /follows/followers/{listenerId}:
     get:
       summary: Get followers of a listener
       description: Get paginated list of users following a specific listener.
@@ -2043,13 +2024,14 @@ paths:
               - desc
             default: desc
       responses:
-        "200":
+        '200':
           description: Followers list fetched successfully
-  "/follows/counts/{userId}":
+  /follows/counts/{userId}:
     get:
       summary: Get follow counts for a user
-      description: Get follower count, following count, and whether the user is a
-        listener. Reads from denormalized fields for O(1) performance.
+      description: >-
+        Get follower count, following count, and whether the user is a listener. Reads from denormalized fields for O(1)
+        performance.
       tags:
         - Follows
       security:
@@ -2062,7 +2044,7 @@ paths:
             type: string
           description: The User ObjectId
       responses:
-        "200":
+        '200':
           description: Follow counts fetched successfully
           content:
             application/json:
@@ -2082,11 +2064,10 @@ paths:
                         type: integer
                       isListener:
                         type: boolean
-  "/follows/status/{listenerId}":
+  /follows/status/{listenerId}:
     get:
       summary: Check follow status
-      description: Check if the current authenticated user follows a specific listener
-        and whether they are marked as favourite.
+      description: Check if the current authenticated user follows a specific listener and whether they are marked as favourite.
       tags:
         - Follows
       security:
@@ -2098,7 +2079,7 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Follow status fetched
           content:
             application/json:
@@ -2116,11 +2097,10 @@ paths:
                         type: boolean
                       isFavorite:
                         type: boolean
-  "/follows/favorite/{listenerId}":
+  /follows/favorite/{listenerId}:
     patch:
       summary: Toggle favourite status
-      description: Toggle a followed listener as favourite/not favourite. Must already
-        be following the listener.
+      description: Toggle a followed listener as favourite/not favourite. Must already be following the listener.
       tags:
         - Follows
       security:
@@ -2132,7 +2112,7 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Favourite status toggled
           content:
             application/json:
@@ -2148,13 +2128,12 @@ paths:
                     properties:
                       isFavorite:
                         type: boolean
-        "400":
+        '400':
           description: You must follow this listener before marking as favourite
   /follows/top:
     get:
       summary: Get top followed listeners (Admin)
-      description: Analytics endpoint — returns listeners sorted by follower count in
-        descending order.
+      description: Analytics endpoint — returns listeners sorted by follower count in descending order.
       tags:
         - Follows
       security:
@@ -2168,27 +2147,27 @@ paths:
             maximum: 50
           description: Number of top listeners to return
       responses:
-        "200":
+        '200':
           description: Top followed listeners fetched
-        "403":
+        '403':
           description: Admin access required
   /company/profile:
     get:
       summary: Get primary company profile
-      description: Retrieve the main company details, links, policy documents, and
-        logos. Publicly accessible. Policies are nested per audience (app,
-        listener, agent) with shared aboutUs/contactUs.
+      description: >-
+        Retrieve the main company details, links, policy documents, and logos. Publicly accessible. Policies are nested
+        per audience (app, listener, agent) with shared aboutUs/contactUs.
       tags:
         - Company
       responses:
-        "200":
+        '200':
           description: Company profile details retrieved successfully
-  "/company/legal/{audience}":
+  /company/legal/{audience}:
     get:
       summary: Get legal documents by audience
-      description: Public endpoint returning privacy policy, terms, and (for
-        app/listener) refund policy for the given audience, plus shared aboutUs
-        and contactUs.
+      description: >-
+        Public endpoint returning privacy policy, terms, and (for app/listener) refund policy for the given audience,
+        plus shared aboutUs and contactUs.
       tags:
         - Company
       parameters:
@@ -2201,11 +2180,11 @@ paths:
               - app
               - listener
               - agent
-          description: "Target client: app (customer), listener, or agent"
+          description: 'Target client: app (customer), listener, or agent'
       responses:
-        "200":
+        '200':
           description: Legal documents fetched successfully
-        "400":
+        '400':
           description: Invalid audience
   /company:
     get:
@@ -2227,7 +2206,7 @@ paths:
             type: integer
             default: 10
       responses:
-        "200":
+        '200':
           description: List of companies fetched successfully
     post:
       summary: Create a new company record (Admin)
@@ -2321,9 +2300,9 @@ paths:
                 cin:
                   type: string
       responses:
-        "201":
+        '201':
           description: Company created successfully
-  "/company/{id}":
+  /company/{id}:
     get:
       summary: Get company record by ID
       tags:
@@ -2337,7 +2316,7 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Company fetched successfully
     put:
       summary: Update company record by ID (Admin)
@@ -2434,7 +2413,7 @@ paths:
                 cin:
                   type: string
       responses:
-        "200":
+        '200':
           description: Company updated successfully
     delete:
       summary: Delete company record by ID (Admin)
@@ -2449,7 +2428,7 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Company deleted successfully
   /gifts:
     get:
@@ -2483,7 +2462,7 @@ paths:
             type: integer
             default: 10
       responses:
-        "200":
+        '200':
           description: Gifts list fetched successfully
     post:
       summary: Create a new virtual gift (Admin)
@@ -2524,13 +2503,12 @@ paths:
                 description:
                   type: string
       responses:
-        "201":
+        '201':
           description: Gift created successfully
   /gifts/send:
     post:
       summary: Send a virtual gift
-      description: Send a virtual gift to a listener (or by Admin to any user). Debits
-        coins from sender and credits recipient.
+      description: Send a virtual gift to a listener (or by Admin to any user). Debits coins from sender and credits recipient.
       tags:
         - Gifts
       security:
@@ -2550,9 +2528,9 @@ paths:
                 receiverId:
                   type: string
       responses:
-        "201":
+        '201':
           description: Gift sent successfully
-        "400":
+        '400':
           description: Insufficient balance or invalid recipient/role combination
   /gifts/history/sent:
     get:
@@ -2573,7 +2551,7 @@ paths:
             type: integer
             default: 10
       responses:
-        "200":
+        '200':
           description: Sent gifts history fetched successfully
   /gifts/history/received:
     get:
@@ -2594,23 +2572,22 @@ paths:
             type: integer
             default: 10
       responses:
-        "200":
+        '200':
           description: Received gifts history fetched successfully
   /gifts/admin/analytics:
     get:
       summary: Get virtual gifting stats & analytics (Admin)
-      description: Returns stats including active gifts, total sent in last 7 days,
-        and top 10 gifts by revenue.
+      description: Returns stats including active gifts, total sent in last 7 days, and top 10 gifts by revenue.
       tags:
         - Gifts
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Analytics data retrieved successfully
-        "403":
+        '403':
           description: Admin access required
-  "/gifts/{id}":
+  /gifts/{id}:
     get:
       summary: Get gift by ID
       tags:
@@ -2624,7 +2601,7 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Gift details fetched successfully
     put:
       summary: Update gift by ID (Admin)
@@ -2667,7 +2644,7 @@ paths:
                 description:
                   type: string
       responses:
-        "200":
+        '200':
           description: Gift updated successfully
     delete:
       summary: Delete gift by ID (Admin)
@@ -2682,7 +2659,7 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Gift deleted successfully
   /banners:
     get:
@@ -2692,7 +2669,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Active banners fetched successfully
     post:
       summary: Create a new banner (Admin)
@@ -2724,7 +2701,7 @@ paths:
                   type: boolean
                   default: true
       responses:
-        "201":
+        '201':
           description: Banner created successfully
   /banners/all:
     get:
@@ -2750,9 +2727,9 @@ paths:
               - position
               - createdAt
       responses:
-        "200":
+        '200':
           description: Banners list fetched successfully
-  "/banners/{id}":
+  /banners/{id}:
     get:
       summary: Get banner by ID (Admin)
       tags:
@@ -2766,7 +2743,7 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Banner details fetched successfully
     put:
       summary: Update banner by ID (Admin)
@@ -2800,7 +2777,7 @@ paths:
                 isActive:
                   type: boolean
       responses:
-        "200":
+        '200':
           description: Banner updated successfully
     delete:
       summary: Delete banner by ID (Admin)
@@ -2815,9 +2792,9 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Banner deleted successfully
-  "/banners/{id}/toggle-active":
+  /banners/{id}/toggle-active:
     patch:
       summary: Toggle Banner active status (Admin)
       tags:
@@ -2842,7 +2819,7 @@ paths:
                 isActive:
                   type: boolean
       responses:
-        "200":
+        '200':
           description: Banner status updated successfully
   /wishlist:
     get:
@@ -2863,9 +2840,9 @@ paths:
             type: integer
             default: 10
       responses:
-        "200":
+        '200':
           description: Wishlist fetched successfully
-  "/wishlist/{listenerId}":
+  /wishlist/{listenerId}:
     post:
       summary: Add a listener to wishlist
       tags:
@@ -2879,7 +2856,7 @@ paths:
           schema:
             type: string
       responses:
-        "201":
+        '201':
           description: Listener added to wishlist successfully
     delete:
       summary: Remove a listener from wishlist
@@ -2894,9 +2871,9 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Listener removed from wishlist successfully
-  "/wishlist/status/{listenerId}":
+  /wishlist/status/{listenerId}:
     get:
       summary: Check if a specific listener is in my wishlist
       tags:
@@ -2910,7 +2887,7 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Wishlist status checked successfully
   /daily-rewards/state:
     get:
@@ -2920,7 +2897,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Daily reward state retrieved successfully
   /daily-rewards/claim:
     post:
@@ -2930,7 +2907,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Daily reward claimed successfully
   /daily-rewards/inventory:
     get:
@@ -2940,7 +2917,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: User inventory fetched successfully
   /daily-rewards/admin/config/days:
     put:
@@ -2982,7 +2959,7 @@ paths:
                       giftId:
                         type: string
       responses:
-        "200":
+        '200':
           description: 7 days reward configuration updated successfully
   /daily-rewards/admin/config/weeks:
     put:
@@ -3015,9 +2992,9 @@ paths:
                       giftId:
                         type: string
       responses:
-        "200":
+        '200':
           description: 4 weeks special gift configurations updated successfully
-  "/daily-rewards/inventory/{inventoryId}/open":
+  /daily-rewards/inventory/{inventoryId}/open:
     post:
       summary: Open an unopened chest or gift from the user's inventory
       tags:
@@ -3032,7 +3009,7 @@ paths:
             type: string
           description: The UserGiftInventory ObjectId
       responses:
-        "200":
+        '200':
           description: Chest opened and coins granted successfully
   /avatars:
     get:
@@ -3042,9 +3019,9 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Avatars fetched successfully
-  "/avatars/{avatarId}/unlock":
+  /avatars/{avatarId}/unlock:
     post:
       summary: Unlock a paid avatar by spending wallet coins
       tags:
@@ -3059,14 +3036,14 @@ paths:
             type: string
           description: The Avatar ObjectId to unlock
       responses:
-        "200":
+        '200':
           description: Avatar unlocked successfully
-  "/avatars/{avatarId}/set-profile":
+  /avatars/{avatarId}/set-profile:
     post:
       summary: Set an unlocked (or free) avatar as profile image
-      description: Updates the authenticated user's profileImage to the selected
-        avatar's image URL. The avatar must be FREE or already unlocked by the
-        user.
+      description: >-
+        Updates the authenticated user's profileImage to the selected avatar's image URL. The avatar must be FREE or
+        already unlocked by the user.
       tags:
         - Avatars
       security:
@@ -3079,7 +3056,7 @@ paths:
             type: string
           description: ID of the avatar to set as profile image
       responses:
-        "200":
+        '200':
           description: Profile image updated successfully
           content:
             application/json:
@@ -3100,9 +3077,9 @@ paths:
                         description: URL of the new profile image
                       avatar:
                         type: object
-        "403":
+        '403':
           description: Avatar not unlocked by the user
-        "404":
+        '404':
           description: Avatar not found or inactive
   /avatars/admin:
     post:
@@ -3142,7 +3119,7 @@ paths:
                 isActive:
                   type: boolean
       responses:
-        "201":
+        '201':
           description: Avatar created successfully
     get:
       summary: Admin list avatars
@@ -3213,19 +3190,19 @@ paths:
             default: desc
           example: desc
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
-  "/avatars/admin/{id}":
+  /avatars/admin/{id}:
     put:
       summary: Update an avatar asset (Admin)
       tags:
@@ -3266,7 +3243,7 @@ paths:
                 isActive:
                   type: boolean
       responses:
-        "200":
+        '200':
           description: Avatar updated successfully
     delete:
       summary: Delete an avatar asset (Admin)
@@ -3281,14 +3258,14 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Avatar deleted successfully
   /calls/initiate:
     post:
       summary: Initiate a new audio or video call session
-      description: Creates a CommunicationSession, sets the listener to BUSY, and
-        returns a signed Agora RTC token plus channel info for the caller to
-        join.
+      description: >-
+        Creates a CommunicationSession, sets the listener to BUSY, and returns a signed Agora RTC token plus channel
+        info for the caller to join.
       tags:
         - Calls
       security:
@@ -3313,7 +3290,7 @@ paths:
                     - VIDEO
                   description: Type of call to initiate
       responses:
-        "201":
+        '201':
           description: Call session created
           content:
             application/json:
@@ -3337,23 +3314,22 @@ paths:
                         type: integer
                       agoraAppId:
                         type: string
-        "400":
-          description: Validation error (invalid mode, self-call, listener offline/busy,
-            no rate set)
-        "402":
+        '400':
+          description: Validation error (invalid mode, self-call, listener offline/busy, no rate set)
+        '402':
           description: Insufficient coin balance
-        "403":
+        '403':
           description: Listener not KYC-verified
-        "404":
+        '404':
           description: Listener profile not found
-        "409":
+        '409':
           description: Caller already in an active session
-  "/calls/token/{sessionId}":
+  /calls/token/{sessionId}:
     get:
       summary: Get or refresh Agora RTC token for an active session
-      description: Returns a fresh Agora RTC token for the requesting user. The user
-        must be a verified participant (caller or listener) of the given
-        session.
+      description: >-
+        Returns a fresh Agora RTC token for the requesting user. The user must be a verified participant (caller or
+        listener) of the given session.
       tags:
         - Calls
       security:
@@ -3366,7 +3342,7 @@ paths:
             type: string
           description: MongoDB ObjectId of the active CommunicationSession
       responses:
-        "200":
+        '200':
           description: Token generated successfully
           content:
             application/json:
@@ -3388,17 +3364,16 @@ paths:
                         type: integer
                       agoraAppId:
                         type: string
-        "400":
+        '400':
           description: Session is not active
-        "403":
+        '403':
           description: User is not a participant in this session
-        "404":
+        '404':
           description: Session not found
   /calls/end:
     post:
       summary: End an active call session
-      description: Ends the call, triggers final billing, resets listener
-        availability, and cleans up Redis state.
+      description: Ends the call, triggers final billing, resets listener availability, and cleans up Redis state.
       tags:
         - Calls
       security:
@@ -3416,11 +3391,11 @@ paths:
                   type: string
                   description: MongoDB ObjectId of the session to end
       responses:
-        "200":
+        '200':
           description: Call ended successfully
-        "400":
+        '400':
           description: Session already ended or does not exist
-        "403":
+        '403':
           description: User is not authorised to end this session
   /anchor-levels:
     get:
@@ -3430,7 +3405,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Anchor levels fetched successfully
   /anchor-levels/me/status:
     get:
@@ -3440,11 +3415,11 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Anchor status fetched successfully
-        "403":
+        '403':
           description: Listener only
-        "404":
+        '404':
           description: Listener profile not found
   /anchor-levels/me/rewards:
     get:
@@ -3462,13 +3437,12 @@ paths:
               - UNCLAIMED
               - CLAIMED
       responses:
-        "200":
+        '200':
           description: Reward inventory fetched successfully
-  "/anchor-levels/me/rewards/{id}/claim":
+  /anchor-levels/me/rewards/{id}/claim:
     post:
       summary: Claim an anchor reward (Listener)
-      description: Coins → wallet, gifts → gift inventory. Idempotent —
-        already-claimed returns 400.
+      description: Coins → wallet, gifts → gift inventory. Idempotent — already-claimed returns 400.
       tags:
         - Anchor Levels
       security:
@@ -3480,9 +3454,9 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Reward claimed successfully
-        "400":
+        '400':
           description: Already claimed or not found
   /anchor-levels/me/rewards/claim-all:
     post:
@@ -3492,7 +3466,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Rewards claimed successfully
   /anchor-levels/admin:
     post:
@@ -3555,9 +3529,9 @@ paths:
                   type: boolean
                   default: true
       responses:
-        "201":
+        '201':
           description: Anchor level created successfully
-        "403":
+        '403':
           description: Admin only
     get:
       summary: List all anchor levels incl. inactive (Admin)
@@ -3566,9 +3540,9 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Anchor levels fetched successfully
-  "/anchor-levels/admin/{id}":
+  /anchor-levels/admin/{id}:
     put:
       summary: Update an anchor level (Admin)
       tags:
@@ -3610,9 +3584,9 @@ paths:
                 isActive:
                   type: boolean
       responses:
-        "200":
+        '200':
           description: Anchor level updated successfully
-        "404":
+        '404':
           description: Not found
     delete:
       summary: Delete an anchor level (Admin)
@@ -3627,9 +3601,9 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Deleted successfully
-        "404":
+        '404':
           description: Not found
   /anchor-levels/admin/claims:
     get:
@@ -3662,9 +3636,9 @@ paths:
               - UNCLAIMED
               - CLAIMED
       responses:
-        "200":
+        '200':
           description: Reward claims fetched successfully
-        "403":
+        '403':
           description: Admin only
   /withdrawals/bank-accounts:
     post:
@@ -3709,9 +3683,9 @@ paths:
                   type: boolean
                   default: false
       responses:
-        "201":
+        '201':
           description: Payment method added successfully
-        "400":
+        '400':
           description: Invalid IFSC / UPI / fields
     get:
       summary: List my saved bank accounts
@@ -3720,9 +3694,9 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Bank accounts fetched successfully
-  "/withdrawals/bank-accounts/{id}":
+  /withdrawals/bank-accounts/{id}:
     delete:
       summary: Delete a saved bank account
       tags:
@@ -3736,11 +3710,11 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Deleted successfully
-        "403":
+        '403':
           description: Not your bank account
-        "404":
+        '404':
           description: Not found
   /withdrawals/config:
     get:
@@ -3750,13 +3724,12 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Withdrawal config fetched successfully
   /withdrawals/quote:
     get:
       summary: Calculate INR breakdown for a coin amount
-      description: Returns gross INR, fee, and net payout for the requested coins (for
-        the live withdrawal UI).
+      description: Returns gross INR, fee, and net payout for the requested coins (for the live withdrawal UI).
       tags:
         - Withdrawals
       security:
@@ -3769,7 +3742,7 @@ paths:
             type: integer
             minimum: 1
       responses:
-        "200":
+        '200':
           description: Quote calculated successfully
           content:
             application/json:
@@ -3808,10 +3781,9 @@ paths:
   /withdrawals:
     post:
       summary: Request a withdrawal (Listener or Agent)
-      description: Reserves coins and creates a PENDING request. Listeners draw from
-        their earned available balance and must have kycStatus APPROVED; agents
-        draw from their wallet coin balance (no KYC gate). Other user types
-        receive 403.
+      description: >-
+        Reserves coins and creates a PENDING request. Listeners draw from their earned available balance and must have
+        kycStatus APPROVED; agents draw from their wallet coin balance (no KYC gate). Other user types receive 403.
       tags:
         - Withdrawals
       security:
@@ -3832,11 +3804,11 @@ paths:
                 bankAccountId:
                   type: string
       responses:
-        "201":
+        '201':
           description: Withdrawal request submitted successfully
-        "400":
+        '400':
           description: Below minimum or insufficient balance
-        "403":
+        '403':
           description: Not a listener or agent / KYC not approved / not your payment method
   /withdrawals/me:
     get:
@@ -3875,9 +3847,9 @@ paths:
               - REJECTED
               - CANCELLED
       responses:
-        "200":
+        '200':
           description: Withdrawals fetched successfully
-  "/withdrawals/{id}":
+  /withdrawals/{id}:
     get:
       summary: Get a withdrawal by id (owner or admin)
       tags:
@@ -3891,13 +3863,13 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Withdrawal fetched successfully
-        "403":
+        '403':
           description: Not owner/admin
-        "404":
+        '404':
           description: Not found
-  "/withdrawals/{id}/cancel":
+  /withdrawals/{id}/cancel:
     post:
       summary: Cancel a pending withdrawal (refunds coins)
       tags:
@@ -3911,9 +3883,9 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Withdrawal cancelled and coins refunded
-        "400":
+        '400':
           description: Not pending / not found
   /withdrawals/admin/config:
     put:
@@ -3947,9 +3919,9 @@ paths:
                   minimum: 1
                   example: 1000
       responses:
-        "200":
+        '200':
           description: Withdrawal config updated successfully
-        "403":
+        '403':
           description: Admin only
   /withdrawals/admin:
     get:
@@ -3984,11 +3956,11 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Withdrawal requests fetched successfully
-        "403":
+        '403':
           description: Admin only
-  "/withdrawals/admin/{id}/approve":
+  /withdrawals/admin/{id}/approve:
     patch:
       summary: Approve a withdrawal (Admin)
       tags:
@@ -4002,11 +3974,11 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Withdrawal approved successfully
-        "400":
+        '400':
           description: Already processed
-  "/withdrawals/admin/{id}/reject":
+  /withdrawals/admin/{id}/reject:
     patch:
       summary: Reject a withdrawal and refund coins (Admin)
       tags:
@@ -4031,16 +4003,16 @@ paths:
                 reason:
                   type: string
       responses:
-        "200":
+        '200':
           description: Withdrawal rejected and coins refunded
-        "400":
+        '400':
           description: Already processed
   /notifications:
     get:
       summary: List my notifications (own only)
-      description: Returns the authenticated account's own notifications — customers,
-        listeners, agents and admins each only see rows where they are the
-        recipient. Supports filtering by status/type plus pagination.
+      description: >-
+        Returns the authenticated account's own notifications — customers, listeners, agents and admins each only see
+        rows where they are the recipient. Supports filtering by status/type plus pagination.
       tags:
         - Notifications
       security:
@@ -4091,7 +4063,7 @@ paths:
               - SYSTEM
               - LEVEL_UP
       responses:
-        "200":
+        '200':
           description: Notifications fetched successfully
   /notifications/unread-count:
     get:
@@ -4101,7 +4073,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Unread count fetched successfully
   /notifications/read-all:
     patch:
@@ -4111,9 +4083,9 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: All notifications marked as read
-  "/notifications/{id}/read":
+  /notifications/{id}/read:
     patch:
       summary: Mark one notification as read (owner only)
       tags:
@@ -4127,11 +4099,11 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Notification marked as read
-        "404":
+        '404':
           description: Notification not found
-  "/notifications/{id}":
+  /notifications/{id}:
     delete:
       summary: Delete one of my notifications (owner only)
       tags:
@@ -4145,9 +4117,9 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Notification deleted successfully
-        "404":
+        '404':
           description: Notification not found
   /notifications/admin/send:
     post:
@@ -4201,17 +4173,16 @@ paths:
                   example:
                     screen: wallet
       responses:
-        "201":
+        '201':
           description: Notification sent successfully
-        "403":
+        '403':
           description: Admin only
-        "404":
+        '404':
           description: Recipient not found
   /notifications/admin/broadcast:
     post:
       summary: Broadcast a notification to an audience (Admin)
-      description: Send to all users (CUSTOMER), all listeners (LISTENER), all agents
-        (AGENT), or everyone (ALL, excluding admins).
+      description: Send to all users (CUSTOMER), all listeners (LISTENER), all agents (AGENT), or everyone (ALL, excluding admins).
       tags:
         - Notifications
       security:
@@ -4265,22 +4236,22 @@ paths:
                   example:
                     screen: rewards
       responses:
-        "201":
+        '201':
           description: Broadcast notification sent successfully
-        "403":
+        '403':
           description: Admin only
   /referrals/details:
     get:
       summary: Get my referral code, link, earnings, and commission table
-      description: Returns the invite code, shareable invite link, referral stats, and
-        the per-pack commission table (coins both users earn when a referred
-        friend first buys each pack).
+      description: >-
+        Returns the invite code, shareable invite link, referral stats, and the per-pack commission table (coins both
+        users earn when a referred friend first buys each pack).
       tags:
         - Referrals
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Referral details fetched successfully
           content:
             application/json:
@@ -4329,9 +4300,9 @@ paths:
   /referrals/apply:
     post:
       summary: Apply a referral code after signup
-      description: Links the accounts. Customer-only. The bonus is paid to BOTH users
-        when the referred friend makes their first coin purchase (amount depends
-        on the pack). Can only be used once per account.
+      description: >-
+        Links the accounts. Customer-only. The bonus is paid to BOTH users when the referred friend makes their first
+        coin purchase (amount depends on the pack). Can only be used once per account.
       tags:
         - Referrals
       security:
@@ -4349,11 +4320,11 @@ paths:
                   type: string
                   example: BOY3526
       responses:
-        "200":
+        '200':
           description: Referral linked — bonus unlocks on first coin purchase
-        "400":
+        '400':
           description: Invalid code, own code, already referred, or non-customer account
-        "404":
+        '404':
           description: User not found
   /referrals/admin/config:
     get:
@@ -4363,7 +4334,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Referral config fetched successfully
     put:
       summary: Update referral rewards configuration (Admin)
@@ -4390,15 +4361,14 @@ paths:
                   type: string
                   example: https://cornerchat.com/invite?code=
       responses:
-        "200":
+        '200':
           description: Referral config updated successfully
-        "403":
+        '403':
           description: Admin only
   /feedback:
     post:
       summary: Submit application feedback
-      description: Any authenticated user (CUSTOMER / LISTENER / ADMIN) can submit
-        feedback about the app.
+      description: Any authenticated user (CUSTOMER / LISTENER / ADMIN) can submit feedback about the app.
       tags:
         - Feedback
       security:
@@ -4427,7 +4397,7 @@ paths:
                   minimum: 1
                   maximum: 5
       responses:
-        "201":
+        '201':
           description: Feedback submitted successfully
   /feedback/me:
     get:
@@ -4457,9 +4427,9 @@ paths:
               - desc
             default: desc
       responses:
-        "200":
+        '200':
           description: Feedback fetched successfully
-  "/feedback/{id}":
+  /feedback/{id}:
     get:
       summary: Get a feedback by id (owner or admin)
       tags:
@@ -4473,11 +4443,11 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Feedback fetched successfully
-        "403":
+        '403':
           description: Not owner/admin
-        "404":
+        '404':
           description: Not found
     put:
       summary: Update your feedback (owner, while status is OPEN)
@@ -4512,13 +4482,13 @@ paths:
                   minimum: 1
                   maximum: 5
       responses:
-        "200":
+        '200':
           description: Feedback updated successfully
-        "400":
+        '400':
           description: Already under review
-        "403":
+        '403':
           description: Not your feedback
-        "404":
+        '404':
           description: Not found
     delete:
       summary: Delete a feedback (owner or admin)
@@ -4533,17 +4503,18 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Feedback deleted successfully
-        "403":
+        '403':
           description: Not owner/admin
-        "404":
+        '404':
           description: Not found
-  "/reviews/listeners/{listenerId}":
+  /reviews/listeners/{listenerId}:
     post:
       summary: Create or update a review for a listener
-      description: Requires the customer to have at least one COMPLETED session with
-        the listener. One review per user per listener (upsert).
+      description: >-
+        Requires the customer to have at least one COMPLETED session with the listener. One review per user per listener
+        (upsert).
       tags:
         - Reviews
       security:
@@ -4570,11 +4541,11 @@ paths:
                 reviewComment:
                   type: string
       responses:
-        "200":
+        '200':
           description: Review submitted successfully
-        "400":
+        '400':
           description: No completed session with this listener
-        "404":
+        '404':
           description: Listener not found
     get:
       summary: Get paginated reviews for a listener
@@ -4608,9 +4579,9 @@ paths:
               - desc
             default: desc
       responses:
-        "200":
+        '200':
           description: Reviews fetched successfully
-  "/reviews/{id}":
+  /reviews/{id}:
     delete:
       summary: Delete your own review
       tags:
@@ -4624,17 +4595,16 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Review deleted successfully
-        "403":
+        '403':
           description: Not your review
-        "404":
+        '404':
           description: Review not found
   /sticker-categories:
     get:
       summary: List sticker categories (paginated, filterable)
-      description: Users see only active categories (cached). Admins get all
-        categories with full filter control.
+      description: Users see only active categories (cached). Admins get all categories with full filter control.
       tags:
         - Sticker Categories
       security:
@@ -4679,7 +4649,7 @@ paths:
             type: boolean
           description: Admin only — filter by active status
       responses:
-        "200":
+        '200':
           description: Sticker categories fetched successfully
     post:
       summary: Create a sticker category (Admin)
@@ -4712,9 +4682,9 @@ paths:
                   type: boolean
                   default: true
       responses:
-        "201":
+        '201':
           description: Sticker category created successfully
-  "/sticker-categories/{id}":
+  /sticker-categories/{id}:
     get:
       summary: Get a sticker category by id
       tags:
@@ -4728,9 +4698,9 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Sticker category fetched successfully
-        "404":
+        '404':
           description: Not found
     put:
       summary: Update a sticker category (Admin)
@@ -4764,9 +4734,9 @@ paths:
                 isActive:
                   type: boolean
       responses:
-        "200":
+        '200':
           description: Sticker category updated successfully
-        "404":
+        '404':
           description: Not found
     delete:
       summary: Delete a sticker category (Admin)
@@ -4782,13 +4752,13 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Deleted successfully
-        "400":
+        '400':
           description: Category still has stickers
-        "404":
+        '404':
           description: Not found
-  "/sticker-categories/{id}/toggle":
+  /sticker-categories/{id}/toggle:
     patch:
       summary: Toggle a sticker category active status (Admin)
       tags:
@@ -4802,15 +4772,14 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Toggled successfully
-        "404":
+        '404':
           description: Not found
   /stickers:
     get:
       summary: List stickers (paginated, filterable)
-      description: Users see only active stickers (cached). Admins get all stickers.
-        Filter by category and search by name/tags.
+      description: Users see only active stickers (cached). Admins get all stickers. Filter by category and search by name/tags.
       tags:
         - Stickers
       security:
@@ -4869,14 +4838,15 @@ paths:
             type: boolean
           description: Admin only — filter by active status
       responses:
-        "200":
-          description: Stickers fetched successfully. For non-admin users each sticker
-            includes `isUnlocked` (and `levelsToUnlock` for LEVEL stickers).
+        '200':
+          description: >-
+            Stickers fetched successfully. For non-admin users each sticker includes `isUnlocked` (and `levelsToUnlock`
+            for LEVEL stickers).
     post:
       summary: Create a sticker (Admin)
-      description: "unlockType controls access: FREE (everyone), PAID (requires
-        `price` coins, user unlocks via POST /stickers/{id}/unlock), LEVEL
-        (auto-unlocks at `requiredLevel`)."
+      description: >-
+        unlockType controls access: FREE (everyone), PAID (requires `price` coins, user unlocks via POST
+        /stickers/{id}/unlock), LEVEL (auto-unlocks at `requiredLevel`).
       tags:
         - Stickers
       security:
@@ -4928,11 +4898,11 @@ paths:
                   type: boolean
                   default: true
       responses:
-        "201":
+        '201':
           description: Sticker created successfully
-        "404":
+        '404':
           description: Category not found
-  "/stickers/{id}":
+  /stickers/{id}:
     get:
       summary: Get a sticker by id
       tags:
@@ -4946,9 +4916,9 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Sticker fetched successfully
-        "404":
+        '404':
           description: Not found
     put:
       summary: Update a sticker (Admin)
@@ -4996,9 +4966,9 @@ paths:
                 isActive:
                   type: boolean
       responses:
-        "200":
+        '200':
           description: Sticker updated successfully
-        "404":
+        '404':
           description: Not found
     delete:
       summary: Delete a sticker (Admin)
@@ -5013,16 +4983,16 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Deleted successfully
-        "404":
+        '404':
           description: Not found
-  "/stickers/{id}/unlock":
+  /stickers/{id}/unlock:
     post:
       summary: Unlock (purchase) a PAID sticker with coins
-      description: Deducts the sticker's coin price from the user's wallet and adds it
-        to their unlocked stickers. Fails for FREE stickers (no purchase needed)
-        and LEVEL stickers (auto-unlock by level).
+      description: >-
+        Deducts the sticker's coin price from the user's wallet and adds it to their unlocked stickers. Fails for FREE
+        stickers (no purchase needed) and LEVEL stickers (auto-unlock by level).
       tags:
         - Stickers
       security:
@@ -5034,13 +5004,13 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Sticker unlocked successfully
-        "400":
+        '400':
           description: Free/level sticker, already unlocked, or insufficient balance
-        "404":
+        '404':
           description: Sticker not found
-  "/stickers/{id}/toggle":
+  /stickers/{id}/toggle:
     patch:
       summary: Toggle a sticker active status (Admin)
       tags:
@@ -5054,9 +5024,9 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Toggled successfully
-        "404":
+        '404':
           description: Not found
   /xp/profile:
     get:
@@ -5066,7 +5036,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: XP profile fetched successfully
           content:
             application/json:
@@ -5086,7 +5056,7 @@ paths:
                   levelName: Rising Star
                   levelBadgeUrl: https://cdn.livechat.com/badges/level_5.png
                   unclaimedRewardsCount: 2
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
   /xp/history:
     get:
@@ -5109,7 +5079,7 @@ paths:
             default: 20
           example: 20
       responses:
-        "200":
+        '200':
           description: XP history fetched successfully
           content:
             application/json:
@@ -5128,15 +5098,15 @@ paths:
                       xpAmount: 50
                       balanceAfter: 1450
                       description: Earned 50 XP for completed voice call (5 mins)
-                      createdAt: 2026-08-29T10:30:00.000Z
+                      createdAt: '2026-08-29T10:30:00.000Z'
                     - _id: 6a911f77bcf86cd799439012
                       userId: 6a80033fa6b0b2c0d9449b9c
                       action: DAILY_LOGIN
                       xpAmount: 20
                       balanceAfter: 1400
                       description: Daily login streak bonus
-                      createdAt: 2026-08-29T08:00:00.000Z
-        "401":
+                      createdAt: '2026-08-29T08:00:00.000Z'
+        '401':
           description: Unauthorized
   /xp/leaderboard:
     get:
@@ -5153,7 +5123,7 @@ paths:
             default: 20
           example: 20
       responses:
-        "200":
+        '200':
           description: Leaderboard fetched successfully
           content:
             application/json:
@@ -5194,7 +5164,7 @@ paths:
               - CLAIMED
           example: UNCLAIMED
       responses:
-        "200":
+        '200':
           description: Reward inventory fetched successfully
           content:
             application/json:
@@ -5213,9 +5183,9 @@ paths:
                       description: 100 Free Bonus Coins
                       iconUrl: https://cdn.livechat.com/rewards/coins_100.png
                     status: UNCLAIMED
-                    unlockedAt: 2026-08-29T09:00:00.000Z
+                    unlockedAt: '2026-08-29T09:00:00.000Z'
                     claimedAt: null
-  "/xp/rewards/{inventoryId}/claim":
+  /xp/rewards/{inventoryId}/claim:
     post:
       summary: Claim a single level-up reward by inventory ID
       tags:
@@ -5230,7 +5200,7 @@ paths:
             type: string
           example: 6a933f77bcf86cd799439099
       responses:
-        "200":
+        '200':
           description: Reward claimed successfully
           content:
             application/json:
@@ -5242,7 +5212,7 @@ paths:
                   rewardType: COINS
                   rewardValue: 100
                   status: CLAIMED
-                  claimedAt: 2026-08-29T10:00:00.000Z
+                  claimedAt: '2026-08-29T10:00:00.000Z'
                   walletUpdated:
                     newCoinBalance: 650
   /xp/rewards/claim-all:
@@ -5253,7 +5223,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Rewards claimed successfully
           content:
             application/json:
@@ -5278,7 +5248,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Level configs fetched successfully
           content:
             application/json:
@@ -5319,7 +5289,7 @@ paths:
               rewards:
                 - 6a900a77bcf86cd799439003
       responses:
-        "201":
+        '201':
           description: Level config created successfully
           content:
             application/json:
@@ -5334,8 +5304,8 @@ paths:
                   badgeUrl: https://cdn.livechat.com/badges/level_6.png
                   rewards:
                     - 6a900a77bcf86cd799439003
-                  createdAt: 2026-08-29T12:00:00.000Z
-  "/xp/admin/level-configs/{id}":
+                  createdAt: '2026-08-29T12:00:00.000Z'
+  /xp/admin/level-configs/{id}:
     put:
       summary: Admin update an existing level tier config
       tags:
@@ -5358,7 +5328,7 @@ paths:
               name: Elite Superstar
               badgeUrl: https://cdn.livechat.com/badges/level_6_elite.png
       responses:
-        "200":
+        '200':
           description: Level config updated successfully
           content:
             application/json:
@@ -5385,7 +5355,7 @@ paths:
             type: string
           example: 6a900a77bcf86cd799439006
       responses:
-        "200":
+        '200':
           description: Level config deleted successfully
           content:
             application/json:
@@ -5402,7 +5372,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Rewards fetched successfully
           content:
             application/json:
@@ -5434,7 +5404,7 @@ paths:
               description: Award 100 free coins on level advancement
               iconUrl: https://cdn.livechat.com/rewards/coin_100.png
       responses:
-        "201":
+        '201':
           description: Reward created successfully
           content:
             application/json:
@@ -5449,7 +5419,7 @@ paths:
                   description: Award 100 free coins on level advancement
                   iconUrl: https://cdn.livechat.com/rewards/coin_100.png
                   isActive: true
-  "/xp/admin/rewards/{id}":
+  /xp/admin/rewards/{id}:
     put:
       summary: Admin update an existing reward
       tags:
@@ -5472,7 +5442,7 @@ paths:
               rewardValue: 200
               isActive: true
       responses:
-        "200":
+        '200':
           description: Reward updated successfully
           content:
             application/json:
@@ -5499,7 +5469,7 @@ paths:
             type: string
           example: 6a900a77bcf86cd799439004
       responses:
-        "200":
+        '200':
           description: Reward deleted successfully
           content:
             application/json:
@@ -5516,7 +5486,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: XP actions fetched successfully
           content:
             application/json:
@@ -5540,7 +5510,7 @@ paths:
                     xpAmount: 25
                     dailyLimit: 20
                     description: 25 XP per gift sent
-  "/xp/admin/xp-actions/{action}":
+  /xp/admin/xp-actions/{action}:
     put:
       summary: Admin update XP reward amount and daily limits for a specific action
       tags:
@@ -5563,7 +5533,7 @@ paths:
               dailyLimit: 20
               isActive: true
       responses:
-        "200":
+        '200':
           description: XP action updated successfully
           content:
             application/json:
@@ -5591,7 +5561,7 @@ paths:
               xpAmount: 500
               reason: Event contest winner bonus
       responses:
-        "200":
+        '200':
           description: XP granted successfully
           content:
             application/json:
@@ -5610,9 +5580,9 @@ paths:
   /search/listeners:
     get:
       summary: Search listeners (user-facing)
-      description: Lets any authenticated user discover listeners by name, country,
-        language, category, and availability. Only returns KYC-approved,
-        non-deleted, non-blocked listener profiles.
+      description: >-
+        Lets any authenticated user discover listeners by name, country, language, category, and availability. Only
+        returns KYC-approved, non-deleted, non-blocked listener profiles.
       tags:
         - Search
       security:
@@ -5622,22 +5592,19 @@ paths:
           name: q
           schema:
             type: string
-          description: Keyword to match against listener first name, last name, or full
-            name (case-insensitive)
+          description: Keyword to match against listener first name, last name, or full name (case-insensitive)
           example: john
         - in: query
           name: country
           schema:
             type: string
-          description: ISO country code filter on the listener's user account (e.g. IN,
-            US, GB)
+          description: ISO country code filter on the listener's user account (e.g. IN, US, GB)
           example: IN
         - in: query
           name: language
           schema:
             type: string
-          description: Filter by language. Accepts a Language ObjectId, language name
-            (e.g. Hindi), or ISO code (e.g. HI)
+          description: Filter by language. Accepts a Language ObjectId, language name (e.g. Hindi), or ISO code (e.g. HI)
           example: Hindi
         - in: query
           name: category
@@ -5690,7 +5657,7 @@ paths:
             default: desc
           description: Sort direction
       responses:
-        "200":
+        '200':
           description: Listener search results fetched successfully
           content:
             application/json:
@@ -5809,15 +5776,15 @@ paths:
                           hasPrevPage:
                             type: boolean
                             example: false
-        "401":
+        '401':
           description: Unauthorized — valid JWT required
   /search/agent/listeners:
     get:
       summary: Agent listener search (agent-only)
-      description: Lightweight search for listeners owned by the authenticated agent.
-        Supports keyword search by name, username, email, or mobile number, plus
-        filters for country, account status, KYC status, and live availability.
-        Returns a compact payload optimized for top-bar autocomplete.
+      description: >-
+        Lightweight search for listeners owned by the authenticated agent. Supports keyword search by name, username,
+        email, or mobile number, plus filters for country, account status, KYC status, and live availability. Returns a
+        compact payload optimized for top-bar autocomplete.
       tags:
         - Search
       security:
@@ -5871,19 +5838,19 @@ paths:
             default: 10
             maximum: 20
       responses:
-        "200":
+        '200':
           description: Compact paginated listener search results
-        "401":
+        '401':
           description: Unauthorized
-        "403":
+        '403':
           description: Forbidden — AGENT role required
   /search/admin:
     get:
       summary: Admin global search (admin-only)
-      description: Full-power search across all Users and Listener Profiles. Supports
-        filtering by name, email, mobile, country, language, user type, KYC
-        status, availability, blocked/deleted status, registration date range,
-        earnings range, and minimum rating. ADMIN role required.
+      description: >-
+        Full-power search across all Users and Listener Profiles. Supports filtering by name, email, mobile, country,
+        language, user type, KYC status, availability, blocked/deleted status, registration date range, earnings range,
+        and minimum rating. ADMIN role required.
       tags:
         - Search
       security:
@@ -5895,8 +5862,9 @@ paths:
             type: string
             minLength: 2
             maxLength: 100
-          description: Keyword matched against first name, last name, full name, email,
-            and mobile number (case-insensitive; min 2 chars when provided)
+          description: >-
+            Keyword matched against first name, last name, full name, email, and mobile number (case-insensitive; min 2
+            chars when provided)
           example: alice
         - in: query
           name: type
@@ -5935,17 +5903,17 @@ paths:
           schema:
             type: string
             enum:
-              - "true"
-              - "false"
+              - 'true'
+              - 'false'
           description: Filter blocked / non-blocked users
-          example: "false"
+          example: 'false'
         - in: query
           name: isDeleted
           schema:
             type: string
             enum:
-              - "true"
-              - "false"
+              - 'true'
+              - 'false'
           description: Include soft-deleted users (omit to return all)
         - in: query
           name: dateFrom
@@ -5953,14 +5921,14 @@ paths:
             type: string
             format: date
           description: Registration date range start (ISO 8601, inclusive)
-          example: 2025-01-01
+          example: '2025-01-01'
         - in: query
           name: dateTo
           schema:
             type: string
             format: date
           description: Registration date range end (ISO 8601, inclusive)
-          example: 2026-12-31
+          example: '2026-12-31'
         - in: query
           name: kycStatus
           schema:
@@ -5997,15 +5965,13 @@ paths:
           name: minEarnings
           schema:
             type: number
-          description: (Listener profiles only) Minimum totalEarnings (coins) on listener
-            profile
+          description: (Listener profiles only) Minimum totalEarnings (coins) on listener profile
           example: 1000
         - in: query
           name: maxEarnings
           schema:
             type: number
-          description: (Listener profiles only) Maximum totalEarnings (coins) on listener
-            profile
+          description: (Listener profiles only) Maximum totalEarnings (coins) on listener profile
           example: 50000
         - in: query
           name: minRating
@@ -6047,12 +6013,12 @@ paths:
           schema:
             type: boolean
             default: false
-          description: When true, returns lightweight rows for admin typeahead (id, name,
-            email, mobileNumber, type, profileImage, isBlocked, kycStatus).
-            Omits language population and extra fields.
+          description: >-
+            When true, returns lightweight rows for admin typeahead (id, name, email, mobileNumber, type, profileImage,
+            isBlocked, kycStatus). Omits language population and extra fields.
           example: true
       responses:
-        "200":
+        '200':
           description: Admin search results fetched successfully
           content:
             application/json:
@@ -6159,8 +6125,7 @@ paths:
                                   type: integer
                             listenerLanguageDetails:
                               type: array
-                              description: Languages from the listener profile (may differ from
-                                user.languages)
+                              description: Languages from the listener profile (may differ from user.languages)
                               items:
                                 type: object
                                 properties:
@@ -6191,19 +6156,241 @@ paths:
                           hasPrevPage:
                             type: boolean
                             example: false
-        "401":
+        '401':
           description: Unauthorized — valid JWT required
-        "403":
+        '403':
           description: Forbidden — ADMIN role required
+  /listeners/admin/boost-config:
+    get:
+      summary: 'Admin: Get visibility boost configuration'
+      description: >-
+        Retrieves current visibility boost configuration including price in coins, boost duration in minutes, maximum
+        active slots limit, and master toggle status.
+      tags:
+        - Listeners
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Boost configuration fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Boost configuration fetched
+                  data:
+                    type: object
+                    properties:
+                      isEnabled:
+                        type: boolean
+                        example: true
+                      priceCoins:
+                        type: number
+                        example: 500
+                      durationMinutes:
+                        type: number
+                        example: 60
+                      maxActiveSlots:
+                        type: number
+                        example: 20
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden — ADMIN role required
+    put:
+      summary: 'Admin: Update visibility boost configuration'
+      description: >-
+        Updates platform visibility boost rules (pricing, duration, active slot limit, enable/disable toggle).
+        Automatically invalidates runtime Redis cache.
+      tags:
+        - Listeners
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isEnabled:
+                  type: boolean
+                  example: true
+                priceCoins:
+                  type: integer
+                  minimum: 1
+                  example: 500
+                durationMinutes:
+                  type: integer
+                  minimum: 1
+                  maximum: 1440
+                  example: 60
+                maxActiveSlots:
+                  type: integer
+                  minimum: 1
+                  maximum: 100
+                  example: 20
+      responses:
+        '200':
+          description: Boost configuration updated successfully
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden — ADMIN role required
+  /listeners/admin/active-boosts:
+    get:
+      summary: 'Admin: Get all active boosted listeners queue'
+      description: >-
+        Retrieves the real-time queue of all currently active boosted listeners, ordered by slot sequence ascending
+        (Slot 1, Slot 2, ...).
+      tags:
+        - Listeners
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Active boosts queue fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Active boosts fetched
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                        listenerId:
+                          type: object
+                          properties:
+                            _id:
+                              type: string
+                            firstName:
+                              type: string
+                            lastName:
+                              type: string
+                            profileImage:
+                              type: string
+                        sequence:
+                          type: integer
+                          example: 1
+                        amountCoins:
+                          type: number
+                          example: 500
+                        startedAt:
+                          type: string
+                          format: date-time
+                        expiresAt:
+                          type: string
+                          format: date-time
+  /listeners/visibility-boost:
+    post:
+      summary: 'Listener: Purchase visibility boost'
+      description: >-
+        Allows a KYC-approved listener to purchase a visibility boost using coins. Priority placement in Home API for
+        the configured duration (default 1 hour). Max active slots limit (default 20) is strictly enforced. Idempotent
+        requests supported via idempotencyKey.
+      tags:
+        - Listeners
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                idempotencyKey:
+                  type: string
+                  maxLength: 64
+                  example: boost_req_987654
+      responses:
+        '201':
+          description: Visibility boost purchased successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 201
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Visibility boost purchased successfully
+                  data:
+                    type: object
+                    properties:
+                      boostId:
+                        type: string
+                      sequence:
+                        type: integer
+                        example: 1
+                      startedAt:
+                        type: string
+                        format: date-time
+                      expiresAt:
+                        type: string
+                        format: date-time
+                      amountCoins:
+                        type: number
+                        example: 500
+                      remainingBalance:
+                        type: number
+                        example: 1500
+        '400':
+          description: Insufficient coin balance
+        '403':
+          description: Boost disabled or listener not KYC approved
+        '409':
+          description: All slots occupied (BOOST_SLOTS_FULL) or listener already has an active boost
+  /listeners/visibility-boost/me:
+    get:
+      summary: 'Listener: Get my active visibility boost'
+      description: >-
+        Returns the authenticated listener's current active visibility boost status, remaining time, and assigned slot
+        sequence.
+      tags:
+        - Listeners
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Active boost fetched successfully
   /home/user-home:
     get:
       summary: User home feed (active listeners)
-      description: Returns the home-screen list of active listeners a user can browse.
-        "Active" means KYC-approved listeners whose user account is neither
-        deleted nor blocked/disabled by an admin. Supports keyword search and
-        filters by language, country, status, and rating, with pagination.
-        Results are Redis-cached (60s) and version-invalidated for fast
-        responses.
+      description: >-
+        Returns the home-screen list of active listeners a user can browse. "Active" means KYC-approved listeners whose
+        user account is neither deleted nor blocked/disabled by an admin. Supports keyword search and filters by
+        language, country, status, and rating, with pagination. Results are Redis-cached (60s) and version-invalidated
+        for fast responses.
       tags:
         - Home
       security:
@@ -6213,22 +6400,19 @@ paths:
           name: q
           schema:
             type: string
-          description: Keyword to match against listener first name, last name, or full
-            name (case-insensitive)
+          description: Keyword to match against listener first name, last name, or full name (case-insensitive)
           example: john
         - in: query
           name: language
           schema:
             type: string
-          description: Filter by language. Accepts a Language ObjectId, language name
-            (e.g. Hindi), or ISO code (e.g. HI)
+          description: Filter by language. Accepts a Language ObjectId, language name (e.g. Hindi), or ISO code (e.g. HI)
           example: Hindi
         - in: query
           name: country
           schema:
             type: string
-          description: ISO country code filter on the listener user account (e.g. IN, US,
-            GB)
+          description: ISO country code filter on the listener user account (e.g. IN, US, GB)
           example: IN
         - in: query
           name: status
@@ -6258,9 +6442,9 @@ paths:
               - rating
               - newest
             default: featured
-          description: Sort mode. featured = promoted first then most-followed/top-rated;
-            popular = most followers/sessions; rating = highest rated; newest =
-            recently joined
+          description: >-
+            Sort mode. featured = promoted first then most-followed/top-rated; popular = most followers/sessions; rating
+            = highest rated; newest = recently joined
           example: popular
         - in: query
           name: page
@@ -6276,7 +6460,7 @@ paths:
             maximum: 50
           description: Number of results per page (max 50)
       responses:
-        "200":
+        '200':
           description: Listeners fetched successfully
           content:
             application/json:
@@ -6395,21 +6579,19 @@ paths:
                           hasPrevPage:
                             type: boolean
                             example: false
-        "400":
+        '400':
           description: Invalid query parameters
-        "401":
+        '401':
           description: Unauthorized - valid JWT required
-        "403":
-          description: Forbidden - only CUSTOMER or LISTENER accounts may access the home
-            feed
+        '403':
+          description: Forbidden - only CUSTOMER or LISTENER accounts may access the home feed
   /home/listener-home:
     get:
       summary: Listener home feed (customers)
-      description: Returns online, new, and popular customer sections for the
-        logged-in listener. Online users are interacted customers currently
-        online. New users have never chatted or called this listener. Popular
-        users are ranked by currentLevel and totalXp. Presence is overlaid from
-        Redis in real time. Socket events listener_home_presence and
+      description: >-
+        Returns online, new, and popular customer sections for the logged-in listener. Online users are interacted
+        customers currently online. New users have never chatted or called this listener. Popular users are ranked by
+        currentLevel and totalXp. Presence is overlaid from Redis in real time. Socket events listener_home_presence and
         listener_home_interaction push live updates.
       tags:
         - Home
@@ -6459,7 +6641,7 @@ paths:
             default: 10
             maximum: 50
       responses:
-        "200":
+        '200':
           description: Listener home fetched successfully
           content:
             application/json:
@@ -6476,30 +6658,29 @@ paths:
                     type: object
                     properties:
                       onlineUsers:
-                        $ref: "#/components/schemas/ListenerHomeSection"
+                        $ref: '#/components/schemas/ListenerHomeSection'
                       newUsers:
-                        $ref: "#/components/schemas/ListenerHomeSection"
+                        $ref: '#/components/schemas/ListenerHomeSection'
                       popularUsers:
-                        $ref: "#/components/schemas/ListenerHomeSection"
-        "401":
+                        $ref: '#/components/schemas/ListenerHomeSection'
+        '401':
           description: Unauthorized
-        "403":
+        '403':
           description: Forbidden — LISTENER role required
   /match/fee:
     get:
       summary: Instant match fee (customer)
-      description: Returns admin-configured instant match fee and whether the feature
-        is enabled. No wallet debit.
+      description: Returns admin-configured instant match fee and whether the feature is enabled. No wallet debit.
       tags:
         - Match
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Fee info returned
-        "401":
+        '401':
           description: Unauthorized
-        "403":
+        '403':
           description: CUSTOMER role required
   /match/admin/config:
     get:
@@ -6509,9 +6690,9 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Match config returned
-        "403":
+        '403':
           description: ADMIN role required
     put:
       summary: Update match config (Admin)
@@ -6534,17 +6715,16 @@ paths:
                   type: boolean
                   example: true
       responses:
-        "200":
+        '200':
           description: Config updated
-        "403":
+        '403':
           description: ADMIN role required
   /match/instant:
     post:
       summary: Instant partner match
-      description: "One-click match: debits admin-configured instantMatchFee on
-        successful match (not on 404). No re-charge within 5-min sticky window.
-        Does not start a session — use socket request_chat or POST
-        /calls/initiate afterward."
+      description: >-
+        One-click match: debits admin-configured instantMatchFee on successful match (not on 404). No re-charge within
+        5-min sticky window. Does not start a session — use socket request_chat or POST /calls/initiate afterward.
       tags:
         - Match
       security:
@@ -6583,26 +6763,24 @@ paths:
                   default: false
                   description: Skip sticky match and fee-paid window
       responses:
-        "200":
-          description: Partner matched; includes matchFeeCharged, balanceAfter,
-            instantMatchFee
-        "401":
+        '200':
+          description: Partner matched; includes matchFeeCharged, balanceAfter, instantMatchFee
+        '401':
           description: Unauthorized
-        "402":
+        '402':
           description: Insufficient wallet balance for match fee or session rate
-        "403":
+        '403':
           description: CUSTOMER role required
-        "404":
+        '404':
           description: No suitable partner available (no fee debited)
-        "409":
+        '409':
           description: Customer already in an active session
-        "503":
+        '503':
           description: Instant match disabled by admin
   /match/status:
     get:
       summary: Match availability probe
-      description: Quick check whether any ONLINE partner exists for the customer. No
-        wallet debit.
+      description: Quick check whether any ONLINE partner exists for the customer. No wallet debit.
       tags:
         - Match
       security:
@@ -6621,20 +6799,19 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Availability status returned
-        "401":
+        '401':
           description: Unauthorized
-        "403":
+        '403':
           description: CUSTOMER role required
   /match/discover:
     get:
       summary: Discover listeners (rating & anchor level)
-      description: "Paginated listener discovery for customers. Defaults to the
-        customer's country (`sameCountry=true`). Sort modes: combined (anchor
-        level + rating), rating, anchor_level, featured, popular. Mongo results
-        are Redis-cached (60s, version-invalidated); live availability is
-        batch-overlaid from Redis presence on every response."
+      description: >-
+        Paginated listener discovery for customers. Defaults to the customer's country (`sameCountry=true`). Sort modes:
+        combined (anchor level + rating), rating, anchor_level, featured, popular. Mongo results are Redis-cached (60s,
+        version-invalidated); live availability is batch-overlaid from Redis presence on every response.
       tags:
         - Match
       security:
@@ -6727,13 +6904,13 @@ paths:
             type: string
             description: Name search
       responses:
-        "200":
+        '200':
           description: Paginated listener list with appliedFilters metadata
-        "400":
+        '400':
           description: Invalid query parameters
-        "401":
+        '401':
           description: Unauthorized
-        "403":
+        '403':
           description: CUSTOMER role required
   /reports/reasons:
     get:
@@ -6744,7 +6921,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Active report reasons returned
           content:
             application/json:
@@ -6755,7 +6932,7 @@ paths:
                     label: Harassment
                     description: Abusive behavior
                     sortOrder: 1
-        "403":
+        '403':
           description: CUSTOMER or LISTENER role required
     post:
       summary: Create report reason (Admin)
@@ -6786,9 +6963,9 @@ paths:
               description: Abusive or threatening behavior
               sortOrder: 1
       responses:
-        "201":
+        '201':
           description: Report reason created
-        "403":
+        '403':
           description: ADMIN role required
   /reports/reasons/admin:
     get:
@@ -6836,9 +7013,9 @@ paths:
             type: string
           example: harass
       responses:
-        "200":
+        '200':
           description: Paginated report reasons returned
-        "403":
+        '403':
           description: ADMIN role required
   /reports:
     post:
@@ -6882,11 +7059,11 @@ paths:
               message: User sent abusive messages during our video call.
               sessionId: 507f1f77bcf86cd799439013
       responses:
-        "201":
+        '201':
           description: Report submitted
-        "400":
+        '400':
           description: Validation error / duplicate open report
-        "403":
+        '403':
           description: CUSTOMER or LISTENER role required
     get:
       summary: List reports (Admin)
@@ -6987,9 +7164,9 @@ paths:
             maximum: 31
           example: 10
       responses:
-        "200":
+        '200':
           description: Paginated report list returned
-        "403":
+        '403':
           description: ADMIN role required
   /reports/stats:
     get:
@@ -7024,7 +7201,7 @@ paths:
             maximum: 31
           example: 10
       responses:
-        "200":
+        '200':
           description: Report stats returned
           content:
             application/json:
@@ -7035,9 +7212,9 @@ paths:
                   inReview: 3
                   resolved: 40
                   dismissed: 5
-        "403":
+        '403':
           description: ADMIN role required
-  "/reports/{id}/moderate":
+  /reports/{id}/moderate:
     patch:
       summary: Moderate report (Admin)
       tags:
@@ -7078,9 +7255,9 @@ paths:
               adminNote: Warned user and closed report
               blockTarget: true
       responses:
-        "200":
+        '200':
           description: Report moderated
-        "403":
+        '403':
           description: ADMIN role required
   /agent/reports:
     get:
@@ -7182,9 +7359,9 @@ paths:
             maximum: 31
           example: 10
       responses:
-        "200":
+        '200':
           description: Agent-scoped reports returned
-        "403":
+        '403':
           description: AGENT role required
   /agent/analytics/revenue/summary:
     get:
@@ -7210,17 +7387,17 @@ paths:
           schema:
             type: string
             format: date-time
-          example: 2026-01-01T00:00:00.000Z
+          example: '2026-01-01T00:00:00.000Z'
         - name: dateTo
           in: query
           schema:
             type: string
             format: date-time
-          example: 2026-07-01T00:00:00.000Z
+          example: '2026-07-01T00:00:00.000Z'
       responses:
-        "200":
+        '200':
           description: Revenue analytics summary
-        "403":
+        '403':
           description: AGENT role required
   /agent/analytics/revenue/charts:
     get:
@@ -7252,9 +7429,9 @@ paths:
             type: string
             format: date-time
       responses:
-        "200":
+        '200':
           description: Revenue analytics charts
-        "403":
+        '403':
           description: AGENT role required
   /agent/analytics/listeners/summary:
     get:
@@ -7275,9 +7452,9 @@ paths:
             default: 6months
           example: 6months
       responses:
-        "200":
+        '200':
           description: Listener analytics summary
-        "403":
+        '403':
           description: AGENT role required
   /agent/analytics/listeners/charts:
     get:
@@ -7298,9 +7475,9 @@ paths:
             default: 6months
           example: 6months
       responses:
-        "200":
+        '200':
           description: Listener growth series
-        "403":
+        '403':
           description: AGENT role required
   /agent/analytics/retention/summary:
     get:
@@ -7321,9 +7498,9 @@ paths:
             default: 6
           example: 6
       responses:
-        "200":
+        '200':
           description: Retention analytics summary
-        "403":
+        '403':
           description: AGENT role required
   /agent/analytics/retention/charts:
     get:
@@ -7344,9 +7521,9 @@ paths:
             default: 6
           example: 6
       responses:
-        "200":
+        '200':
           description: Retention curve series
-        "403":
+        '403':
           description: AGENT role required
   /agent/analytics/period-reports:
     get:
@@ -7371,17 +7548,17 @@ paths:
           schema:
             type: string
             format: date
-          example: 2026-07-01
+          example: '2026-07-01'
         - name: dateTo
           in: query
           schema:
             type: string
             format: date
-          example: 2026-07-10
+          example: '2026-07-10'
       responses:
-        "200":
+        '200':
           description: Period report with stats and chart data
-        "403":
+        '403':
           description: AGENT role required
   /agent/dashboard/summary:
     get:
@@ -7402,9 +7579,9 @@ paths:
             default: 7d
           example: 7d
       responses:
-        "200":
+        '200':
           description: Dashboard summary with 8 KPI cards
-        "403":
+        '403':
           description: AGENT role required
   /agent/dashboard/charts:
     get:
@@ -7425,9 +7602,9 @@ paths:
             default: 7d
           example: 7d
       responses:
-        "200":
+        '200':
           description: Listener growth, revenue, commission, and daily active charts
-        "403":
+        '403':
           description: AGENT role required
   /agent/dashboard/activity:
     get:
@@ -7448,12 +7625,12 @@ paths:
           in: query
           schema:
             type: string
-            default: "0"
-          example: "0"
+            default: '0'
+          example: '0'
       responses:
-        "200":
+        '200':
           description: Paginated activity items
-        "403":
+        '403':
           description: AGENT role required
   /agent/settlements/stats:
     get:
@@ -7463,9 +7640,9 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Settlement stats
-        "403":
+        '403':
           description: AGENT role required
   /agent/settlements:
     get:
@@ -7530,9 +7707,9 @@ paths:
             maximum: 31
           example: 10
       responses:
-        "200":
+        '200':
           description: Paginated settlements
-        "403":
+        '403':
           description: AGENT role required
   /withdrawals/admin/stats:
     get:
@@ -7542,9 +7719,9 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Payout stats
-        "403":
+        '403':
           description: ADMIN role required
   /withdrawals/admin/settlements/run:
     post:
@@ -7572,11 +7749,11 @@ paths:
             example:
               weeksAgo: 1
       responses:
-        "200":
+        '200':
           description: Settlements processed
-        "403":
+        '403':
           description: ADMIN role required
-  "/reports/reasons/{id}":
+  /reports/reasons/{id}:
     patch:
       summary: Update report reason (Admin)
       tags:
@@ -7612,9 +7789,9 @@ paths:
               description: Unsolicited messages
               sortOrder: 2
       responses:
-        "200":
+        '200':
           description: Report reason updated
-        "403":
+        '403':
           description: ADMIN role required
     delete:
       summary: Delete report reason (Admin)
@@ -7632,11 +7809,11 @@ paths:
             example: 507f1f77bcf86cd799439011
           example: 507f1f77bcf86cd799439011
       responses:
-        "200":
+        '200':
           description: Report reason deleted
-        "403":
+        '403':
           description: ADMIN role required
-  "/reports/reasons/{id}/toggle":
+  /reports/reasons/{id}/toggle:
     patch:
       summary: Toggle report reason active status (Admin)
       tags:
@@ -7664,9 +7841,9 @@ paths:
             example:
               isActive: false
       responses:
-        "200":
+        '200':
           description: Report reason toggled
-        "403":
+        '403':
           description: ADMIN role required
   /reports/me:
     get:
@@ -7768,11 +7945,11 @@ paths:
             maximum: 31
           example: 10
       responses:
-        "200":
+        '200':
           description: Own reports returned
-        "403":
+        '403':
           description: CUSTOMER or LISTENER role required
-  "/reports/me/{id}":
+  /reports/me/{id}:
     get:
       summary: Get my report by ID
       tags:
@@ -7788,11 +7965,11 @@ paths:
             example: 507f1f77bcf86cd799439011
           example: 507f1f77bcf86cd799439011
       responses:
-        "200":
+        '200':
           description: Report detail returned
-        "404":
+        '404':
           description: Report not found
-  "/reports/{id}":
+  /reports/{id}:
     get:
       summary: Get report by ID (Admin)
       tags:
@@ -7808,11 +7985,11 @@ paths:
             example: 507f1f77bcf86cd799439011
           example: 507f1f77bcf86cd799439011
       responses:
-        "200":
+        '200':
           description: Report detail returned
-        "404":
+        '404':
           description: Report not found
-  "/agent/reports/{id}":
+  /agent/reports/{id}:
     get:
       summary: Get agent report detail (read-only)
       tags:
@@ -7828,11 +8005,11 @@ paths:
             example: 507f1f77bcf86cd799439011
           example: 507f1f77bcf86cd799439011
       responses:
-        "200":
+        '200':
           description: Report detail returned
-        "403":
+        '403':
           description: AGENT role required / not your report
-        "404":
+        '404':
           description: Report not found
   /agent/revenue/summary:
     get:
@@ -7853,7 +8030,7 @@ paths:
             default: month
           example: month
       responses:
-        "200":
+        '200':
           description: Revenue summary returned
           content:
             application/json:
@@ -7866,7 +8043,7 @@ paths:
                   monthCommission: 9800
                   pendingCommission: 3200
                   paidCommission: 15550
-        "403":
+        '403':
           description: AGENT role required
   /agent/revenue/graphs:
     get:
@@ -7886,7 +8063,7 @@ paths:
             default: 6months
           example: 6months
       responses:
-        "200":
+        '200':
           description: Revenue graphs returned
           content:
             application/json:
@@ -7907,7 +8084,7 @@ paths:
                     - label: Calls
                       value: 45000
                       pct: 36
-        "403":
+        '403':
           description: AGENT role required
   /agent/revenue/history/stats:
     get:
@@ -7917,7 +8094,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: History stats returned
           content:
             application/json:
@@ -7928,7 +8105,7 @@ paths:
                   paid: 15550
                   pending: 3200
                   avgRate: 15
-        "403":
+        '403':
           description: AGENT role required
   /agent/revenue/history:
     get:
@@ -7981,19 +8158,19 @@ paths:
           schema:
             type: string
             format: date-time
-          example: 2026-01-01T00:00:00.000Z
+          example: '2026-01-01T00:00:00.000Z'
         - in: query
           name: dateTo
           schema:
             type: string
             format: date-time
-          example: 2026-07-01T00:00:00.000Z
+          example: '2026-07-01T00:00:00.000Z'
       responses:
-        "200":
+        '200':
           description: Commission history returned
-        "403":
+        '403':
           description: AGENT role required
-  "/agent/settlements/{id}":
+  /agent/settlements/{id}:
     get:
       summary: Get settlement detail
       tags:
@@ -8009,9 +8186,9 @@ paths:
             example: 507f1f77bcf86cd799439011
           example: 507f1f77bcf86cd799439011
       responses:
-        "200":
+        '200':
           description: Settlement detail returned
-        "404":
+        '404':
           description: Settlement not found
   /roles:
     get:
@@ -8030,12 +8207,12 @@ paths:
           schema:
             type: string
             enum:
-              - "true"
-              - "false"
+              - 'true'
+              - 'false'
       responses:
-        "200":
+        '200':
           description: Roles list
-        "403":
+        '403':
           description: Forbidden
     post:
       summary: Create a role
@@ -8065,9 +8242,9 @@ paths:
                 isActive:
                   type: boolean
       responses:
-        "201":
+        '201':
           description: Role created
-        "403":
+        '403':
           description: Forbidden
   /roles/stats:
     get:
@@ -8077,7 +8254,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Role stats
   /roles/policies:
     get:
@@ -8087,9 +8264,9 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Policy rows
-  "/roles/{id}":
+  /roles/{id}:
     get:
       summary: Get role by id
       tags:
@@ -8103,7 +8280,7 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Role detail
     patch:
       summary: Update role
@@ -8118,7 +8295,7 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Role updated
     delete:
       summary: Delete non-system role
@@ -8133,9 +8310,9 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Role deleted
-  "/roles/{id}/matrix":
+  /roles/{id}/matrix:
     get:
       summary: Permission matrix for a role
       tags:
@@ -8149,7 +8326,7 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Matrix
     put:
       summary: Update permission matrix for a role
@@ -8164,9 +8341,9 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Matrix updated
-  "/roles/{id}/members":
+  /roles/{id}/members:
     get:
       summary: List admins assigned to a role
       tags:
@@ -8180,7 +8357,7 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Members
   /permissions:
     get:
@@ -8190,7 +8367,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Permissions
   /permissions/matrix-meta:
     get:
@@ -8200,7 +8377,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Matrix metadata
   /audit-logs:
     get:
@@ -8223,9 +8400,9 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Audit logs
-  "/users/admin/{id}/role":
+  /users/admin/{id}/role:
     patch:
       summary: Assign role to an admin user
       tags:
@@ -8250,13 +8427,12 @@ paths:
                 roleId:
                   type: string
       responses:
-        "200":
+        '200':
           description: Role assigned
   /admin/dashboard/summary:
     get:
       summary: Admin dashboard KPI summary
-      description: Unified executive dashboard cards with period-over-period changePct
-        plus realtime pulse counters
+      description: Unified executive dashboard cards with period-over-period changePct plus realtime pulse counters
       tags:
         - Admin Dashboard
       security:
@@ -8288,23 +8464,22 @@ paths:
           schema:
             type: string
             format: date-time
-          example: 2026-01-01T00:00:00.000Z
+          example: '2026-01-01T00:00:00.000Z'
         - in: query
           name: dateTo
           schema:
             type: string
             format: date-time
-          example: 2026-07-10T23:59:59.000Z
+          example: '2026-07-10T23:59:59.000Z'
       responses:
-        "200":
+        '200':
           description: Dashboard summary returned
-        "403":
+        '403':
           description: ADMIN role required
   /admin/dashboard/charts:
     get:
       summary: Admin dashboard charts bundle
-      description: Revenue, registrations, sessions, channel split, and peak hours
-        charts for the selected date filter
+      description: Revenue, registrations, sessions, channel split, and peak hours charts for the selected date filter
       tags:
         - Admin Dashboard
       security:
@@ -8336,17 +8511,17 @@ paths:
           schema:
             type: string
             format: date-time
-          example: 2026-01-01T00:00:00.000Z
+          example: '2026-01-01T00:00:00.000Z'
         - in: query
           name: dateTo
           schema:
             type: string
             format: date-time
-          example: 2026-07-10T23:59:59.000Z
+          example: '2026-07-10T23:59:59.000Z'
       responses:
-        "200":
+        '200':
           description: Dashboard charts returned
-        "403":
+        '403':
           description: ADMIN role required
   /admin/dashboard/listeners/busy:
     get:
@@ -8375,9 +8550,9 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Busy listeners list returned
-        "403":
+        '403':
           description: ADMIN role required
   /admin/dashboard/sessions/chat:
     get:
@@ -8406,9 +8581,9 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Active chat sessions list returned
-        "403":
+        '403':
           description: ADMIN role required
   /analytics/admin/revenue:
     get:
@@ -8449,18 +8624,18 @@ paths:
           schema:
             type: string
             format: date-time
-          example: 2026-01-01T00:00:00.000Z
+          example: '2026-01-01T00:00:00.000Z'
         - in: query
           name: dateTo
           description: Custom range end
           schema:
             type: string
             format: date-time
-          example: 2026-07-10T23:59:59.000Z
+          example: '2026-07-10T23:59:59.000Z'
       responses:
-        "200":
+        '200':
           description: Platform revenue analytics returned
-        "403":
+        '403':
           description: ADMIN role required
   /analytics/admin/revenue/summary:
     get:
@@ -8501,18 +8676,18 @@ paths:
           schema:
             type: string
             format: date-time
-          example: 2026-01-01T00:00:00.000Z
+          example: '2026-01-01T00:00:00.000Z'
         - in: query
           name: dateTo
           description: Custom range end
           schema:
             type: string
             format: date-time
-          example: 2026-07-10T23:59:59.000Z
+          example: '2026-07-10T23:59:59.000Z'
       responses:
-        "200":
+        '200':
           description: Platform revenue summary cards returned
-        "403":
+        '403':
           description: ADMIN role required
   /analytics/admin/revenue/charts:
     get:
@@ -8553,18 +8728,18 @@ paths:
           schema:
             type: string
             format: date-time
-          example: 2026-01-01T00:00:00.000Z
+          example: '2026-01-01T00:00:00.000Z'
         - in: query
           name: dateTo
           description: Custom range end
           schema:
             type: string
             format: date-time
-          example: 2026-07-10T23:59:59.000Z
+          example: '2026-07-10T23:59:59.000Z'
       responses:
-        "200":
+        '200':
           description: Platform revenue charts returned
-        "403":
+        '403':
           description: ADMIN role required
   /analytics/admin/users:
     get:
@@ -8605,18 +8780,18 @@ paths:
           schema:
             type: string
             format: date-time
-          example: 2026-01-01T00:00:00.000Z
+          example: '2026-01-01T00:00:00.000Z'
         - in: query
           name: dateTo
           description: Custom range end
           schema:
             type: string
             format: date-time
-          example: 2026-07-10T23:59:59.000Z
+          example: '2026-07-10T23:59:59.000Z'
       responses:
-        "200":
+        '200':
           description: User analytics returned
-        "403":
+        '403':
           description: ADMIN role required
   /analytics/admin/users/summary:
     get:
@@ -8657,18 +8832,18 @@ paths:
           schema:
             type: string
             format: date-time
-          example: 2026-01-01T00:00:00.000Z
+          example: '2026-01-01T00:00:00.000Z'
         - in: query
           name: dateTo
           description: Custom range end
           schema:
             type: string
             format: date-time
-          example: 2026-07-10T23:59:59.000Z
+          example: '2026-07-10T23:59:59.000Z'
       responses:
-        "200":
+        '200':
           description: User analytics summary cards returned
-        "403":
+        '403':
           description: ADMIN role required
   /analytics/admin/users/charts:
     get:
@@ -8709,18 +8884,18 @@ paths:
           schema:
             type: string
             format: date-time
-          example: 2026-01-01T00:00:00.000Z
+          example: '2026-01-01T00:00:00.000Z'
         - in: query
           name: dateTo
           description: Custom range end
           schema:
             type: string
             format: date-time
-          example: 2026-07-10T23:59:59.000Z
+          example: '2026-07-10T23:59:59.000Z'
       responses:
-        "200":
+        '200':
           description: User analytics charts returned
-        "403":
+        '403':
           description: ADMIN role required
   /analytics/admin/listeners:
     get:
@@ -8761,18 +8936,18 @@ paths:
           schema:
             type: string
             format: date-time
-          example: 2026-01-01T00:00:00.000Z
+          example: '2026-01-01T00:00:00.000Z'
         - in: query
           name: dateTo
           description: Custom range end
           schema:
             type: string
             format: date-time
-          example: 2026-07-10T23:59:59.000Z
+          example: '2026-07-10T23:59:59.000Z'
       responses:
-        "200":
+        '200':
           description: Listener analytics returned
-        "403":
+        '403':
           description: ADMIN role required
   /analytics/admin/listeners/summary:
     get:
@@ -8813,18 +8988,18 @@ paths:
           schema:
             type: string
             format: date-time
-          example: 2026-01-01T00:00:00.000Z
+          example: '2026-01-01T00:00:00.000Z'
         - in: query
           name: dateTo
           description: Custom range end
           schema:
             type: string
             format: date-time
-          example: 2026-07-10T23:59:59.000Z
+          example: '2026-07-10T23:59:59.000Z'
       responses:
-        "200":
+        '200':
           description: Listener analytics summary cards returned
-        "403":
+        '403':
           description: ADMIN role required
   /analytics/admin/listeners/charts:
     get:
@@ -8865,18 +9040,18 @@ paths:
           schema:
             type: string
             format: date-time
-          example: 2026-01-01T00:00:00.000Z
+          example: '2026-01-01T00:00:00.000Z'
         - in: query
           name: dateTo
           description: Custom range end
           schema:
             type: string
             format: date-time
-          example: 2026-07-10T23:59:59.000Z
+          example: '2026-07-10T23:59:59.000Z'
       responses:
-        "200":
+        '200':
           description: Listener analytics charts returned
-        "403":
+        '403':
           description: ADMIN role required
   /analytics/admin/sessions:
     get:
@@ -8917,18 +9092,18 @@ paths:
           schema:
             type: string
             format: date-time
-          example: 2026-01-01T00:00:00.000Z
+          example: '2026-01-01T00:00:00.000Z'
         - in: query
           name: dateTo
           description: Custom range end
           schema:
             type: string
             format: date-time
-          example: 2026-07-10T23:59:59.000Z
+          example: '2026-07-10T23:59:59.000Z'
       responses:
-        "200":
+        '200':
           description: Session analytics returned
-        "403":
+        '403':
           description: ADMIN role required
   /analytics/admin/sessions/summary:
     get:
@@ -8969,18 +9144,18 @@ paths:
           schema:
             type: string
             format: date-time
-          example: 2026-01-01T00:00:00.000Z
+          example: '2026-01-01T00:00:00.000Z'
         - in: query
           name: dateTo
           description: Custom range end
           schema:
             type: string
             format: date-time
-          example: 2026-07-10T23:59:59.000Z
+          example: '2026-07-10T23:59:59.000Z'
       responses:
-        "200":
+        '200':
           description: Session analytics summary cards returned
-        "403":
+        '403':
           description: ADMIN role required
   /analytics/admin/sessions/charts:
     get:
@@ -9021,18 +9196,18 @@ paths:
           schema:
             type: string
             format: date-time
-          example: 2026-01-01T00:00:00.000Z
+          example: '2026-01-01T00:00:00.000Z'
         - in: query
           name: dateTo
           description: Custom range end
           schema:
             type: string
             format: date-time
-          example: 2026-07-10T23:59:59.000Z
+          example: '2026-07-10T23:59:59.000Z'
       responses:
-        "200":
+        '200':
           description: Session analytics charts returned
-        "403":
+        '403':
           description: ADMIN role required
   /communications/admin/sessions/stats:
     get:
@@ -9069,17 +9244,17 @@ paths:
           schema:
             type: string
             format: date-time
-          example: 2026-07-01T00:00:00.000Z
+          example: '2026-07-01T00:00:00.000Z'
         - in: query
           name: dateTo
           schema:
             type: string
             format: date-time
-          example: 2026-07-10T23:59:59.000Z
+          example: '2026-07-10T23:59:59.000Z'
       responses:
-        "200":
+        '200':
           description: Session stats returned
-        "403":
+        '403':
           description: ADMIN role required
   /communications/admin/sessions/live:
     get:
@@ -9108,9 +9283,9 @@ paths:
             maximum: 100
           example: 50
       responses:
-        "200":
+        '200':
           description: Live sessions returned
-        "403":
+        '403':
           description: ADMIN role required
   /communications/admin/sessions:
     get:
@@ -9160,13 +9335,13 @@ paths:
           schema:
             type: string
             format: date-time
-          example: 2026-07-01T00:00:00.000Z
+          example: '2026-07-01T00:00:00.000Z'
         - in: query
           name: dateTo
           schema:
             type: string
             format: date-time
-          example: 2026-07-10T23:59:59.000Z
+          example: '2026-07-10T23:59:59.000Z'
         - in: query
           name: search
           schema:
@@ -9206,11 +9381,11 @@ paths:
             default: desc
           example: desc
       responses:
-        "200":
+        '200':
           description: Session list returned
-        "403":
+        '403':
           description: ADMIN role required
-  "/communications/admin/sessions/{sessionId}":
+  /communications/admin/sessions/{sessionId}:
     get:
       summary: Session detail
       tags:
@@ -9226,11 +9401,11 @@ paths:
             example: 507f1f77bcf86cd799439011
           example: 507f1f77bcf86cd799439011
       responses:
-        "200":
+        '200':
           description: Session detail returned
-        "404":
+        '404':
           description: Session not found
-  "/communications/admin/sessions/{sessionId}/force-end":
+  /communications/admin/sessions/{sessionId}/force-end:
     post:
       summary: Force-end an ongoing session
       tags:
@@ -9246,11 +9421,11 @@ paths:
             example: 507f1f77bcf86cd799439011
           example: 507f1f77bcf86cd799439011
       responses:
-        "200":
+        '200':
           description: Session force-ended
-        "400":
+        '400':
           description: Session not ongoing / cannot force-end
-        "404":
+        '404':
           description: Session not found
   /communications/admin/config:
     get:
@@ -9260,7 +9435,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Config returned
           content:
             application/json:
@@ -9317,9 +9492,9 @@ paths:
               noiseCancellationEnabled: true
               maxVideoParticipants: 2
       responses:
-        "200":
+        '200':
           description: Config updated
-        "400":
+        '400':
           description: Validation error
   /anchor-levels/admin/stats:
     get:
@@ -9329,7 +9504,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Stats returned
           content:
             application/json:
@@ -9339,15 +9514,15 @@ paths:
                 data:
                   total: 10
                   active: 8
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /avatars/admin/stats:
     get:
@@ -9357,7 +9532,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Stats returned
           content:
             application/json:
@@ -9369,15 +9544,15 @@ paths:
                   active: 35
                   free: 10
                   paid: 30
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /banners/admin/stats:
     get:
@@ -9387,23 +9562,22 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /chats/conversations:
     get:
       summary: List chat conversations (inbox)
-      description: Authenticated user inbox with last message, unread counts, and
-        optional search.
+      description: Authenticated user inbox with last message, unread counts, and optional search.
       tags:
         - Chats
       security:
@@ -9431,17 +9605,17 @@ paths:
             maxLength: 100
           example: alice
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /chats/sessions:
     get:
@@ -9468,19 +9642,19 @@ paths:
             default: 20
           example: 20
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
-  "/chats/sessions/{sessionId}/messages":
+  /chats/sessions/{sessionId}/messages:
     get:
       summary: Get session messages
       description: Paginated messages. Caller must be a session participant.
@@ -9512,19 +9686,19 @@ paths:
             default: 50
           example: 50
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
-  "/chats/sessions/{sessionId}/media":
+  /chats/sessions/{sessionId}/media:
     post:
       summary: Upload media message to session
       description: multipart/form-data file upload (image/video/audio, max 50MB).
@@ -9554,17 +9728,17 @@ paths:
                   format: binary
                   description: Media file
       responses:
-        "201":
+        '201':
           description: Media message created
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /coin-packs/admin:
     get:
@@ -9620,17 +9794,17 @@ paths:
             default: asc
           example: asc
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /coin-packs/admin/stats:
     get:
@@ -9640,17 +9814,17 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /company/admin/profile:
     get:
@@ -9660,17 +9834,17 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
     put:
       summary: Update admin company profile
@@ -9754,17 +9928,17 @@ paths:
               supportEmail: help@chatcorner.com
               website: https://chatcorner.com
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /company/admin/stats:
     get:
@@ -9774,17 +9948,17 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /daily-rewards/admin/cache/clear:
     post:
@@ -9794,17 +9968,17 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /daily-rewards/admin/claims:
     get:
@@ -9873,17 +10047,17 @@ paths:
             maximum: 31
           example: 10
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /daily-rewards/admin/config:
     get:
@@ -9893,17 +10067,17 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /daily-rewards/admin/stats:
     get:
@@ -9935,17 +10109,17 @@ paths:
             maximum: 31
           example: 10
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /feedback/admin:
     get:
@@ -10035,19 +10209,19 @@ paths:
             maximum: 31
           example: 10
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
-  "/feedback/admin/{id}":
+  /feedback/admin/{id}:
     get:
       summary: Admin get feedback by ID
       tags:
@@ -10063,19 +10237,19 @@ paths:
             example: 507f1f77bcf86cd799439011
           example: 507f1f77bcf86cd799439011
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
-  "/feedback/admin/{id}/moderate":
+  /feedback/admin/{id}/moderate:
     patch:
       summary: Moderate feedback
       tags:
@@ -10111,17 +10285,17 @@ paths:
               status: RESOLVED
               adminResponse: Fixed in next release
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /feedback/admin/stats:
     get:
@@ -10153,17 +10327,17 @@ paths:
             maximum: 31
           example: 10
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /gifts/admin:
     get:
@@ -10228,17 +10402,17 @@ paths:
             default: desc
           example: desc
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /gifts/admin/stats:
     get:
@@ -10248,19 +10422,19 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
-  "/languages/{id}/toggle":
+  /languages/{id}/toggle:
     patch:
       summary: Toggle language active status
       tags:
@@ -10276,17 +10450,17 @@ paths:
             example: 507f1f77bcf86cd799439011
           example: 507f1f77bcf86cd799439011
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /languages/admin/stats:
     get:
@@ -10296,7 +10470,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Stats returned
           content:
             application/json:
@@ -10308,17 +10482,17 @@ paths:
                   active: 10
                   inactive: 2
                   listenerProfilesUsing: 80
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
-  "/listeners/admin/{id}":
+  /listeners/admin/{id}:
     get:
       summary: Admin get listener by ID
       tags:
@@ -10334,17 +10508,17 @@ paths:
             example: 507f1f77bcf86cd799439011
           example: 507f1f77bcf86cd799439011
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
     put:
       summary: Admin update listener
@@ -10399,17 +10573,17 @@ paths:
               kycStatus: APPROVED
               availability: ONLINE
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /listeners/admin/availability-monitoring:
     get:
@@ -10473,17 +10647,17 @@ paths:
             default: desc
           example: desc
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /listeners/admin/performance:
     get:
@@ -10534,17 +10708,17 @@ paths:
             default: desc
           example: desc
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /listeners/admin/stats:
     get:
@@ -10554,17 +10728,17 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /live-rooms:
     get:
@@ -10590,19 +10764,19 @@ paths:
             default: 20
           example: 20
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
-  "/live-rooms/{id}":
+  /live-rooms/{id}:
     get:
       summary: Get live room by ID
       tags:
@@ -10618,19 +10792,19 @@ paths:
             example: 507f1f77bcf86cd799439011
           example: 507f1f77bcf86cd799439011
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
-  "/live-rooms/{id}/agora-token":
+  /live-rooms/{id}/agora-token:
     post:
       summary: Generate Agora RTC token for live room
       tags:
@@ -10646,17 +10820,17 @@ paths:
             example: 507f1f77bcf86cd799439011
           example: 507f1f77bcf86cd799439011
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /notifications/admin:
     get:
@@ -10743,17 +10917,17 @@ paths:
             maximum: 31
           example: 10
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /notifications/admin/stats:
     get:
@@ -10763,17 +10937,17 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /notifications/stats:
     get:
@@ -10783,7 +10957,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Stats returned
           content:
             application/json:
@@ -10793,15 +10967,15 @@ paths:
                 data:
                   unread: 3
                   total: 40
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /referrals/admin/referrals:
     get:
@@ -10850,17 +11024,17 @@ paths:
             type: string
           example: REF123
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /referrals/admin/stats:
     get:
@@ -10870,17 +11044,17 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /sticker-categories/admin/stats:
     get:
@@ -10890,17 +11064,17 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /stickers/admin/stats:
     get:
@@ -10910,17 +11084,17 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /users/activity:
     get:
@@ -10961,17 +11135,17 @@ paths:
             default: desc
           example: desc
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /users/activity/stats:
     get:
@@ -10981,17 +11155,17 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /users/agent:
     post:
@@ -11027,7 +11201,7 @@ paths:
                   example: Secret123
                 mobileNumber:
                   type: string
-                  example: "9876543210"
+                  example: '9876543210'
                 commissionPercentage:
                   type: number
                   minimum: 0
@@ -11038,20 +11212,20 @@ paths:
               lastName: Doe
               email: agent@example.com
               password: Secret123
-              mobileNumber: "9876543210"
+              mobileNumber: '9876543210'
               commissionPercentage: 15
       responses:
-        "201":
+        '201':
           description: Created
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /users/agent-stats:
     get:
@@ -11061,19 +11235,19 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
-  "/users/agent/{id}/commission":
+  /users/agent/{id}/commission:
     patch:
       summary: Update agent commission percentage
       tags:
@@ -11105,17 +11279,17 @@ paths:
             example:
               commissionPercentage: 12
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /users/stats:
     get:
@@ -11125,17 +11299,17 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /wallets/admin:
     get:
@@ -11188,7 +11362,7 @@ paths:
           name: search
           schema:
             type: string
-          example: "98765"
+          example: '98765'
         - in: query
           name: year
           schema:
@@ -11211,19 +11385,19 @@ paths:
             maximum: 31
           example: 10
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
-  "/wallets/admin/{id}":
+  /wallets/admin/{id}:
     get:
       summary: Admin get wallet by ID
       tags:
@@ -11239,19 +11413,19 @@ paths:
             example: 507f1f77bcf86cd799439011
           example: 507f1f77bcf86cd799439011
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
-  "/wallets/admin/{id}/status":
+  /wallets/admin/{id}/status:
     put:
       summary: Update wallet status
       tags:
@@ -11285,17 +11459,17 @@ paths:
             example:
               status: FROZEN
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /wallets/admin/coin-transactions:
     get:
@@ -11391,17 +11565,17 @@ paths:
             maximum: 31
           example: 10
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /wallets/admin/payment-transactions:
     get:
@@ -11497,17 +11671,17 @@ paths:
             maximum: 31
           example: 10
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /wallets/admin/stats:
     get:
@@ -11539,19 +11713,19 @@ paths:
             maximum: 31
           example: 10
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
-  "/wallets/admin/user/{userId}":
+  /wallets/admin/user/{userId}:
     get:
       summary: Admin get wallet by user ID
       tags:
@@ -11567,19 +11741,19 @@ paths:
             example: 507f1f77bcf86cd799439011
           example: 507f1f77bcf86cd799439011
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
-  "/wallets/admin/user/{userId}/credit-debit":
+  /wallets/admin/user/{userId}/credit-debit:
     post:
       summary: Admin credit/debit user coins
       tags:
@@ -11629,19 +11803,19 @@ paths:
               referenceType: BONUS
               description: Promo credit
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
-  "/withdrawals/admin/{id}":
+  /withdrawals/admin/{id}:
     get:
       summary: Admin get withdrawal by ID
       tags:
@@ -11657,17 +11831,17 @@ paths:
             example: 507f1f77bcf86cd799439011
           example: 507f1f77bcf86cd799439011
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /withdrawals/admin/settlements:
     get:
@@ -11742,17 +11916,17 @@ paths:
             maximum: 31
           example: 10
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /withdrawals/me/stats:
     get:
@@ -11773,17 +11947,17 @@ paths:
               - REJECTED
           example: PENDING
       responses:
-        "200":
+        '200':
           description: Success
-        "400":
+        '400':
           description: Bad request / validation error
-        "401":
+        '401':
           description: Unauthorized — missing or invalid JWT
-        "403":
+        '403':
           description: Forbidden — insufficient role
-        "404":
+        '404':
           description: Resource not found
-        "500":
+        '500':
           description: Internal server error
   /xp/admin/reward-claims:
     get:
@@ -11819,7 +11993,7 @@ paths:
               - CLAIMED
           example: CLAIMED
       responses:
-        "200":
+        '200':
           description: XP reward claims fetched successfully
           content:
             application/json:
@@ -11843,8 +12017,8 @@ paths:
                         rewardType: COINS
                         rewardValue: 100
                       status: CLAIMED
-                      unlockedAt: 2026-08-29T09:00:00.000Z
-                      claimedAt: 2026-08-29T10:00:00.000Z
+                      unlockedAt: '2026-08-29T09:00:00.000Z'
+                      claimedAt: '2026-08-29T10:00:00.000Z'
   /xp/admin/stats:
     get:
       summary: Admin XP KPIs and platform summary
@@ -11853,7 +12027,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: XP admin stats fetched successfully
           content:
             application/json:
@@ -11908,7 +12082,7 @@ paths:
             default: desc
           example: desc
       responses:
-        "200":
+        '200':
           description: XP transactions fetched successfully
           content:
             application/json:
@@ -11931,4 +12105,4 @@ paths:
                       xpAmount: 50
                       balanceAfter: 1450
                       description: Earned 50 XP for completed voice call (5 mins)
-                      createdAt: 2026-08-29T10:30:00.000Z
+                      createdAt: '2026-08-29T10:30:00.000Z'

@@ -9699,6 +9699,329 @@
         }
       }
     },
+    "/listeners/admin/boost-config": {
+      "get": {
+        "summary": "Admin: Get visibility boost configuration",
+        "description": "Retrieves current visibility boost configuration including price in coins, boost duration in minutes, maximum active slots limit, and master toggle status.",
+        "tags": [
+          "Listeners"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Boost configuration fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Boost configuration fetched"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "isEnabled": {
+                          "type": "boolean",
+                          "example": true
+                        },
+                        "priceCoins": {
+                          "type": "number",
+                          "example": 500
+                        },
+                        "durationMinutes": {
+                          "type": "number",
+                          "example": 60
+                        },
+                        "maxActiveSlots": {
+                          "type": "number",
+                          "example": 20
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden — ADMIN role required"
+          }
+        }
+      },
+      "put": {
+        "summary": "Admin: Update visibility boost configuration",
+        "description": "Updates platform visibility boost rules (pricing, duration, active slot limit, enable/disable toggle). Automatically invalidates runtime Redis cache.",
+        "tags": [
+          "Listeners"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "isEnabled": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "priceCoins": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "example": 500
+                  },
+                  "durationMinutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440,
+                    "example": 60
+                  },
+                  "maxActiveSlots": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100,
+                    "example": 20
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Boost configuration updated successfully"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden — ADMIN role required"
+          }
+        }
+      }
+    },
+    "/listeners/admin/active-boosts": {
+      "get": {
+        "summary": "Admin: Get all active boosted listeners queue",
+        "description": "Retrieves the real-time queue of all currently active boosted listeners, ordered by slot sequence ascending (Slot 1, Slot 2, ...).",
+        "tags": [
+          "Listeners"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active boosts queue fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Active boosts fetched"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "_id": {
+                            "type": "string"
+                          },
+                          "listenerId": {
+                            "type": "object",
+                            "properties": {
+                              "_id": {
+                                "type": "string"
+                              },
+                              "firstName": {
+                                "type": "string"
+                              },
+                              "lastName": {
+                                "type": "string"
+                              },
+                              "profileImage": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "sequence": {
+                            "type": "integer",
+                            "example": 1
+                          },
+                          "amountCoins": {
+                            "type": "number",
+                            "example": 500
+                          },
+                          "startedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "expiresAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/listeners/visibility-boost": {
+      "post": {
+        "summary": "Listener: Purchase visibility boost",
+        "description": "Allows a KYC-approved listener to purchase a visibility boost using coins. Priority placement in Home API for the configured duration (default 1 hour). Max active slots limit (default 20) is strictly enforced. Idempotent requests supported via idempotencyKey.",
+        "tags": [
+          "Listeners"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "idempotencyKey": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "example": "boost_req_987654"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Visibility boost purchased successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "integer",
+                      "example": 201
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Visibility boost purchased successfully"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "boostId": {
+                          "type": "string"
+                        },
+                        "sequence": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "startedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "expiresAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "amountCoins": {
+                          "type": "number",
+                          "example": 500
+                        },
+                        "remainingBalance": {
+                          "type": "number",
+                          "example": 1500
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Insufficient coin balance"
+          },
+          "403": {
+            "description": "Boost disabled or listener not KYC approved"
+          },
+          "409": {
+            "description": "All slots occupied (BOOST_SLOTS_FULL) or listener already has an active boost"
+          }
+        }
+      }
+    },
+    "/listeners/visibility-boost/me": {
+      "get": {
+        "summary": "Listener: Get my active visibility boost",
+        "description": "Returns the authenticated listener's current active visibility boost status, remaining time, and assigned slot sequence.",
+        "tags": [
+          "Listeners"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active boost fetched successfully"
+          }
+        }
+      }
+    },
     "/home/user-home": {
       "get": {
         "summary": "User home feed (active listeners)",
