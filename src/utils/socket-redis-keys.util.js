@@ -17,6 +17,11 @@ export const KEYS = {
   presenceStatus: (userId) => `presence:status:${userId}`,
 
   /**
+   * Set of online customer userIds
+   */
+  onlineCustomers: () => 'presence:customers:online',
+
+  /**
    * Details of an active communication session
    * Value: Hash { callerId, listenerId, ratePerMinute, startTime, lastBilledAt, segmentId, mode }
    */
@@ -39,6 +44,21 @@ export const KEYS = {
    * Value: JSON { type:'CALL', callerId, listenerId, mode, ratePerMinute, callerInfo }
    */
   callRequest: (listenerId, callerId) => `call_request:${listenerId}:${callerId}`,
+
+  /**
+   * Unique call request by callRequestId (UUID)
+   */
+  callRequestById: (callRequestId) => `call_request:${callRequestId}`,
+
+  /**
+   * Distributed atomic lock for user during ringing (prevents double-ringing / concurrency collision)
+   */
+  callLock: (userId) => `lock:call:${userId}`,
+
+  /**
+   * User active ring pointer (mapping userId to active callRequestId)
+   */
+  userActiveCallRing: (userId) => `call_ring_active:${userId}`,
 
   /**
    * Redis key indicating that a user recently disconnected and is in their reconnection grace period
@@ -120,10 +140,32 @@ export const KEYS = {
 
   /** SET of roomIds with at least one actively-billed viewer. Used by cron scan. */
   liveRoomBillingSet: () => 'live_billing:active_rooms',
+
+  // ─── WhatsApp-Style Chat Messaging ─────────────────────────────────────────
+
+  /** Idempotency guard for a client-generated message UUID. Value: 'PROCESSED'. TTL: 24h. */
+  msgIdempotency: (clientMsgId) => `msg:idempotency:${clientMsgId}`,
+
+  /** Customer's cached wallet balance in Redis for atomic Lua debit. Value: Integer string. */
+  walletBalance: (userId) => `wallet:user:${userId}:balance`,
+
+  /** Redis Stream: offline message mailbox for a receiver. Entries: { clientMsgId, payload }. */
+  chatMailboxStream: (receiverId) => `chat:mailbox:stream:${receiverId}`,
+
+  /** Hash: per-sender unread message counts for a user. Field: senderId → count. */
+  unreadUser: (userId) => `unread:user:${userId}`,
+
+  /** Monotonic read pointer for a conversation. Value: lastReadMessageId string. */
+  convRead: (userId, partnerId) => `conv:read:${userId}:${partnerId}`,
+
+  /** Monotonic read timestamp for a conversation. Value: ISO timestamp string. */
+  convReadTs: (userId, partnerId) => `conv:read:ts:${userId}:${partnerId}`,
 };
 
 export const PATTERNS = {
   allActiveSessions: 'active_session:*',
   /** Pattern to find all viewer billing hashes for a given room. */
   liveRoomBillingViewers: (roomId) => `live_billing:${roomId}:*`,
+  /** Pattern to find all offline mailbox streams. */
+  allChatMailboxStreams: 'chat:mailbox:stream:*',
 };

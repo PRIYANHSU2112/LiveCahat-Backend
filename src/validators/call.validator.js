@@ -14,9 +14,11 @@ const callValidator = {
    */
   initiateCall: {
     body: Joi.object({
-      listenerId: objectId.required(),
+      targetUserId: objectId.optional(),
+      listenerId: objectId.optional(),
+      customerId: objectId.optional(),
       mode: Joi.string().valid('AUDIO', 'VIDEO').required(),
-    }),
+    }).or('targetUserId', 'listenerId', 'customerId'),
   },
 
   /**

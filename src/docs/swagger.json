@@ -102,6 +102,120 @@
             "type": "integer"
           }
         }
+      },
+      "ListenerCardLean": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string",
+            "example": "66d0c410b0284df0021c322b"
+          },
+          "userId": {
+            "type": "string",
+            "example": "66d0c410b0284df0021c322a"
+          },
+          "videoRate": {
+            "type": "number",
+            "example": 12
+          },
+          "avgRating": {
+            "type": "number",
+            "example": 4.8
+          },
+          "liveStatus": {
+            "type": "string",
+            "enum": [
+              "ONLINE",
+              "OFFLINE",
+              "BUSY",
+              "LIVE"
+            ],
+            "example": "ONLINE"
+          },
+          "availability": {
+            "type": "string",
+            "enum": [
+              "ONLINE",
+              "OFFLINE",
+              "BUSY"
+            ],
+            "example": "ONLINE"
+          },
+          "isOnline": {
+            "type": "boolean",
+            "example": true
+          },
+          "isFeatured": {
+            "type": "boolean",
+            "example": false
+          },
+          "isBoosted": {
+            "type": "boolean",
+            "example": false
+          },
+          "countryDetails": {
+            "type": "object",
+            "properties": {
+              "_id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string",
+                "example": "India"
+              },
+              "code": {
+                "type": "string",
+                "example": "IN"
+              },
+              "flagUrl": {
+                "type": "string",
+                "example": "https://flagcdn.com/w40/in.png"
+              }
+            }
+          },
+          "languageDetails": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "_id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string",
+                  "example": "Hindi"
+                },
+                "code": {
+                  "type": "string",
+                  "example": "HI"
+                },
+                "flagUrl": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "user": {
+            "type": "object",
+            "properties": {
+              "_id": {
+                "type": "string"
+              },
+              "firstName": {
+                "type": "string",
+                "example": "Priya"
+              },
+              "lastName": {
+                "type": "string",
+                "example": "Sharma"
+              },
+              "profileImage": {
+                "type": "string",
+                "example": "https://example.com/photos/priya.jpg"
+              }
+            }
+          }
+        }
       }
     }
   },
@@ -5221,8 +5335,8 @@
     },
     "/calls/initiate": {
       "post": {
-        "summary": "Initiate a new audio or video call session",
-        "description": "Creates a CommunicationSession, sets the listener to BUSY, and returns a signed Agora RTC token plus channel info for the caller to join.",
+        "summary": "Initiate audio/video call session (Bidirectional: Customer <-> Listener)",
+        "description": "Supports both Customer calling Listener and Listener calling Customer with Redis-first signaling. Customer is always the payer and Listener is always the earner.",
         "tags": [
           "Calls"
         ],
@@ -5238,13 +5352,17 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "listenerId",
+                  "targetUserId",
                   "mode"
                 ],
                 "properties": {
+                  "targetUserId": {
+                    "type": "string",
+                    "description": "MongoDB ObjectId of the person being called (Listener or Customer)"
+                  },
                   "listenerId": {
                     "type": "string",
-                    "description": "MongoDB ObjectId of the target listener"
+                    "description": "Legacy alias for targetUserId when calling a listener"
                   },
                   "mode": {
                     "type": "string",
@@ -5252,7 +5370,7 @@
                       "AUDIO",
                       "VIDEO"
                     ],
-                    "description": "Type of call to initiate"
+                    "description": "Call mode"
                   }
                 }
               }
@@ -10024,8 +10142,8 @@
     },
     "/home/user-home": {
       "get": {
-        "summary": "User home feed (active listeners)",
-        "description": "Returns the home-screen list of active listeners a user can browse. \"Active\" means KYC-approved listeners whose user account is neither deleted nor blocked/disabled by an admin. Supports keyword search and filters by language, country, status, and rating, with pagination. Results are Redis-cached (60s) and version-invalidated for fast responses.",
+        "summary": "User home screen listener feed (Optimized lean cards)",
+        "description": "Returns curated list of active listener cards with minimal bandwidth payload (omitting bio, profilePhotos, categories, ratings arrays). Presence status is overlaid in real-time from Redis.",
         "tags": [
           "Home"
         ],
@@ -10145,120 +10263,7 @@
                         "docs": {
                           "type": "array",
                           "items": {
-                            "type": "object",
-                            "properties": {
-                              "_id": {
-                                "type": "string"
-                              },
-                              "userId": {
-                                "type": "string"
-                              },
-                              "bio": {
-                                "type": "string"
-                              },
-                              "profilePhotos": {
-                                "type": "array",
-                                "items": {
-                                  "type": "string"
-                                }
-                              },
-                              "categories": {
-                                "type": "array",
-                                "items": {
-                                  "type": "string"
-                                }
-                              },
-                              "chatRate": {
-                                "type": "number",
-                                "example": 5
-                              },
-                              "voiceRate": {
-                                "type": "number",
-                                "example": 8
-                              },
-                              "videoRate": {
-                                "type": "number",
-                                "example": 12
-                              },
-                              "avgRating": {
-                                "type": "number",
-                                "example": 4.5
-                              },
-                              "totalRatings": {
-                                "type": "integer",
-                                "example": 128
-                              },
-                              "totalSessions": {
-                                "type": "integer",
-                                "example": 340
-                              },
-                              "availability": {
-                                "type": "string",
-                                "enum": [
-                                  "ONLINE",
-                                  "OFFLINE",
-                                  "BUSY"
-                                ]
-                              },
-                              "isFeatured": {
-                                "type": "boolean"
-                              },
-                              "followersCount": {
-                                "type": "integer"
-                              },
-                              "anchorLevel": {
-                                "type": "integer"
-                              },
-                              "languageDetails": {
-                                "type": "array",
-                                "items": {
-                                  "type": "object",
-                                  "properties": {
-                                    "_id": {
-                                      "type": "string"
-                                    },
-                                    "name": {
-                                      "type": "string",
-                                      "example": "Hindi"
-                                    },
-                                    "code": {
-                                      "type": "string",
-                                      "example": "HI"
-                                    },
-                                    "flagUrl": {
-                                      "type": "string"
-                                    }
-                                  }
-                                }
-                              },
-                              "user": {
-                                "type": "object",
-                                "properties": {
-                                  "_id": {
-                                    "type": "string"
-                                  },
-                                  "firstName": {
-                                    "type": "string"
-                                  },
-                                  "lastName": {
-                                    "type": "string"
-                                  },
-                                  "profileImage": {
-                                    "type": "string"
-                                  },
-                                  "countryCode": {
-                                    "type": "string",
-                                    "example": "IN"
-                                  },
-                                  "isOnline": {
-                                    "type": "boolean"
-                                  },
-                                  "currentLevel": {
-                                    "type": "integer"
-                                  }
-                                }
-                              }
-                            }
+                            "$ref": "#/components/schemas/ListenerCardLean"
                           }
                         },
                         "meta": {
@@ -10650,7 +10655,7 @@
     },
     "/match/discover": {
       "get": {
-        "summary": "Discover listeners (rating & anchor level)",
+        "summary": "Discover matching listeners feed (Optimized lean cards)",
         "description": "Paginated listener discovery for customers. Defaults to the customer's country (`sameCountry=true`). Sort modes: combined (anchor level + rating), rating, anchor_level, featured, popular. Mongo results are Redis-cached (60s, version-invalidated); live availability is batch-overlaid from Redis presence on every response.",
         "tags": [
           "Match"

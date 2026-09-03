@@ -2,6 +2,7 @@ import connectionHandler from '../handlers/connection.handler.js';
 import chatRequestHandler from '../handlers/chat-request.handler.js';
 import sessionHandler from '../handlers/session.handler.js';
 import messageHandler from '../handlers/message.handler.js';
+import directChatHandler from '../handlers/direct-chat.handler.js';
 import callHandler from '../handlers/call.handler.js';
 import liveHandler from '../handlers/live.handler.js';
 
@@ -23,13 +24,16 @@ export const registerSocketEvents = (io, socket) => {
   // 3. Session Room operations
   sessionHandler.register(io, socket);
 
-  // 4. Real-time Messaging & typing indicators
+  // 4. Real-time Messaging & typing indicators (legacy session-based)
   messageHandler.register(io, socket);
 
-  // 5. Audio/Video Call signaling (Agora)
+  // 5. WhatsApp-Style Direct Chat (conversation-based, no session required)
+  directChatHandler.register(io, socket);
+
+  // 6. Audio/Video Call signaling (Agora)
   callHandler.register(io, socket);
 
-  // 6. Group Live Room broadcast
+  // 7. Group Live Room broadcast
   liveHandler.register(io, socket);
 };
 

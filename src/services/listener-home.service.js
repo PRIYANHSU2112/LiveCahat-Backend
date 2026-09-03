@@ -5,6 +5,7 @@ import listenerHomeRepository from '../repositories/listener-home.repository.js'
 import listenerInteractionService from './listener-interaction.service.js';
 import presenceService from './presence.service.js';
 import ApiError from '../utils/ApiError.js';
+import { KEYS } from '../utils/socket-redis-keys.util.js';
 import { getCache, setCache, getCacheVersion } from '../utils/redis.util.js';
 import {
   overlayPresenceOnCards,
@@ -62,14 +63,35 @@ class ListenerHomeService {
   }
 
   async _getOnlineUsers(listenerId, { page, limit, skip }) {
+    // 1. Get interacted customer IDs
     const interactedIds = await listenerInteractionService.getInteractedCustomerIds(listenerId);
 
-    if (!interactedIds.length) {
+    // 2. Also get globally online customer IDs from Redis set
+    let globalOnlineIds = [];
+    if (redisClient.isRedisAvailable) {
+      const redisIds = (await redisClient.smembers(KEYS.onlineCustomers())) || [];
+      globalOnlineIds = redisIds.map((id) => id.toString());
+    }
+
+    // 3. Fallback: find any online customers in MongoDB if needed
+    let mongoOnlineIds = [];
+    if (!interactedIds.length && !globalOnlineIds.length) {
+      const activeCustomers = await User.find({ type: 'CUSTOMER', isOnline: true, isDeleted: false })
+        .select('_id')
+        .limit(50)
+        .lean();
+      mongoOnlineIds = activeCustomers.map((u) => u._id.toString());
+    }
+
+    // Combine distinct IDs with interacted IDs given highest priority
+    const combinedIds = Array.from(new Set([...interactedIds, ...globalOnlineIds, ...mongoOnlineIds]));
+
+    if (!combinedIds.length) {
       return buildSectionResponse([], 0, page, limit);
     }
 
-    const statusMap = await presenceService.getStatusBatch(interactedIds);
-    const onlineIds = interactedIds.filter((id) => {
+    const statusMap = await presenceService.getStatusBatch(combinedIds);
+    const onlineIds = combinedIds.filter((id) => {
       const status = statusMap.get(id) || 'OFFLINE';
       return status !== 'OFFLINE';
     });
@@ -92,7 +114,7 @@ class ListenerHomeService {
     const users = await listenerHomeRepository.findCustomersByIdsOrdered(pageIds);
     const usersWithInteraction = users.map((user) => ({
       ...user,
-      lastInteractionAt: lastInteractionMap.get(user._id.toString()),
+      lastInteractionAt: lastInteractionMap.get(user._id.toString()) || null,
     }));
 
     const docs = overlayPresenceOnCards(

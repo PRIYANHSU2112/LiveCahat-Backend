@@ -66,6 +66,88 @@ components:
           type: integer
         totalPages:
           type: integer
+    ListenerCardLean:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 66d0c410b0284df0021c322b
+        userId:
+          type: string
+          example: 66d0c410b0284df0021c322a
+        videoRate:
+          type: number
+          example: 12
+        avgRating:
+          type: number
+          example: 4.8
+        liveStatus:
+          type: string
+          enum:
+            - ONLINE
+            - OFFLINE
+            - BUSY
+            - LIVE
+          example: ONLINE
+        availability:
+          type: string
+          enum:
+            - ONLINE
+            - OFFLINE
+            - BUSY
+          example: ONLINE
+        isOnline:
+          type: boolean
+          example: true
+        isFeatured:
+          type: boolean
+          example: false
+        isBoosted:
+          type: boolean
+          example: false
+        countryDetails:
+          type: object
+          properties:
+            _id:
+              type: string
+            name:
+              type: string
+              example: India
+            code:
+              type: string
+              example: IN
+            flagUrl:
+              type: string
+              example: https://flagcdn.com/w40/in.png
+        languageDetails:
+          type: array
+          items:
+            type: object
+            properties:
+              _id:
+                type: string
+              name:
+                type: string
+                example: Hindi
+              code:
+                type: string
+                example: HI
+              flagUrl:
+                type: string
+        user:
+          type: object
+          properties:
+            _id:
+              type: string
+            firstName:
+              type: string
+              example: Priya
+            lastName:
+              type: string
+              example: Sharma
+            profileImage:
+              type: string
+              example: https://example.com/photos/priya.jpg
 tags:
   - name: Auth
     description: Authentication endpoints
@@ -222,10 +304,7 @@ paths:
                   description: Optional; if sent must match request-otp. LISTENER type must be FEMALE only.
                 inviteCode:
                   type: string
-                  description: >-
-                    Optional invite/referral code. For CUSTOMER type: links referrer for coin bonuses on first purchase.
-                    For LISTENER type: links new listener to Agent (createdByAgentId) if code belongs to an Agent, or
-                    Direct Admin if code belongs to an Admin (or missing). Ignored for existing registered listeners.
+                  description: 'Optional invite/referral code. For CUSTOMER type: links referrer for coin bonuses on first purchase. For LISTENER type: links new listener to Agent (createdByAgentId) if code belongs to an Agent, or Direct Admin if code belongs to an Admin (or missing). Ignored for existing registered listeners.'
                 age:
                   type: integer
                   minimum: 18
@@ -266,9 +345,7 @@ paths:
   /auth/guest-login:
     post:
       summary: Guest login with age verification and device ID
-      description: >-
-        Creates a permanent guest account on first call. On subsequent calls with the same deviceId, restores the
-        existing session. User must be 18+.
+      description: Creates a permanent guest account on first call. On subsequent calls with the same deviceId, restores the existing session. User must be 18+.
       tags:
         - Auth
       requestBody:
@@ -322,9 +399,7 @@ paths:
   /auth/link-account:
     post:
       summary: Link phone number to guest account
-      description: >-
-        Verifies OTP and permanently links a phone number to the guest account, upgrading it to a full account. Request
-        OTP first via POST /auth/request-otp.
+      description: Verifies OTP and permanently links a phone number to the guest account, upgrading it to a full account. Request OTP first via POST /auth/request-otp.
       tags:
         - Auth
       security:
@@ -546,9 +621,7 @@ paths:
               - REJECTED
         - name: accountStatus
           in: query
-          description: >-
-            Account status filter: active (KYC approved & not blocked), blocked (user blocked), or pending (KYC
-            pending).
+          description: 'Account status filter: active (KYC approved & not blocked), blocked (user blocked), or pending (KYC pending).'
           schema:
             type: string
             enum:
@@ -843,9 +916,7 @@ paths:
   /listeners/availability/toggle:
     patch:
       summary: Toggle availability ONLINE ⇄ OFFLINE
-      description: >-
-        Listener-only. Flips current availability: ONLINE → OFFLINE, any other state → ONLINE. No request body. Syncs
-        the presence service.
+      description: 'Listener-only. Flips current availability: ONLINE → OFFLINE, any other state → ONLINE. No request body. Syncs the presence service.'
       tags:
         - Listeners
       security:
@@ -887,9 +958,7 @@ paths:
   /listeners/dashboard/overview:
     get:
       summary: Listener dashboard overview (period stats + growth chart)
-      description: >-
-        Listener-only. Period-filtered stat cards — coins earned (sessions + gifts), total coin (current wallet
-        balance), minutes, gifts — plus an earnings growth series (today→hourly, week→7 days, month→30 days).
+      description: Listener-only. Period-filtered stat cards — coins earned (sessions + gifts), total coin (current wallet balance), minutes, gifts — plus an earnings growth series (today→hourly, week→7 days, month→30 days).
       tags:
         - Listeners
       security:
@@ -2029,9 +2098,7 @@ paths:
   /follows/counts/{userId}:
     get:
       summary: Get follow counts for a user
-      description: >-
-        Get follower count, following count, and whether the user is a listener. Reads from denormalized fields for O(1)
-        performance.
+      description: Get follower count, following count, and whether the user is a listener. Reads from denormalized fields for O(1) performance.
       tags:
         - Follows
       security:
@@ -2154,9 +2221,7 @@ paths:
   /company/profile:
     get:
       summary: Get primary company profile
-      description: >-
-        Retrieve the main company details, links, policy documents, and logos. Publicly accessible. Policies are nested
-        per audience (app, listener, agent) with shared aboutUs/contactUs.
+      description: Retrieve the main company details, links, policy documents, and logos. Publicly accessible. Policies are nested per audience (app, listener, agent) with shared aboutUs/contactUs.
       tags:
         - Company
       responses:
@@ -2165,9 +2230,7 @@ paths:
   /company/legal/{audience}:
     get:
       summary: Get legal documents by audience
-      description: >-
-        Public endpoint returning privacy policy, terms, and (for app/listener) refund policy for the given audience,
-        plus shared aboutUs and contactUs.
+      description: Public endpoint returning privacy policy, terms, and (for app/listener) refund policy for the given audience, plus shared aboutUs and contactUs.
       tags:
         - Company
       parameters:
@@ -3041,9 +3104,7 @@ paths:
   /avatars/{avatarId}/set-profile:
     post:
       summary: Set an unlocked (or free) avatar as profile image
-      description: >-
-        Updates the authenticated user's profileImage to the selected avatar's image URL. The avatar must be FREE or
-        already unlocked by the user.
+      description: Updates the authenticated user's profileImage to the selected avatar's image URL. The avatar must be FREE or already unlocked by the user.
       tags:
         - Avatars
       security:
@@ -3262,10 +3323,8 @@ paths:
           description: Avatar deleted successfully
   /calls/initiate:
     post:
-      summary: Initiate a new audio or video call session
-      description: >-
-        Creates a CommunicationSession, sets the listener to BUSY, and returns a signed Agora RTC token plus channel
-        info for the caller to join.
+      summary: 'Initiate audio/video call session (Bidirectional: Customer <-> Listener)'
+      description: Supports both Customer calling Listener and Listener calling Customer with Redis-first signaling. Customer is always the payer and Listener is always the earner.
       tags:
         - Calls
       security:
@@ -3277,18 +3336,21 @@ paths:
             schema:
               type: object
               required:
-                - listenerId
+                - targetUserId
                 - mode
               properties:
+                targetUserId:
+                  type: string
+                  description: MongoDB ObjectId of the person being called (Listener or Customer)
                 listenerId:
                   type: string
-                  description: MongoDB ObjectId of the target listener
+                  description: Legacy alias for targetUserId when calling a listener
                 mode:
                   type: string
                   enum:
                     - AUDIO
                     - VIDEO
-                  description: Type of call to initiate
+                  description: Call mode
       responses:
         '201':
           description: Call session created
@@ -3327,9 +3389,7 @@ paths:
   /calls/token/{sessionId}:
     get:
       summary: Get or refresh Agora RTC token for an active session
-      description: >-
-        Returns a fresh Agora RTC token for the requesting user. The user must be a verified participant (caller or
-        listener) of the given session.
+      description: Returns a fresh Agora RTC token for the requesting user. The user must be a verified participant (caller or listener) of the given session.
       tags:
         - Calls
       security:
@@ -3781,9 +3841,7 @@ paths:
   /withdrawals:
     post:
       summary: Request a withdrawal (Listener or Agent)
-      description: >-
-        Reserves coins and creates a PENDING request. Listeners draw from their earned available balance and must have
-        kycStatus APPROVED; agents draw from their wallet coin balance (no KYC gate). Other user types receive 403.
+      description: Reserves coins and creates a PENDING request. Listeners draw from their earned available balance and must have kycStatus APPROVED; agents draw from their wallet coin balance (no KYC gate). Other user types receive 403.
       tags:
         - Withdrawals
       security:
@@ -4010,9 +4068,7 @@ paths:
   /notifications:
     get:
       summary: List my notifications (own only)
-      description: >-
-        Returns the authenticated account's own notifications — customers, listeners, agents and admins each only see
-        rows where they are the recipient. Supports filtering by status/type plus pagination.
+      description: Returns the authenticated account's own notifications — customers, listeners, agents and admins each only see rows where they are the recipient. Supports filtering by status/type plus pagination.
       tags:
         - Notifications
       security:
@@ -4243,9 +4299,7 @@ paths:
   /referrals/details:
     get:
       summary: Get my referral code, link, earnings, and commission table
-      description: >-
-        Returns the invite code, shareable invite link, referral stats, and the per-pack commission table (coins both
-        users earn when a referred friend first buys each pack).
+      description: Returns the invite code, shareable invite link, referral stats, and the per-pack commission table (coins both users earn when a referred friend first buys each pack).
       tags:
         - Referrals
       security:
@@ -4300,9 +4354,7 @@ paths:
   /referrals/apply:
     post:
       summary: Apply a referral code after signup
-      description: >-
-        Links the accounts. Customer-only. The bonus is paid to BOTH users when the referred friend makes their first
-        coin purchase (amount depends on the pack). Can only be used once per account.
+      description: Links the accounts. Customer-only. The bonus is paid to BOTH users when the referred friend makes their first coin purchase (amount depends on the pack). Can only be used once per account.
       tags:
         - Referrals
       security:
@@ -4512,9 +4564,7 @@ paths:
   /reviews/listeners/{listenerId}:
     post:
       summary: Create or update a review for a listener
-      description: >-
-        Requires the customer to have at least one COMPLETED session with the listener. One review per user per listener
-        (upsert).
+      description: Requires the customer to have at least one COMPLETED session with the listener. One review per user per listener (upsert).
       tags:
         - Reviews
       security:
@@ -4839,14 +4889,10 @@ paths:
           description: Admin only — filter by active status
       responses:
         '200':
-          description: >-
-            Stickers fetched successfully. For non-admin users each sticker includes `isUnlocked` (and `levelsToUnlock`
-            for LEVEL stickers).
+          description: Stickers fetched successfully. For non-admin users each sticker includes `isUnlocked` (and `levelsToUnlock` for LEVEL stickers).
     post:
       summary: Create a sticker (Admin)
-      description: >-
-        unlockType controls access: FREE (everyone), PAID (requires `price` coins, user unlocks via POST
-        /stickers/{id}/unlock), LEVEL (auto-unlocks at `requiredLevel`).
+      description: 'unlockType controls access: FREE (everyone), PAID (requires `price` coins, user unlocks via POST /stickers/{id}/unlock), LEVEL (auto-unlocks at `requiredLevel`).'
       tags:
         - Stickers
       security:
@@ -4990,9 +5036,7 @@ paths:
   /stickers/{id}/unlock:
     post:
       summary: Unlock (purchase) a PAID sticker with coins
-      description: >-
-        Deducts the sticker's coin price from the user's wallet and adds it to their unlocked stickers. Fails for FREE
-        stickers (no purchase needed) and LEVEL stickers (auto-unlock by level).
+      description: Deducts the sticker's coin price from the user's wallet and adds it to their unlocked stickers. Fails for FREE stickers (no purchase needed) and LEVEL stickers (auto-unlock by level).
       tags:
         - Stickers
       security:
@@ -5580,9 +5624,7 @@ paths:
   /search/listeners:
     get:
       summary: Search listeners (user-facing)
-      description: >-
-        Lets any authenticated user discover listeners by name, country, language, category, and availability. Only
-        returns KYC-approved, non-deleted, non-blocked listener profiles.
+      description: Lets any authenticated user discover listeners by name, country, language, category, and availability. Only returns KYC-approved, non-deleted, non-blocked listener profiles.
       tags:
         - Search
       security:
@@ -5781,10 +5823,7 @@ paths:
   /search/agent/listeners:
     get:
       summary: Agent listener search (agent-only)
-      description: >-
-        Lightweight search for listeners owned by the authenticated agent. Supports keyword search by name, username,
-        email, or mobile number, plus filters for country, account status, KYC status, and live availability. Returns a
-        compact payload optimized for top-bar autocomplete.
+      description: Lightweight search for listeners owned by the authenticated agent. Supports keyword search by name, username, email, or mobile number, plus filters for country, account status, KYC status, and live availability. Returns a compact payload optimized for top-bar autocomplete.
       tags:
         - Search
       security:
@@ -5847,10 +5886,7 @@ paths:
   /search/admin:
     get:
       summary: Admin global search (admin-only)
-      description: >-
-        Full-power search across all Users and Listener Profiles. Supports filtering by name, email, mobile, country,
-        language, user type, KYC status, availability, blocked/deleted status, registration date range, earnings range,
-        and minimum rating. ADMIN role required.
+      description: Full-power search across all Users and Listener Profiles. Supports filtering by name, email, mobile, country, language, user type, KYC status, availability, blocked/deleted status, registration date range, earnings range, and minimum rating. ADMIN role required.
       tags:
         - Search
       security:
@@ -5862,9 +5898,7 @@ paths:
             type: string
             minLength: 2
             maxLength: 100
-          description: >-
-            Keyword matched against first name, last name, full name, email, and mobile number (case-insensitive; min 2
-            chars when provided)
+          description: Keyword matched against first name, last name, full name, email, and mobile number (case-insensitive; min 2 chars when provided)
           example: alice
         - in: query
           name: type
@@ -6013,9 +6047,7 @@ paths:
           schema:
             type: boolean
             default: false
-          description: >-
-            When true, returns lightweight rows for admin typeahead (id, name, email, mobileNumber, type, profileImage,
-            isBlocked, kycStatus). Omits language population and extra fields.
+          description: When true, returns lightweight rows for admin typeahead (id, name, email, mobileNumber, type, profileImage, isBlocked, kycStatus). Omits language population and extra fields.
           example: true
       responses:
         '200':
@@ -6163,9 +6195,7 @@ paths:
   /listeners/admin/boost-config:
     get:
       summary: 'Admin: Get visibility boost configuration'
-      description: >-
-        Retrieves current visibility boost configuration including price in coins, boost duration in minutes, maximum
-        active slots limit, and master toggle status.
+      description: Retrieves current visibility boost configuration including price in coins, boost duration in minutes, maximum active slots limit, and master toggle status.
       tags:
         - Listeners
       security:
@@ -6208,9 +6238,7 @@ paths:
           description: Forbidden — ADMIN role required
     put:
       summary: 'Admin: Update visibility boost configuration'
-      description: >-
-        Updates platform visibility boost rules (pricing, duration, active slot limit, enable/disable toggle).
-        Automatically invalidates runtime Redis cache.
+      description: Updates platform visibility boost rules (pricing, duration, active slot limit, enable/disable toggle). Automatically invalidates runtime Redis cache.
       tags:
         - Listeners
       security:
@@ -6251,9 +6279,7 @@ paths:
   /listeners/admin/active-boosts:
     get:
       summary: 'Admin: Get all active boosted listeners queue'
-      description: >-
-        Retrieves the real-time queue of all currently active boosted listeners, ordered by slot sequence ascending
-        (Slot 1, Slot 2, ...).
+      description: Retrieves the real-time queue of all currently active boosted listeners, ordered by slot sequence ascending (Slot 1, Slot 2, ...).
       tags:
         - Listeners
       security:
@@ -6308,10 +6334,7 @@ paths:
   /listeners/visibility-boost:
     post:
       summary: 'Listener: Purchase visibility boost'
-      description: >-
-        Allows a KYC-approved listener to purchase a visibility boost using coins. Priority placement in Home API for
-        the configured duration (default 1 hour). Max active slots limit (default 20) is strictly enforced. Idempotent
-        requests supported via idempotencyKey.
+      description: Allows a KYC-approved listener to purchase a visibility boost using coins. Priority placement in Home API for the configured duration (default 1 hour). Max active slots limit (default 20) is strictly enforced. Idempotent requests supported via idempotencyKey.
       tags:
         - Listeners
       security:
@@ -6373,9 +6396,7 @@ paths:
   /listeners/visibility-boost/me:
     get:
       summary: 'Listener: Get my active visibility boost'
-      description: >-
-        Returns the authenticated listener's current active visibility boost status, remaining time, and assigned slot
-        sequence.
+      description: Returns the authenticated listener's current active visibility boost status, remaining time, and assigned slot sequence.
       tags:
         - Listeners
       security:
@@ -6385,12 +6406,8 @@ paths:
           description: Active boost fetched successfully
   /home/user-home:
     get:
-      summary: User home feed (active listeners)
-      description: >-
-        Returns the home-screen list of active listeners a user can browse. "Active" means KYC-approved listeners whose
-        user account is neither deleted nor blocked/disabled by an admin. Supports keyword search and filters by
-        language, country, status, and rating, with pagination. Results are Redis-cached (60s) and version-invalidated
-        for fast responses.
+      summary: User home screen listener feed (Optimized lean cards)
+      description: Returns curated list of active listener cards with minimal bandwidth payload (omitting bio, profilePhotos, categories, ratings arrays). Presence status is overlaid in real-time from Redis.
       tags:
         - Home
       security:
@@ -6442,9 +6459,7 @@ paths:
               - rating
               - newest
             default: featured
-          description: >-
-            Sort mode. featured = promoted first then most-followed/top-rated; popular = most followers/sessions; rating
-            = highest rated; newest = recently joined
+          description: Sort mode. featured = promoted first then most-followed/top-rated; popular = most followers/sessions; rating = highest rated; newest = recently joined
           example: popular
         - in: query
           name: page
@@ -6479,85 +6494,7 @@ paths:
                       docs:
                         type: array
                         items:
-                          type: object
-                          properties:
-                            _id:
-                              type: string
-                            userId:
-                              type: string
-                            bio:
-                              type: string
-                            profilePhotos:
-                              type: array
-                              items:
-                                type: string
-                            categories:
-                              type: array
-                              items:
-                                type: string
-                            chatRate:
-                              type: number
-                              example: 5
-                            voiceRate:
-                              type: number
-                              example: 8
-                            videoRate:
-                              type: number
-                              example: 12
-                            avgRating:
-                              type: number
-                              example: 4.5
-                            totalRatings:
-                              type: integer
-                              example: 128
-                            totalSessions:
-                              type: integer
-                              example: 340
-                            availability:
-                              type: string
-                              enum:
-                                - ONLINE
-                                - OFFLINE
-                                - BUSY
-                            isFeatured:
-                              type: boolean
-                            followersCount:
-                              type: integer
-                            anchorLevel:
-                              type: integer
-                            languageDetails:
-                              type: array
-                              items:
-                                type: object
-                                properties:
-                                  _id:
-                                    type: string
-                                  name:
-                                    type: string
-                                    example: Hindi
-                                  code:
-                                    type: string
-                                    example: HI
-                                  flagUrl:
-                                    type: string
-                            user:
-                              type: object
-                              properties:
-                                _id:
-                                  type: string
-                                firstName:
-                                  type: string
-                                lastName:
-                                  type: string
-                                profileImage:
-                                  type: string
-                                countryCode:
-                                  type: string
-                                  example: IN
-                                isOnline:
-                                  type: boolean
-                                currentLevel:
-                                  type: integer
+                          $ref: '#/components/schemas/ListenerCardLean'
                       meta:
                         type: object
                         properties:
@@ -6588,11 +6525,7 @@ paths:
   /home/listener-home:
     get:
       summary: Listener home feed (customers)
-      description: >-
-        Returns online, new, and popular customer sections for the logged-in listener. Online users are interacted
-        customers currently online. New users have never chatted or called this listener. Popular users are ranked by
-        currentLevel and totalXp. Presence is overlaid from Redis in real time. Socket events listener_home_presence and
-        listener_home_interaction push live updates.
+      description: Returns online, new, and popular customer sections for the logged-in listener. Online users are interacted customers currently online. New users have never chatted or called this listener. Popular users are ranked by currentLevel and totalXp. Presence is overlaid from Redis in real time. Socket events listener_home_presence and listener_home_interaction push live updates.
       tags:
         - Home
       security:
@@ -6722,9 +6655,7 @@ paths:
   /match/instant:
     post:
       summary: Instant partner match
-      description: >-
-        One-click match: debits admin-configured instantMatchFee on successful match (not on 404). No re-charge within
-        5-min sticky window. Does not start a session — use socket request_chat or POST /calls/initiate afterward.
+      description: 'One-click match: debits admin-configured instantMatchFee on successful match (not on 404). No re-charge within 5-min sticky window. Does not start a session — use socket request_chat or POST /calls/initiate afterward.'
       tags:
         - Match
       security:
@@ -6807,11 +6738,8 @@ paths:
           description: CUSTOMER role required
   /match/discover:
     get:
-      summary: Discover listeners (rating & anchor level)
-      description: >-
-        Paginated listener discovery for customers. Defaults to the customer's country (`sameCountry=true`). Sort modes:
-        combined (anchor level + rating), rating, anchor_level, featured, popular. Mongo results are Redis-cached (60s,
-        version-invalidated); live availability is batch-overlaid from Redis presence on every response.
+      summary: Discover matching listeners feed (Optimized lean cards)
+      description: 'Paginated listener discovery for customers. Defaults to the customer''s country (`sameCountry=true`). Sort modes: combined (anchor level + rating), rating, anchor_level, featured, popular. Mongo results are Redis-cached (60s, version-invalidated); live availability is batch-overlaid from Redis presence on every response.'
       tags:
         - Match
       security:

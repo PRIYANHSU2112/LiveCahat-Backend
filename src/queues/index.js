@@ -1,8 +1,12 @@
 import { notificationQueue } from './notification.queue.js';
+import { sessionPersistenceQueue } from './session-persistence.queue.js';
+import { chatPersistenceQueue } from './chat-persistence.queue.js';
 import logger from '../utils/logger.util.js';
 
 export const allQueues = [
   notificationQueue,
+  sessionPersistenceQueue,
+  chatPersistenceQueue,
 ];
 
 /**
@@ -19,3 +23,16 @@ export {
   enqueueLiveStartedNotification,
   enqueueBroadcastNotification,
 } from './notification.queue.js';
+
+export {
+  sessionPersistenceQueue,
+  enqueueSessionStarted,
+  enqueueSessionEnded,
+  enqueueSessionSegmentSwitched,
+} from './session-persistence.queue.js';
+
+export {
+  chatPersistenceQueue,
+  enqueueChatPersistence,
+} from './chat-persistence.queue.js';
+

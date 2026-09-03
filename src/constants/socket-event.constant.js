@@ -20,6 +20,16 @@ export const CLIENT_EVENTS = {
   CANCEL_CALL: 'cancel_call',
   END_CALL: 'end_call',
 
+  // ─── WhatsApp-Style Direct Messaging ──────────────────────────
+  /** Direct message (conversation-based, no active session required) */
+  CHAT_SEND_MESSAGE: 'chat:send_message',
+  /** Receiver ACKs delivery of offline-queued messages */
+  CHAT_ACK_DELIVERED: 'chat:ack_delivered',
+  /** User marks a conversation as read up to a specific messageId */
+  CHAT_READ_CONVERSATION: 'chat:read_conversation',
+  /** Direct typing indicator (conversation-based) */
+  CHAT_TYPING: 'chat:typing',
+
   // ─── Group Live Room ──────────────────────────────────────────
   LIVE_START: 'live:start',
   LIVE_END: 'live:end',
@@ -59,6 +69,24 @@ export const SERVER_EVENTS = {
   CALL_REQUEST_REJECTED: 'call_request_rejected',
   CALL_STARTED: 'call_started',
   CALL_ENDED: 'call_ended',
+
+  // ─── WhatsApp-Style Direct Messaging ──────────────────────────
+  /** Server ACK to sender: message accepted and dispatched (✓ single tick) */
+  CHAT_ACK_SENT: 'chat:ack_sent',
+  /** Incoming direct message to receiver */
+  CHAT_RECEIVE_MESSAGE: 'chat:receive_message',
+  /** Offline messages batch delivered on reconnect */
+  CHAT_OFFLINE_MESSAGES: 'chat:offline_messages',
+  /** Sender notified: message delivered to receiver (✓✓ double tick) */
+  CHAT_MESSAGE_DELIVERED: 'chat:message_delivered',
+  /** Sender notified: receiver read conversation up to messageId (✓✓ blue) */
+  CHAT_MESSAGES_READ: 'chat:messages_read',
+  /** Wallet insufficient for message cost */
+  CHAT_INSUFFICIENT_BALANCE: 'chat:insufficient_balance',
+  /** Direct typing indicator to receiver */
+  CHAT_DISPLAY_TYPING: 'chat:display_typing',
+  /** Chat session paused due to inactivity */
+  CHAT_PAUSED: 'chat:paused',
 
   // ─── Group Live Room ──────────────────────────────────────────
   LIVE_STARTED: 'live:started',

@@ -476,6 +476,36 @@ class ChatMessageService extends BaseService {
     }
     return messages;
   }
+  /**
+   * Get direct conversation messages between two users without requiring a sessionId.
+   * Supports cursor pagination with beforeMessageId.
+   */
+  async getDirectMessages(userId1, userId2, { limit = 50, beforeMessageId = null } = {}) {
+    const parsedLimit = Math.min(parseInt(limit, 10) || 50, 100);
+
+    const query = {
+      $or: [
+        { senderId: userId1, recipientId: userId2 },
+        { senderId: userId2, recipientId: userId1 },
+      ],
+      deletedAt: null,
+    };
+
+    if (beforeMessageId && mongoose.Types.ObjectId.isValid(beforeMessageId)) {
+      query._id = { $lt: new mongoose.Types.ObjectId(beforeMessageId) };
+    }
+
+    const messages = await chatMessageRepository.model
+      .find(query)
+      .sort({ _id: -1 }) // newest first for cursor pagination
+      .limit(parsedLimit)
+      .populate('senderId', 'firstName lastName profileImage')
+      .populate('recipientId', 'firstName lastName profileImage')
+      .lean();
+
+    // Return chronological order (oldest to newest)
+    return messages.reverse();
+  }
 }
 
 export default new ChatMessageService();

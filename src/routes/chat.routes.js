@@ -34,4 +34,10 @@ router.patch('/sessions/:sessionId/read', chatController.markAsRead);
 // Send media message (image, video, voice recording)
 router.post('/sessions/:sessionId/media', uploadChatAttachment, chatController.sendMediaMessage);
 
+/**
+ * GET /chats/direct/:partnerId/messages
+ * Direct WhatsApp-style conversation messages without sessionId.
+ */
+router.get('/direct/:partnerId/messages', chatController.getDirectMessages);
+
 export default router;

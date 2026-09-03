@@ -490,6 +490,12 @@ class ListenerService extends BaseService {
       })
     );
 
+    // Prioritize ONLINE and active listeners at the top
+    updatedData.sort((a, b) => {
+      const getPriority = (s) => (s === 'ONLINE' ? 1 : (s === 'LIVE' ? 2 : (s === 'BUSY' ? 3 : 4)));
+      return getPriority(a.availability) - getPriority(b.availability);
+    });
+
     const response = formatPaginatedResponse(updatedData, total, page, limit);
     return response;
   }

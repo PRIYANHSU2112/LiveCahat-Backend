@@ -156,6 +156,24 @@ class ChatController extends BaseController {
       markedCount: result.modifiedCount || 0,
     });
   });
+
+  /**
+   * GET /chats/direct/:partnerId/messages
+   * Get direct WhatsApp-style conversation messages with a partner without needing a sessionId.
+   */
+  getDirectMessages = catchAsync(async (req, res) => {
+    const { partnerId } = req.params;
+    if (!partnerId) {
+      return this.sendError(res, 400, 'Partner ID is required');
+    }
+
+    const messages = await chatMessageService.getDirectMessages(
+      req.user._id,
+      partnerId,
+      req.query
+    );
+    this.sendResponse(res, 200, 'Direct messages fetched successfully', { messages });
+  });
 }
 
 export default new ChatController();

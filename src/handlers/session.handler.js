@@ -100,11 +100,15 @@ class SessionHandler {
 
       const disconnectReason = userId === callerId ? 'CALLER_DISCONNECTED' : 'LISTENER_DISCONNECTED';
 
-      // Emit end event to all users in the session room
-      emitToSession(io, sessionId, SERVER_EVENTS.CHAT_ENDED, {
+      const endPayload = {
         sessionId,
         reason: disconnectReason,
-      });
+      };
+
+      // Emit end event to user rooms and session room
+      io.to(callerId).emit(SERVER_EVENTS.CHAT_ENDED, endPayload);
+      io.to(listenerId).emit(SERVER_EVENTS.CHAT_ENDED, endPayload);
+      emitToSession(io, sessionId, SERVER_EVENTS.CHAT_ENDED, endPayload);
 
       // Execute session tear-down, billing updates and availability resets
       await communicationSessionService.endSession(sessionId, disconnectReason);

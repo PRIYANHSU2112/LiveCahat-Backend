@@ -33,52 +33,66 @@ class CallService {
    * @param {string} mode        - 'AUDIO' or 'VIDEO'.
    * @returns {Object} { session, agoraToken, channelName, agoraUid, agoraAppId }
    */
-  async initiateCall(callerId, listenerId, mode) {
+  async initiateCall(callerId, targetUserId, mode, callerRole = 'CUSTOMER') {
     // 1. Validate mode
     if (!['AUDIO', 'VIDEO'].includes(mode)) {
       throw new ApiError(400, 'Mode must be AUDIO or VIDEO.');
     }
 
     // 2. Prevent self-call
-    if (callerId === listenerId) {
+    if (callerId === targetUserId) {
       throw new ApiError(400, 'You cannot call yourself.');
     }
 
-    // 3. Check active sessions to detect in-session upgrade vs new call
-    const [existingCallerSession, existingListenerSession] = await Promise.all([
+    // 3. Determine Payer (Customer) and Earner (Listener)
+    let customerId;
+    let listenerId;
+
+    if (callerRole === 'CUSTOMER') {
+      customerId = callerId;
+      listenerId = targetUserId;
+    } else if (callerRole === 'LISTENER') {
+      listenerId = callerId;
+      customerId = targetUserId;
+    } else {
+      throw new ApiError(400, 'Invalid caller role.');
+    }
+
+    // 4. Check active sessions to detect in-session upgrade vs new call
+    const [existingCallerSession, existingTargetSession] = await Promise.all([
       communicationSessionService.getActiveSessionForUser(callerId),
-      communicationSessionService.getActiveSessionForUser(listenerId),
+      communicationSessionService.getActiveSessionForUser(targetUserId),
     ]);
 
     let isUpgrade = false;
     let sharedSessionId = null;
 
-    if (existingCallerSession && existingListenerSession && existingCallerSession === existingListenerSession) {
+    if (existingCallerSession && existingTargetSession && existingCallerSession === existingTargetSession) {
       isUpgrade = true;
       sharedSessionId = existingCallerSession;
     } else {
-      const listenerStatus = await presenceService.getStatus(listenerId);
-      if (listenerStatus !== 'ONLINE' && listenerStatus !== 'LIVE') {
+      const targetStatus = await presenceService.getStatus(targetUserId);
+      if (targetStatus !== 'ONLINE' && targetStatus !== 'LIVE') {
         throw new ApiError(
           400,
-          listenerStatus === 'BUSY'
-            ? 'Listener is currently busy in another session.'
-            : 'Listener is offline.'
+          targetStatus === 'BUSY'
+            ? 'User is currently busy in another session.'
+            : 'User is offline.'
         );
       }
 
       if (existingCallerSession) {
         throw new ApiError(409, 'You are already in an active session.');
       }
-      if (existingListenerSession) {
-        throw new ApiError(409, 'Listener is currently busy.');
+      if (existingTargetSession) {
+        throw new ApiError(409, 'User is currently busy.');
       }
     }
 
-    // 4. Fetch listener profile and caller wallet in parallel
-    const [listenerProfile, callerWallet] = await Promise.all([
+    // 5. Fetch listener profile and customer wallet in parallel
+    const [listenerProfile, customerWallet] = await Promise.all([
       ListenerProfile.findOne({ userId: listenerId }).lean(),
-      Wallet.findOne({ userId: callerId }).lean(),
+      Wallet.findOne({ userId: customerId }).lean(),
     ]);
 
     if (!listenerProfile) {
@@ -96,13 +110,16 @@ class CallService {
       throw new ApiError(400, `Listener has not set a rate for ${mode} calls.`);
     }
 
-    // 5. Verify caller wallet balance ≥ 1 minute
-    const coinBalance = callerWallet ? callerWallet.coinBalance : 0;
+    // 6. Verify customer wallet balance ≥ 1 minute
+    const coinBalance = customerWallet ? customerWallet.coinBalance : 0;
     if (coinBalance < ratePerMinute) {
-      throw new ApiError(402, `Insufficient balance. You need at least ${ratePerMinute} coins to start a ${mode} call.`);
+      const msg = callerRole === 'CUSTOMER'
+        ? `Insufficient balance. You need at least ${ratePerMinute} coins to start a ${mode} call.`
+        : `Customer has insufficient balance to receive a ${mode} call.`;
+      throw new ApiError(402, msg);
     }
 
-    // 6. Switch segment if upgrade, otherwise start new session
+    // 7. Switch segment if upgrade, otherwise start new session
     let session;
     let sessionId;
 
@@ -112,7 +129,7 @@ class CallService {
       session = switched.session;
     } else {
       session = await communicationSessionService.startSession(
-        callerId,
+        customerId,
         listenerId,
         mode,
         ratePerMinute
@@ -120,7 +137,7 @@ class CallService {
       sessionId = session._id.toString();
     }
 
-    // 7. Generate Agora token for the caller
+    // 8. Generate Agora token for the caller
     const channelName = buildChannelName(sessionId);
     const agoraUid = stringToUid(callerId);
 
@@ -131,7 +148,7 @@ class CallService {
       3600
     );
 
-    logger.info(`[Call Service] Call initiated: caller=${callerId}, listener=${listenerId}, mode=${mode}, session=${sessionId}, isUpgrade=${isUpgrade}`);
+    logger.info(`[Call Service] Call initiated: caller=${callerId}, target=${targetUserId}, mode=${mode}, session=${sessionId}, isUpgrade=${isUpgrade}`);
 
     return {
       session,

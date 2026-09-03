@@ -1,4 +1,6 @@
 import { createNotificationWorker } from './notification.worker.js';
+import { createSessionPersistenceWorker } from './session-persistence.worker.js';
+import { createChatPersistenceWorker } from './chat-persistence.worker.js';
 import logger from '../utils/logger.util.js';
 
 let activeWorkers = [];
@@ -10,7 +12,9 @@ export const initializeWorkers = () => {
   logger.info('[BullMQ] Initializing background workers...');
 
   const notificationWorker = createNotificationWorker();
-  activeWorkers = [notificationWorker];
+  const sessionPersistenceWorker = createSessionPersistenceWorker();
+  const chatPersistenceWorker = createChatPersistenceWorker();
+  activeWorkers = [notificationWorker, sessionPersistenceWorker, chatPersistenceWorker];
 
   logger.info(`[BullMQ] ${activeWorkers.length} background worker(s) running.`);
   return activeWorkers;
@@ -29,3 +33,12 @@ export const closeAllWorkers = async () => {
 export {
   createNotificationWorker,
 } from './notification.worker.js';
+
+export {
+  createSessionPersistenceWorker,
+} from './session-persistence.worker.js';
+
+export {
+  createChatPersistenceWorker,
+} from './chat-persistence.worker.js';
+

@@ -72,5 +72,15 @@ communicationSessionSchema.index({ listenerId: 1, status: 1, createdAt: -1 });
 communicationSessionSchema.index({ status: 1, createdAt: -1 });
 communicationSessionSchema.index({ callerId: 1, status: 1, createdAt: -1 });
 
+// Partial unique indexes as the final database-level guarantee against duplicate ongoing sessions
+communicationSessionSchema.index(
+  { callerId: 1, status: 1 },
+  { unique: true, partialFilterExpression: { status: 'ONGOING' } }
+);
+communicationSessionSchema.index(
+  { listenerId: 1, status: 1 },
+  { unique: true, partialFilterExpression: { status: 'ONGOING' } }
+);
+
 const CommunicationSession = mongoose.model('CommunicationSession', communicationSessionSchema);
 export default CommunicationSession;

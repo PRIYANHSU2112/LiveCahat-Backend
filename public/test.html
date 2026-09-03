@@ -1119,9 +1119,13 @@
       <div class="subtitle">Simulate Customer & Listener workflows — Chat, Audio & Video Calls</div>
     </div>
     <div style="display: flex; align-items: center; gap: 10px;">
+      <button id="btnQuickLoginBoth"
+        style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; padding: 7px 16px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);">
+        ⚡ Auto-Login Customer & Listener
+      </button>
       <label style="font-size: 12px; font-weight: 600; color: var(--text-muted);">Backend URL:</label>
       <input type="text" id="backendUrl" value="http://127.0.0.1:5000"
-        style="width: 220px; padding: 6px 10px; font-size: 13px; background-color: rgba(15, 23, 42, 0.9);">
+        style="width: 200px; padding: 6px 10px; font-size: 13px; background-color: rgba(15, 23, 42, 0.9);">
     </div>
   </header>
 
@@ -1183,28 +1187,27 @@
             </div>
           </div>
 
-          <div id="requestArea" style="display: none;">
-            <div class="test-helper-card">
-              Selected Listener: <strong id="selectedListenerName">None</strong><br>
-              Listener ID: <strong id="selectedListenerId">None</strong><br>
-              Rate: <strong id="selectedListenerRate">0</strong> coins/min
-            </div>
-            <div class="test-helper-card" style="margin-top: 8px;">
-              Report APIs: <strong>GET /api/v1/reports/reasons</strong> for checkbox options, then
-              <strong>POST /api/v1/reports</strong> with <code>targetId</code>, <code>reasonIds[]</code>,
-              and <code>message</code>. Admin manages reasons at <strong>/api/v1/reports/reasons/admin</strong>.
-            </div>
-            <button class="btn-success" style="width: 100%; margin-top: 12px; padding: 12px;" id="btnRequestChat">
-              🚀 Request 1-to-1 Chat
+          <div id="requestArea" style="display: none; background: rgba(37, 211, 102, 0.08); border: 1px solid rgba(37, 211, 102, 0.3); border-radius: 12px; padding: 12px; margin-top: 8px;">
+            <div style="font-size: 13px; font-weight: 700; color: #25D366;">Selected Listener: <span id="selectedListenerName">None</span></div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px;">ID: <span id="selectedListenerId" style="font-family: monospace;">None</span> | Rate: <strong id="selectedListenerRate">0</strong> coins/min</div>
+            <button class="btn-primary"
+              style="width: 100%; margin-top: 4px; padding: 10px; font-weight: 700; background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);"
+              id="btnCustomerDirectChat">
+              💬 Open Instant Chat
             </button>
           </div>
 
-          <div id="customerSessionStatusBanner" class="request-banner" style="display: none;">
-            <div class="banner-text" id="customerBannerText">Request sent. Waiting for listener response... (30s
-              timeout)</div>
+          <div id="customerIncomingCallBanner" class="request-banner"
+            style="display: none; border-color: #818cf8; background: linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(139, 92, 246, 0.15) 100%);">
+            <div class="banner-text">
+              📞 <strong>Incoming <span id="customerIncomingCallMode">AUDIO</span> Call from Listener!</strong><br>
+              Listener: <strong id="customerIncomingCallListenerName">Listener</strong><br>
+              Listener ID: <strong id="customerIncomingCallListenerId">--</strong><br>
+              Rate: <strong id="customerIncomingCallRateVal">0</strong> coins/min
+            </div>
             <div class="banner-actions">
-              <button class="btn-danger" style="width: 100%; font-size: 12px; padding: 6px 12px;"
-                id="btnCancelRequest">Cancel</button>
+              <button class="btn-success" style="flex: 1;" id="btnCustomerAcceptIncomingCall">Accept Call</button>
+              <button class="btn-danger" style="flex: 1;" id="btnCustomerRejectIncomingCall">Reject</button>
             </div>
           </div>
 
@@ -1361,6 +1364,45 @@
             </div>
           </div>
 
+          <!-- Listener Outbound Call to Online Customer Card -->
+          <div id="listenerCallCustomerArea"
+            style="display: none; background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(99, 102, 241, 0.4); border-radius: 12px; padding: 14px; margin-top: 4px;">
+            <div style="font-size: 13px; font-weight: 700; color: #a5b4fc; margin-bottom: 6px;">📞 Call Selected Online
+              Customer</div>
+            <div style="font-size: 13px;">Customer: <strong id="listenerSelectedCustomerName">--</strong></div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 10px;">User ID: <span
+                id="listenerSelectedCustomerId" style="font-family: monospace; color: #fff;">--</span></div>
+
+            <div class="call-mode-selector" style="margin-bottom: 10px;">
+              <label>
+                <input type="radio" name="listenerOutboundCallMode" value="AUDIO" checked>
+                <span>🎤 Audio Call</span>
+              </label>
+              <label>
+                <input type="radio" name="listenerOutboundCallMode" value="VIDEO">
+                <span>📹 Video Call</span>
+              </label>
+            </div>
+
+            <div style="display: flex; gap: 8px;">
+              <button class="btn-call" style="flex: 1; padding: 10px; font-size: 13px;"
+                id="btnListenerInitiateCallCustomer">📞 Start Call</button>
+              <button class="btn-primary"
+                style="flex: 1; padding: 10px; font-size: 13px; font-weight: 700; background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);"
+                id="btnListenerDirectChat">💬 Instant Chat</button>
+              <button class="btn-secondary" style="padding: 10px 14px; font-size: 12px;"
+                id="btnListenerCloseCallArea">Cancel</button>
+            </div>
+          </div>
+
+          <div id="listenerCallWaitingBanner" class="request-banner" style="display: none; border-color: #818cf8;">
+            <div class="banner-text">📞 <strong>Calling Customer...</strong> Waiting for response (30s timeout)</div>
+            <div class="banner-actions">
+              <button class="btn-danger" style="width: 100%; font-size: 12px; padding: 8px;"
+                id="btnListenerCancelOutboundCall">Cancel Call</button>
+            </div>
+          </div>
+
           <div>
             <div
               style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; margin-top: 10px;">
@@ -1375,18 +1417,6 @@
             </div>
           </div>
 
-          <div id="incomingRequestBanner" class="request-banner" style="display: none;">
-            <div class="banner-text">
-              ⚠️ <strong>Incoming Chat Request!</strong><br>
-              Caller Name: <strong id="incomingCallerName">Caller</strong><br>
-              Caller ID: <strong id="incomingCallerId">--</strong><br>
-              Rate: <strong id="incomingRateVal">0</strong> coins/min
-            </div>
-            <div class="banner-actions">
-              <button class="btn-success" style="flex: 1;" id="btnAcceptChat">Accept</button>
-              <button class="btn-danger" style="flex: 1;" id="btnRejectChat">Reject</button>
-            </div>
-          </div>
 
           <div id="incomingCallBanner" class="request-banner"
             style="display: none; border-color: #818cf8; background: linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(139, 92, 246, 0.15) 100%);">
@@ -1518,24 +1548,29 @@
         </div>
 
         <div class="auth-section">
-          <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">CALLER JWT TOKEN</label>
+          <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">CALLER JWT TOKEN (CUSTOMER OR
+            LISTENER)</label>
           <div class="input-row">
-            <input type="text" id="callerToken" placeholder="Paste customer JWT token here...">
+            <input type="text" id="callerToken" placeholder="Paste Customer or Listener JWT token...">
             <button id="btnConnectCaller">Connect</button>
           </div>
         </div>
 
         <div class="workspace-area" id="callerWorkspace" style="display: none;">
-          <!-- Fetch Listeners for call -->
+          <!-- Fetch Directory for call -->
           <div>
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <label style="font-size: 13px; font-weight: 600;">Listeners Directory</label>
-              <button class="btn-secondary" style="padding: 4px 8px; font-size: 11px;"
+              <select id="callTargetType"
+                style="padding: 5px 8px; font-size: 12px; max-width: 230px; background: rgba(15, 23, 42, 0.9);">
+                <option value="LISTENERS">🎧 Listeners (Caller = Customer)</option>
+                <option value="CUSTOMERS">🧑‍💼 Online Customers (Caller = Listener)</option>
+              </select>
+              <button class="btn-secondary" style="padding: 4px 10px; font-size: 11px;"
                 id="btnLoadCallListeners">Refresh</button>
             </div>
             <div class="listeners-card-list" id="callListenersList">
               <div style="text-align: center; font-size: 13px; color: var(--text-muted); padding: 20px;">Click 'Refresh'
-                to load listeners.</div>
+                to load directory.</div>
             </div>
           </div>
 
@@ -1635,16 +1670,16 @@
             Availability: <strong style="color: var(--success);">ONLINE</strong>
           </div>
 
-          <!-- Incoming call banner -->
-          <div id="incomingCallBanner" class="call-request-banner">
+          <!-- Incoming call banner in Call Tab -->
+          <div id="callTabReceiverIncomingBanner" class="call-request-banner" style="display: none;">
             <div style="font-size: 16px; font-weight: 700;">📞 Incoming Call!</div>
-            <div class="call-info-row">Caller: <strong id="incomingCallerCallName">--</strong></div>
-            <div class="call-info-row">Mode: <strong id="incomingCallMode">--</strong></div>
-            <div class="call-info-row">Rate: <strong id="incomingCallRate">0</strong> coins/min</div>
+            <div class="call-info-row">Caller: <strong id="callTabIncomingCallerCallName">--</strong></div>
+            <div class="call-info-row">Mode: <strong id="callTabIncomingCallMode">--</strong></div>
+            <div class="call-info-row">Rate: <strong id="callTabIncomingCallRate">0</strong> coins/min</div>
             <div class="banner-actions">
-              <button class="btn-success" style="flex: 1; padding: 12px; font-size: 14px;" id="btnAcceptCall">✅
+              <button class="btn-success" style="flex: 1; padding: 12px; font-size: 14px;" id="btnCallTabAcceptCall">✅
                 Accept</button>
-              <button class="btn-danger" style="flex: 1; padding: 12px; font-size: 14px;" id="btnRejectCall">❌
+              <button class="btn-danger" style="flex: 1; padding: 12px; font-size: 14px;" id="btnCallTabRejectCall">❌
                 Reject</button>
             </div>
           </div>
@@ -1920,6 +1955,8 @@
     let currentSelectedListener = null;
     let currentIncomingCallerId = null;
     let recentSessionsByParticipant = {};
+    let customerDirectPartnerId = null;
+    let listenerDirectPartnerId = null;
 
     // In-Session (Tab 1) Agora Real-Time Streaming State
     let customerInSessionAgoraClient = null;
@@ -2010,6 +2047,49 @@
     // TAB 1: CHAT TESTING (original logic preserved)
     // ═══════════════════════════════════════════════════════════
 
+    // Quick Auto-Login Customer & Listener
+    document.getElementById('btnQuickLoginBoth')?.addEventListener('click', async () => {
+      const btn = document.getElementById('btnQuickLoginBoth');
+      btn.disabled = true;
+      btn.textContent = '⏳ Logging in...';
+      const backendUrl = getBackendUrl();
+
+      try {
+        async function fetchToken(type, mobile) {
+          await fetch(`${backendUrl}/api/v1/auth/request-otp`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type, mobileNumber: mobile, countryCode: '+91', age: 25, gender: type === 'LISTENER' ? 'FEMALE' : 'MALE' })
+          });
+          const vRes = await fetch(`${backendUrl}/api/v1/auth/verify-otp`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type, mobileNumber: mobile, otp: '123456', countryCode: '+91' })
+          });
+          const vData = await vRes.json();
+          return vData.data?.token;
+        }
+
+        const customerToken = await fetchToken('CUSTOMER', '9999000001');
+        const listenerToken = await fetchToken('LISTENER', '8888000001');
+
+        if (customerToken) {
+          document.getElementById('customerToken').value = customerToken;
+          document.getElementById('btnConnectCustomer').click();
+        }
+        if (listenerToken) {
+          document.getElementById('listenerToken').value = listenerToken;
+          document.getElementById('btnConnectListener').click();
+        }
+        btn.textContent = '✅ Auto-Logged In!';
+        setTimeout(() => { btn.disabled = false; btn.textContent = '⚡ Auto-Login Customer & Listener'; }, 2000);
+      } catch (err) {
+        alert('Auto login failed: ' + err.message);
+        btn.disabled = false;
+        btn.textContent = '⚡ Auto-Login Customer & Listener';
+      }
+    });
+
     // Connect Customer Socket
     document.getElementById('btnConnectCustomer').addEventListener('click', () => {
       const token = document.getElementById('customerToken').value.trim();
@@ -2025,6 +2105,7 @@
         document.getElementById('customerPrompt').style.display = 'none';
         document.getElementById('customerWorkspace').style.display = 'flex';
         appendLog('Customer', `Connected. Socket ID: ${customerSocket.id}`);
+        wireDirectChatEvents(customerSocket, 'customer');
         document.getElementById('btnLoadListeners').click();
         fetchRecentSessions('customer');
       });
@@ -2034,36 +2115,73 @@
         appendLog('Customer', 'Disconnected.');
       });
 
-      customerSocket.on('chat_request_accepted', (data) => {
-        appendLog('Customer', `Chat accepted! Session: ${data.sessionId}`);
+      customerSocket.on('chat_started', (data) => {
+        appendLog('Customer', `💬 Active Session Segment Started: ${data.sessionId} (Rate: ${data.ratePerMinute}/min)`);
         activeCustomerSessionId = data.sessionId;
-        document.getElementById('customerSessionStatusBanner').style.display = 'none';
-        document.getElementById('requestArea').style.display = 'none';
-        document.getElementById('customerSessionIdVal').textContent = data.sessionId;
-        document.getElementById('customerChatBox').style.display = 'flex';
-        document.getElementById('customerMessages').innerHTML = '';
-        document.getElementById('customerMsgInput').disabled = false;
-        document.getElementById('btnCustomerSend').disabled = false;
+        const sessEl = document.getElementById('customerSessionIdVal');
+        if (sessEl) sessEl.textContent = data.sessionId;
+        const badgeEl = document.getElementById('customerActiveSegmentBadge');
+        if (badgeEl) {
+          badgeEl.textContent = '💬 CHAT (Active)';
+          badgeEl.className = 'segment-badge segment-chat';
+          badgeEl.style.background = '';
+        }
         customerSocket.emit('join_session', { sessionId: data.sessionId });
-        fetchChatHistory('customer', token, data.sessionId);
       });
 
-      customerSocket.on('chat_request_rejected', (data) => {
-        appendLog('Customer', `Chat rejected: ${data.reason}`);
-        alert(`Request rejected: ${data.reason}`);
-        document.getElementById('customerSessionStatusBanner').style.display = 'none';
-        document.getElementById('requestArea').style.display = 'flex';
+      customerSocket.on('chat:paused', (data) => {
+        appendLog('Customer', `⏸️ ${data.message || 'Chat paused due to inactivity'}`);
+        const badgeEl = document.getElementById('customerActiveSegmentBadge');
+        if (badgeEl) {
+          badgeEl.textContent = '⏸️ CHAT (Paused - Idle)';
+          badgeEl.style.background = '#f59e0b';
+        }
       });
 
       customerSocket.on('chat_ended', (data) => {
-        appendLog('Customer', `Chat ended. Reason: ${data.reason}`);
-        appendMsg('customerMessages', 'System', '--- Chat session has ended ---', false);
-        document.getElementById('customerMsgInput').disabled = true;
-        document.getElementById('btnCustomerSend').disabled = true;
+        appendLog('Customer', `Chat session settled & ended (${data.reason}).`);
+        appendMsg('customerMessages', 'System', `--- Chat session ended (${data.reason}) ---`, false);
+        activeCustomerSessionId = null;
+        const sessEl = document.getElementById('customerSessionIdVal');
+        if (sessEl) sessEl.textContent = 'DIRECT CHAT (WhatsApp)';
+        const badgeEl = document.getElementById('customerActiveSegmentBadge');
+        if (badgeEl) {
+          badgeEl.textContent = '💬 CHAT';
+          badgeEl.className = 'segment-badge segment-chat';
+          badgeEl.style.background = '';
+        }
         document.getElementById('customerCallStatusNotice').style.display = 'none';
         document.getElementById('btnCustomerHangupCall').style.display = 'none';
         stopInSessionAgora('customer');
         fetchRecentSessions('customer');
+      });
+
+      customerSocket.on('incoming_call_request', (data) => {
+        appendLog('Customer', `📞 Incoming call from Listener ${data.callerId} (${data.mode}, Rate: ${data.ratePerMinute}/min)`);
+        window.currentIncomingListenerCallData = data;
+        document.getElementById('customerIncomingCallMode').textContent = data.mode;
+        document.getElementById('customerIncomingCallListenerName').textContent = `${data.callerInfo?.firstName || ''} ${data.callerInfo?.lastName || ''}`.trim() || 'Listener';
+        document.getElementById('customerIncomingCallListenerId').textContent = data.callerId;
+        document.getElementById('customerIncomingCallRateVal').textContent = data.ratePerMinute;
+        document.getElementById('customerIncomingCallBanner').style.display = 'flex';
+      });
+
+      customerSocket.on('call_started', async (data) => {
+        appendLog('Customer', `📞 Call started! (${data.mode}) Agora channel: ${data.agora?.channelName}`);
+        document.getElementById('customerIncomingCallBanner').style.display = 'none';
+        window.currentIncomingListenerCallData = null;
+        activeCustomerSessionId = data.sessionId;
+        const badge = document.getElementById('customerActiveSegmentBadge');
+        badge.textContent = data.mode === 'VIDEO' ? '📹 VIDEO' : '📞 AUDIO';
+        badge.className = `segment-badge ${data.mode === 'VIDEO' ? 'segment-video' : 'segment-audio'}`;
+        document.getElementById('customerCallStatusNotice').style.display = 'flex';
+        document.getElementById('customerCallStatusText').textContent = `${data.mode} Call Active`;
+        document.getElementById('customerAgoraChannel').textContent = data.agora?.channelName || data.sessionId;
+        document.getElementById('btnCustomerHangupCall').style.display = 'inline-block';
+        document.getElementById('customerChatBox').style.display = 'flex';
+        if (data.agora) {
+          await startInSessionAgora('customer', data.agora, data.mode, data.sessionId);
+        }
       });
 
       customerSocket.on('call_request_accepted', async (data) => {
@@ -2090,6 +2208,7 @@
       customerSocket.on('call_ended', (data) => {
         appendLog('Customer', `📞 Call ended (${data.reason}). Switched to chat: ${data.switchedToChat}`);
         document.getElementById('customerCallStatusNotice').style.display = 'none';
+        document.getElementById('customerIncomingCallBanner').style.display = 'none';
         document.getElementById('btnCustomerHangupCall').style.display = 'none';
         document.getElementById('btnCustomerUpgradeAudio').style.display = 'inline-flex';
         document.getElementById('btnCustomerUpgradeVideo').style.display = 'inline-flex';
@@ -2114,15 +2233,9 @@
           document.getElementById('btnLoadListeners').click();
         }
         if (currentSelectedListener === data.listenerId) {
-          const requestBtn = document.getElementById('btnRequestChat');
-          if (data.status !== 'ONLINE') {
-            requestBtn.disabled = true;
-            requestBtn.textContent = `Listener is ${data.status}`;
-            requestBtn.className = 'btn-secondary';
-          } else {
-            requestBtn.disabled = false;
-            requestBtn.textContent = '🚀 Request 1-to-1 Chat';
-            requestBtn.className = 'btn-success';
+          const directBtn = document.getElementById('btnCustomerDirectChat');
+          if (directBtn) {
+            directBtn.textContent = data.status === 'ONLINE' ? '💬 Open Instant Chat' : `💬 Chat (Listener is ${data.status})`;
           }
         }
       });
@@ -2136,6 +2249,29 @@
       customerSocket.on('balance_warning', (data) => { appendLog('Customer', `⚠️ ${data.message}`); alert(`⚠️ ${data.message}`); });
       customerSocket.on('socket_error', (data) => { appendLog('Customer', `❌ ${data.message}`); alert(`Error: ${data.message}`); });
       customerSocket.on('connect_error', (err) => { appendLog('Customer', `❌ Handshake: ${err.message}`); alert(`Rejected: ${err.message}`); });
+    });
+
+    // Customer actions on incoming call from Listener
+    document.getElementById('btnCustomerAcceptIncomingCall')?.addEventListener('click', () => {
+      if (!customerSocket || !window.currentIncomingListenerCallData) return;
+      appendLog('Customer', `Accepting call from Listener ${window.currentIncomingListenerCallData.callerId}...`);
+      customerSocket.emit('accept_call', {
+        callRequestId: window.currentIncomingListenerCallData.callRequestId,
+        callerId: window.currentIncomingListenerCallData.callerId,
+      });
+      document.getElementById('customerIncomingCallBanner').style.display = 'none';
+    });
+
+    document.getElementById('btnCustomerRejectIncomingCall')?.addEventListener('click', () => {
+      if (!customerSocket || !window.currentIncomingListenerCallData) return;
+      customerSocket.emit('reject_call', {
+        callRequestId: window.currentIncomingListenerCallData.callRequestId,
+        callerId: window.currentIncomingListenerCallData.callerId,
+        reason: 'Declined by customer.',
+      });
+      document.getElementById('customerIncomingCallBanner').style.display = 'none';
+      window.currentIncomingListenerCallData = null;
+      appendLog('Customer', 'Rejected incoming call from listener.');
     });
 
     // Connect Listener Socket
@@ -2154,6 +2290,7 @@
         document.getElementById('listenerWorkspace').style.display = 'flex';
         document.getElementById('listenerAvailabilityStatus').innerHTML = `Availability state: <strong style="color: var(--success);">ONLINE</strong>`;
         appendLog('Listener', `Connected. Socket ID: ${listenerSocket.id}`);
+        wireDirectChatEvents(listenerSocket, 'listener');
         fetchRecentSessions('listener');
         fetchListenerHome();
       });
@@ -2164,24 +2301,42 @@
         appendLog('Listener', 'Disconnected.');
       });
 
-      listenerSocket.on('incoming_chat_request', (data) => {
-        appendLog('Listener', `⚠️ Chat request from ${data.callerId}`);
-        currentIncomingCallerId = data.callerId;
-        document.getElementById('incomingCallerName').textContent = `${data.callerInfo.firstName} ${data.callerInfo.lastName}`;
-        document.getElementById('incomingCallerId').textContent = data.callerId;
-        document.getElementById('incomingRateVal').textContent = data.chatRate;
-        document.getElementById('incomingRequestBanner').style.display = 'flex';
-      });
 
       listenerSocket.on('incoming_call_request', (data) => {
         appendLog('Listener', `📞 Incoming ${data.mode} call request from ${data.callerId} (Rate: ${data.ratePerMinute}/min)`);
         currentIncomingCallerId = data.callerId;
+        window.currentIncomingCallData = data;
         document.getElementById('incomingCallMode').textContent = data.mode;
         document.getElementById('incomingCallCallerName').textContent = `${data.callerInfo?.firstName || ''} ${data.callerInfo?.lastName || ''}`.trim() || 'Customer';
         document.getElementById('incomingCallCallerId').textContent = data.callerId;
         document.getElementById('incomingCallRateVal').textContent = data.ratePerMinute;
         document.getElementById('incomingCallUpgradeBadge').style.display = data.isUpgrade ? 'inline-block' : 'none';
         document.getElementById('incomingCallBanner').style.display = 'flex';
+      });
+
+      listenerSocket.on('call_request_accepted', async (data) => {
+        appendLog('Listener', `📞 Customer accepted call! (${data.mode}) Agora channel: ${data.agora?.channelName}`);
+        document.getElementById('listenerCallWaitingBanner').style.display = 'none';
+        document.getElementById('listenerCallCustomerArea').style.display = 'none';
+        activeListenerSessionId = data.sessionId;
+        const badge = document.getElementById('listenerActiveSegmentBadge');
+        badge.textContent = data.mode === 'VIDEO' ? '📹 VIDEO' : '📞 AUDIO';
+        badge.className = `segment-badge ${data.mode === 'VIDEO' ? 'segment-video' : 'segment-audio'}`;
+        document.getElementById('listenerCallStatusNotice').style.display = 'flex';
+        document.getElementById('listenerCallStatusText').textContent = `${data.mode} Call Active`;
+        document.getElementById('listenerAgoraChannel').textContent = data.agora?.channelName || data.sessionId;
+        document.getElementById('btnListenerHangupCall').style.display = 'inline-block';
+        document.getElementById('listenerChatBox').style.display = 'flex';
+        if (data.agora) {
+          await startInSessionAgora('listener', data.agora, data.mode, data.sessionId);
+        }
+      });
+
+      listenerSocket.on('call_request_rejected', (data) => {
+        appendLog('Listener', `❌ Call rejected by customer: ${data.reason}`);
+        alert(`Call rejected: ${data.reason}`);
+        document.getElementById('listenerCallWaitingBanner').style.display = 'none';
+        document.getElementById('listenerCallCustomerArea').style.display = 'block';
       });
 
       listenerSocket.on('call_started', async (data) => {
@@ -2203,6 +2358,7 @@
         appendLog('Listener', `📞 Call ended (${data.reason}). Switched to chat: ${data.switchedToChat}`);
         document.getElementById('listenerCallStatusNotice').style.display = 'none';
         document.getElementById('btnListenerHangupCall').style.display = 'none';
+        document.getElementById('listenerCallWaitingBanner').style.display = 'none';
         const badge = document.getElementById('listenerActiveSegmentBadge');
         badge.textContent = '💬 CHAT';
         badge.className = 'segment-badge segment-chat';
@@ -2215,25 +2371,40 @@
       });
 
       listenerSocket.on('chat_started', (data) => {
-        appendLog('Listener', `Chat started! Session: ${data.sessionId}`);
+        appendLog('Listener', `💬 Active Session Segment Started: ${data.sessionId} (Rate: ${data.ratePerMinute}/min)`);
         activeListenerSessionId = data.sessionId;
-        document.getElementById('listenerAvailabilityStatus').innerHTML = `Availability state: <strong style="color: var(--warning);">BUSY</strong>`;
-        document.getElementById('incomingRequestBanner').style.display = 'none';
-        document.getElementById('listenerSessionIdVal').textContent = data.sessionId;
-        document.getElementById('listenerChatBox').style.display = 'flex';
-        document.getElementById('listenerMessages').innerHTML = '';
-        document.getElementById('listenerMsgInput').disabled = false;
-        document.getElementById('btnListenerSend').disabled = false;
+        const sessEl = document.getElementById('listenerSessionIdVal');
+        if (sessEl) sessEl.textContent = data.sessionId;
+        const badgeEl = document.getElementById('listenerActiveSegmentBadge');
+        if (badgeEl) {
+          badgeEl.textContent = '💬 CHAT (Active)';
+          badgeEl.className = 'segment-badge segment-chat';
+          badgeEl.style.background = '';
+        }
         listenerSocket.emit('join_session', { sessionId: data.sessionId });
-        fetchChatHistory('listener', token, data.sessionId);
+      });
+
+      listenerSocket.on('chat:paused', (data) => {
+        appendLog('Listener', `⏸️ ${data.message || 'Chat paused due to inactivity'}`);
+        const badgeEl = document.getElementById('listenerActiveSegmentBadge');
+        if (badgeEl) {
+          badgeEl.textContent = '⏸️ CHAT (Paused - Idle)';
+          badgeEl.style.background = '#f59e0b';
+        }
       });
 
       listenerSocket.on('chat_ended', (data) => {
-        appendLog('Listener', `Chat ended. Reason: ${data.reason}`);
-        document.getElementById('listenerAvailabilityStatus').innerHTML = `Availability state: <strong style="color: var(--success);">ONLINE</strong>`;
-        appendMsg('listenerMessages', 'System', '--- Chat session has ended ---', false);
-        document.getElementById('listenerMsgInput').disabled = true;
-        document.getElementById('btnListenerSend').disabled = true;
+        appendLog('Listener', `Chat session settled & ended (${data.reason}).`);
+        appendMsg('listenerMessages', 'System', `--- Chat session ended (${data.reason}) ---`, false);
+        activeListenerSessionId = null;
+        const sessEl = document.getElementById('listenerSessionIdVal');
+        if (sessEl) sessEl.textContent = 'DIRECT CHAT (WhatsApp)';
+        const badgeEl = document.getElementById('listenerActiveSegmentBadge');
+        if (badgeEl) {
+          badgeEl.textContent = '💬 CHAT';
+          badgeEl.className = 'segment-badge segment-chat';
+          badgeEl.style.background = '';
+        }
         document.getElementById('listenerCallStatusNotice').style.display = 'none';
         document.getElementById('btnListenerHangupCall').style.display = 'none';
         stopInSessionAgora('listener');
@@ -2276,13 +2447,7 @@
         document.getElementById('selectedListenerName').textContent = `${listener.firstName || ''} ${listener.lastName || ''}`.trim() || 'Matched listener';
         document.getElementById('selectedListenerId').textContent = match.listenerId;
         document.getElementById('selectedListenerRate').textContent = listener.chatRate || 0;
-        document.getElementById('customerWorkspace').style.display = 'flex';
-        document.getElementById('requestArea').style.display = 'block';
-        const requestBtn = document.getElementById('btnRequestChat');
-        requestBtn.disabled = false;
-        requestBtn.textContent = '🚀 Request 1-to-1 Chat';
-        requestBtn.className = 'btn-success';
-        document.getElementById('customerSessionStatusBanner').style.display = 'none';
+        openCustomerDirectChat(match.listenerId, document.getElementById('selectedListenerName').textContent);
         appendLog('Customer', `⚡ Instant match: ${match.listenerId} (${(match.matchReasons || []).join(', ')}) | fee: ${match.matchFeeCharged ?? 0} coins, balance: ${match.balanceAfter ?? '—'}`);
         if (!customerSocket) {
           appendLog('Customer', 'Tip: Click Connect to enable socket chat request.');
@@ -2301,52 +2466,116 @@
       const token = document.getElementById('customerToken').value.trim();
       if (!token) return;
       try {
-        const res = await fetch(`${getBackendUrl()}/api/v1/listeners`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const res = await fetch(`${getBackendUrl()}/api/v1/listeners?limit=100`, { headers: { 'Authorization': `Bearer ${token}` } });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message);
         const listDiv = document.getElementById('listenersList');
         listDiv.innerHTML = '';
-        const listeners = data.data.docs || [];
-        if (!listeners.length) { listDiv.innerHTML = `<div style="text-align:center;color:var(--text-muted);font-size:13px;padding:20px;">No listeners.</div>`; return; }
+        let listeners = data.data?.docs || [];
+        if (!listeners.length) { listDiv.innerHTML = `<div style="text-align:center;color:var(--text-muted);font-size:13px;padding:20px;">No listeners found.</div>`; return; }
+
+        // Sort: ONLINE first, then LIVE, then BUSY, then OFFLINE
+        listeners.sort((a, b) => {
+          const weight = (s) => (s === 'ONLINE' ? 1 : (s === 'LIVE' ? 2 : (s === 'BUSY' ? 3 : 4)));
+          return weight(a.availability) - weight(b.availability);
+        });
+
         listeners.forEach(profile => {
           const user = profile.user || {};
           const item = document.createElement('div');
           item.className = `listener-item ${currentSelectedListener === profile.userId ? 'selected' : ''}`;
-          item.innerHTML = `<div class="listener-info"><div class="listener-name">${user.firstName || ''} ${user.lastName || ''}</div><div class="listener-meta">ID: ${profile.userId} | Rate: ${profile.chatRate || 0}/min</div></div><div class="listener-status status-${profile.availability.toLowerCase()}" id="listener-status-${profile.userId}">${profile.availability}</div>`;
+          const rawName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+          const listenerName = rawName || (user.mobileNumber ? `Listener ${user.mobileNumber}` : `Listener (${String(profile.userId).slice(-4)})`);
+          const isOnline = (profile.availability || '').toUpperCase() === 'ONLINE';
+          const isBusy = (profile.availability || '').toUpperCase() === 'BUSY';
+          const statusIcon = isOnline ? '🟢 ' : (isBusy ? '🟡 ' : '⚪ ');
+          item.innerHTML = `<div class="listener-info"><div class="listener-name">${statusIcon}${listenerName}</div><div class="listener-meta">ID: ${profile.userId} | Rate: ${profile.chatRate || 0}/min</div></div><div class="listener-status status-${(profile.availability || 'offline').toLowerCase()}" id="listener-status-${profile.userId}">${profile.availability || 'OFFLINE'}</div>`;
           item.addEventListener('click', () => {
             document.querySelectorAll('#listenersList .listener-item').forEach(el => el.classList.remove('selected'));
             item.classList.add('selected');
             currentSelectedListener = profile.userId;
-            document.getElementById('selectedListenerName').textContent = `${user.firstName || ''} ${user.lastName || ''}`;
+            document.getElementById('selectedListenerName').textContent = listenerName;
             document.getElementById('selectedListenerId').textContent = profile.userId;
             document.getElementById('selectedListenerRate').textContent = profile.chatRate || 0;
-            document.getElementById('requestArea').style.display = 'block';
+            openCustomerDirectChat(profile.userId, listenerName);
           });
           listDiv.appendChild(item);
         });
-        appendLog('Customer', `Loaded ${listeners.length} listeners.`);
+        appendLog('Customer', `Loaded ${listeners.length} listeners (online listeners prioritized at top).`);
       } catch (err) { appendLog('Customer', `❌ ${err.message}`); }
     });
 
-    document.getElementById('btnRequestChat').addEventListener('click', () => {
-      if (!customerSocket || !currentSelectedListener) return;
-      customerSocket.emit('request_chat', { listenerId: currentSelectedListener });
-      document.getElementById('customerBannerText').textContent = `Request sent... (30s timeout)`;
-      document.getElementById('customerSessionStatusBanner').style.display = 'flex';
-      document.getElementById('requestArea').style.display = 'none';
-    });
+    async function openCustomerDirectChat(listenerId, listenerName) {
+      if (!listenerId || listenerId === 'None') return;
+      customerDirectPartnerId = listenerId;
+      currentSelectedListener = listenerId;
+      const titleEl = document.getElementById('customerChatPartnerTitle');
+      if (titleEl) titleEl.textContent = `💬 ${listenerName}`;
+      const sessEl = document.getElementById('customerSessionIdVal');
+      if (sessEl) sessEl.textContent = activeCustomerSessionId || 'DIRECT CHAT (WhatsApp)';
 
-    document.getElementById('btnCancelRequest').addEventListener('click', () => {
-      document.getElementById('customerSessionStatusBanner').style.display = 'none';
-      document.getElementById('requestArea').style.display = 'flex';
-    });
+      if (document.getElementById('requestArea')) document.getElementById('requestArea').style.display = 'none';
+      document.getElementById('customerChatBox').style.display = 'flex';
+      document.getElementById('customerMessages').innerHTML = '';
+      document.getElementById('customerMsgInput').disabled = false;
+      document.getElementById('btnCustomerSend').disabled = false;
+      appendLog('Customer', `💬 Opened Direct WhatsApp Chat with Listener ${listenerName} (${listenerId})`);
 
-    document.getElementById('btnAcceptChat').addEventListener('click', () => { if (listenerSocket && currentIncomingCallerId) listenerSocket.emit('accept_chat', { callerId: currentIncomingCallerId }); });
-    document.getElementById('btnRejectChat').addEventListener('click', () => {
-      if (listenerSocket && currentIncomingCallerId) listenerSocket.emit('reject_chat', { callerId: currentIncomingCallerId, reason: 'Declined.' });
-      document.getElementById('incomingRequestBanner').style.display = 'none';
-      currentIncomingCallerId = null;
-    });
+      // Fetch direct chat history from API
+      const token = document.getElementById('customerToken').value.trim();
+      if (token) {
+        try {
+          const res = await fetch(`${getBackendUrl()}/api/v1/chats/direct/${listenerId}/messages`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const result = await res.json();
+            const msgs = result.data?.messages || [];
+            msgs.forEach((m) => {
+              const isSelf = String(m.senderId?._id || m.senderId) !== String(listenerId);
+              appendMsg('customerMessages', isSelf ? 'Me' : listenerName, m.text, isSelf, m.messageType || 'TEXT', m.fileUrl, m._id);
+            });
+          }
+        } catch (err) { }
+      }
+    }
+
+    async function openListenerDirectChat(customerId, customerName) {
+      if (!customerId || customerId === '--') return;
+      listenerDirectPartnerId = customerId;
+      currentIncomingCallerId = customerId;
+      const titleEl = document.getElementById('listenerChatPartnerTitle');
+      if (titleEl) titleEl.textContent = `💬 ${customerName}`;
+      const sessEl = document.getElementById('listenerSessionIdVal');
+      if (sessEl) sessEl.textContent = activeListenerSessionId || 'DIRECT CHAT (WhatsApp)';
+
+      if (document.getElementById('listenerCallCustomerArea')) {
+        document.getElementById('listenerCallCustomerArea').style.display = 'none';
+      }
+      document.getElementById('listenerChatBox').style.display = 'flex';
+      document.getElementById('listenerMessages').innerHTML = '';
+      document.getElementById('listenerMsgInput').disabled = false;
+      document.getElementById('btnListenerSend').disabled = false;
+      appendLog('Listener', `💬 Opened Direct WhatsApp Chat with Customer ${customerName} (${customerId})`);
+
+      // Fetch direct chat history from API
+      const token = document.getElementById('listenerToken').value.trim();
+      if (token) {
+        try {
+          const res = await fetch(`${getBackendUrl()}/api/v1/chats/direct/${customerId}/messages`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const result = await res.json();
+            const msgs = result.data?.messages || [];
+            msgs.forEach((m) => {
+              const isSelf = String(m.senderId?._id || m.senderId) !== String(customerId);
+              appendMsg('listenerMessages', isSelf ? 'Me' : customerName, m.text, isSelf, m.messageType || 'TEXT', m.fileUrl, m._id);
+            });
+          }
+        } catch (err) { }
+      }
+    }
 
     // ─── Call Upgrade & Management Listeners ─────────────────────────────────
     document.getElementById('btnCustomerUpgradeAudio').addEventListener('click', () => {
@@ -2365,16 +2594,25 @@
       appendLog('Customer', `📹 Requesting Video Call upgrade with ${partnerId}...`);
     });
 
-    document.getElementById('btnAcceptCall').addEventListener('click', () => {
+    document.getElementById('btnAcceptCall')?.addEventListener('click', () => {
       if (!listenerSocket || !currentIncomingCallerId) return;
-      listenerSocket.emit('accept_call', { callerId: currentIncomingCallerId });
+      const callRequestId = window.currentIncomingCallData?.callRequestId;
+      listenerSocket.emit('accept_call', {
+        callerId: currentIncomingCallerId,
+        callRequestId: callRequestId,
+      });
       document.getElementById('incomingCallBanner').style.display = 'none';
       appendLog('Listener', `Accepted call from ${currentIncomingCallerId}`);
     });
 
-    document.getElementById('btnRejectCall').addEventListener('click', () => {
+    document.getElementById('btnRejectCall')?.addEventListener('click', () => {
       if (!listenerSocket || !currentIncomingCallerId) return;
-      listenerSocket.emit('reject_call', { callerId: currentIncomingCallerId, reason: 'Declined by listener' });
+      const callRequestId = window.currentIncomingCallData?.callRequestId;
+      listenerSocket.emit('reject_call', {
+        callerId: currentIncomingCallerId,
+        callRequestId: callRequestId,
+        reason: 'Declined by listener',
+      });
       document.getElementById('incomingCallBanner').style.display = 'none';
       appendLog('Listener', `Rejected call from ${currentIncomingCallerId}`);
     });
@@ -2394,25 +2632,41 @@
     });
 
     document.getElementById('btnCustomerEndSessionFull').addEventListener('click', () => {
-      if (!customerSocket || !activeCustomerSessionId) return;
-      if (!confirm('End entire chat & call session?')) return;
-      customerSocket.emit('end_chat', { sessionId: activeCustomerSessionId });
+      if (!customerSocket) return;
+      if (activeCustomerSessionId) {
+        if (!confirm('End and settle chat session?')) return;
+        customerSocket.emit('end_chat', { sessionId: activeCustomerSessionId });
+      } else if (customerDirectPartnerId) {
+        customerSocket.emit('chat:leave', { partnerId: customerDirectPartnerId });
+      }
+      activeCustomerSessionId = null;
       stopInSessionAgora('customer');
       appendLog('Customer', 'Ended entire session.');
     });
 
     document.getElementById('btnListenerEndSessionFull').addEventListener('click', () => {
-      if (!listenerSocket || !activeListenerSessionId) return;
-      if (!confirm('End entire chat & call session?')) return;
-      listenerSocket.emit('end_chat', { sessionId: activeListenerSessionId });
+      if (!listenerSocket) return;
+      if (activeListenerSessionId) {
+        if (!confirm('End and settle chat session?')) return;
+        listenerSocket.emit('end_chat', { sessionId: activeListenerSessionId });
+      } else if (listenerDirectPartnerId) {
+        listenerSocket.emit('chat:leave', { partnerId: listenerDirectPartnerId });
+      }
+      activeListenerSessionId = null;
       stopInSessionAgora('listener');
       appendLog('Listener', 'Ended entire session.');
     });
 
     document.getElementById('btnCustomerEndChat').addEventListener('click', () => {
+      if (activeCustomerSessionId && customerSocket) {
+        customerSocket.emit('end_chat', { sessionId: activeCustomerSessionId });
+      } else if (customerSocket && customerDirectPartnerId) {
+        customerSocket.emit('chat:leave', { partnerId: customerDirectPartnerId });
+      }
       activeCustomerSessionId = null;
+      customerDirectPartnerId = null;
       document.getElementById('customerChatBox').style.display = 'none';
-      document.getElementById('requestArea').style.display = 'flex';
+      if (document.getElementById('requestArea')) document.getElementById('requestArea').style.display = 'none';
       document.getElementById('customerMsgInput').disabled = false;
       document.getElementById('btnCustomerSend').disabled = false;
       stopInSessionAgora('customer');
@@ -2420,7 +2674,13 @@
     });
 
     document.getElementById('btnListenerEndChat').addEventListener('click', () => {
+      if (activeListenerSessionId && listenerSocket) {
+        listenerSocket.emit('end_chat', { sessionId: activeListenerSessionId });
+      } else if (listenerSocket && listenerDirectPartnerId) {
+        listenerSocket.emit('chat:leave', { partnerId: listenerDirectPartnerId });
+      }
       activeListenerSessionId = null;
+      listenerDirectPartnerId = null;
       document.getElementById('listenerChatBox').style.display = 'none';
       document.getElementById('listenerMsgInput').disabled = false;
       document.getElementById('btnListenerSend').disabled = false;
@@ -2602,36 +2862,206 @@
       }
     });
 
-    // Chat send + typing
-    function setupChatConsole(inputEl, sendBtn, getSocket, getSessionIdFn) {
-      sendBtn.addEventListener('click', () => {
-        const socket = getSocket();
-        const sessionId = getSessionIdFn();
-        if (!sessionId || !socket) return;
-        const text = inputEl.value.trim();
-        if (!text) return;
-        socket.emit('send_message', { sessionId, text });
-        const isCustomer = inputEl.id.includes('customer');
-        const containerId = isCustomer ? 'customerMessages' : 'listenerMessages';
-        const role = isCustomer ? 'customer' : 'listener';
-        const token = document.getElementById(isCustomer ? 'customerToken' : 'listenerToken').value.trim();
-        appendMsg(containerId, 'Me', text, true, 'TEXT', null, null, sessionId, role, token);
-        inputEl.value = '';
-        socket.emit('typing', { sessionId, isTyping: false });
+    // ═══════════════════════════════════════════════════════════
+    // WHATSAPP-STYLE DIRECT CHAT ENGINE (NO REQUEST REQUIRED)
+    // ═══════════════════════════════════════════════════════════
+
+    function updateMessageStatus(clientMsgId, tickSymbol, color = 'var(--text-muted)') {
+      if (clientMsgId) {
+        const el = document.querySelector(`[data-client-msg-id="${clientMsgId}"] .msg-tick`);
+        if (el) {
+          el.textContent = ' ' + tickSymbol;
+          el.style.color = color;
+          return;
+        }
+      }
+      const allTicks = document.querySelectorAll('.msg-tick');
+      if (allTicks.length > 0) {
+        const last = allTicks[allTicks.length - 1];
+        last.textContent = ' ' + tickSymbol;
+        last.style.color = color;
+      }
+    }
+
+    function wireDirectChatEvents(socket, role) {
+      if (!socket) return;
+      const isCustomer = role === 'customer';
+      const containerId = isCustomer ? 'customerMessages' : 'listenerMessages';
+      const chatBoxId = isCustomer ? 'customerChatBox' : 'listenerChatBox';
+      const inputEl = document.getElementById(isCustomer ? 'customerMsgInput' : 'listenerMsgInput');
+      const sendBtn = document.getElementById(isCustomer ? 'btnCustomerSend' : 'btnListenerSend');
+
+      // 1. Direct message received in real-time
+      socket.on('chat:receive_message', (data) => {
+        appendLog(isCustomer ? 'Customer' : 'Listener', `💬 Received message from ${data.senderId}: "${data.text}"`);
+        document.getElementById(chatBoxId).style.display = 'flex';
+        inputEl.disabled = false;
+        sendBtn.disabled = false;
+        if (isCustomer) customerDirectPartnerId = data.senderId;
+        else listenerDirectPartnerId = data.senderId;
+
+        appendMsg(containerId, data.senderId, data.text, false, data.messageType || 'TEXT', data.fileUrl);
+
+        // Auto-ACK delivery to server
+        socket.emit('chat:ack_delivered', {
+          entryIds: data.entryId ? [data.entryId] : [],
+          senderIds: [data.senderId],
+        });
+
+        // Auto-mark conversation as read
+        if (data.clientMsgId) {
+          socket.emit('chat:read_conversation', {
+            partnerId: data.senderId,
+            lastReadMessageId: data.clientMsgId,
+          });
+        }
       });
-      let typingTimeout = null;
-      inputEl.addEventListener('input', () => {
-        const socket = getSocket();
-        const sessionId = getSessionIdFn();
-        if (!sessionId || !socket) return;
-        socket.emit('typing', { sessionId, isTyping: true });
-        clearTimeout(typingTimeout);
-        typingTimeout = setTimeout(() => socket.emit('typing', { sessionId, isTyping: false }), 1500);
+
+      // 2. Offline queued messages delivered on reconnect
+      socket.on('chat:offline_messages', (data) => {
+        const list = data.messages || [];
+        if (!list.length) return;
+        appendLog(isCustomer ? 'Customer' : 'Listener', `📬 Received ${list.length} offline message(s) from stream`);
+        document.getElementById(chatBoxId).style.display = 'flex';
+        inputEl.disabled = false;
+        sendBtn.disabled = false;
+        const entryIds = [];
+        const senderIds = [];
+        list.forEach((m) => {
+          appendMsg(containerId, m.senderId, m.text, false, m.messageType || 'TEXT', m.fileUrl);
+          if (m.entryId) entryIds.push(m.entryId);
+          if (m.senderId) senderIds.push(m.senderId);
+        });
+        if (entryIds.length > 0) {
+          socket.emit('chat:ack_delivered', { entryIds, senderIds });
+        }
+      });
+
+      // 3. Server ACK for sent message (✓ single tick)
+      socket.on('chat:ack_sent', (data) => {
+        const tick = data.deliveryStatus === 'DELIVERED' ? '✓✓' : '✓';
+        updateMessageStatus(data.clientMsgId, tick);
+        appendLog(isCustomer ? 'Customer' : 'Listener', `✓ Message sent (${data.deliveryStatus || 'SENT'}) [Balance: ${data.newBalance}]`);
+      });
+
+      // 4. Receiver socket confirmed delivery (✓✓ double gray tick)
+      socket.on('chat:message_delivered', (data) => {
+        updateMessageStatus(null, '✓✓', '#9ca3af');
+        appendLog(isCustomer ? 'Customer' : 'Listener', `✓✓ Delivered to recipient!`);
+      });
+
+      // 5. Receiver read the message (✓✓ blue ticks)
+      socket.on('chat:messages_read', (data) => {
+        updateMessageStatus(null, '✓✓', '#38bdf8');
+        appendLog(isCustomer ? 'Customer' : 'Listener', `✓✓ Blue: Recipient read your message!`);
+      });
+
+      // 6. Insufficient balance warning
+      socket.on('chat:insufficient_balance', (data) => {
+        appendLog(isCustomer ? 'Customer' : 'Listener', `❌ Insufficient balance! Current: ${data.currentBalance} coins.`);
+        alert(`Insufficient coins to send message! Your balance: ${data.currentBalance}. Please recharge.`);
+      });
+
+      // 7. Direct typing indicator
+      socket.on('chat:display_typing', (data) => {
+        const partnerTitle = document.getElementById(isCustomer ? 'customerChatPartnerTitle' : 'listenerChatPartnerTitle');
+        if (partnerTitle && data.isTyping) {
+          partnerTitle.dataset.origText = partnerTitle.dataset.origText || partnerTitle.textContent;
+          partnerTitle.textContent = '✍️ typing...';
+        } else if (partnerTitle && partnerTitle.dataset.origText) {
+          partnerTitle.textContent = partnerTitle.dataset.origText;
+        }
       });
     }
 
-    setupChatConsole(document.getElementById('customerMsgInput'), document.getElementById('btnCustomerSend'), () => customerSocket, () => activeCustomerSessionId);
-    setupChatConsole(document.getElementById('listenerMsgInput'), document.getElementById('btnListenerSend'), () => listenerSocket, () => activeListenerSessionId);
+    // Chat send + typing (supports BOTH Direct WhatsApp chat and Session-based chat)
+    function setupChatConsole(inputEl, sendBtn, getSocket, getSessionIdFn, getDirectPartnerIdFn) {
+      sendBtn.addEventListener('click', () => {
+        const socket = getSocket();
+        if (!socket) return alert('Socket not connected.');
+        const text = inputEl.value.trim();
+        if (!text) return;
+
+        const isCustomer = inputEl.id.includes('customer');
+        const directPartnerId = getDirectPartnerIdFn();
+        const sessionId = getSessionIdFn();
+        const containerId = isCustomer ? 'customerMessages' : 'listenerMessages';
+        const role = isCustomer ? 'customer' : 'listener';
+        const token = document.getElementById(isCustomer ? 'customerToken' : 'listenerToken').value.trim();
+
+        if (directPartnerId) {
+          // ─── Direct WhatsApp Messaging Path (No Request Needed) ───
+          const clientMsgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
+          socket.emit('chat:send_message', {
+            clientMsgId,
+            recipientId: directPartnerId,
+            text,
+            cost: isCustomer ? 0 : 0, // 0 for testing free messaging or configure cost
+          });
+          appendMsg(containerId, 'Me', text, true, 'TEXT', null, null, null, role, token, null, clientMsgId);
+          inputEl.value = '';
+          socket.emit('chat:typing', { recipientId: directPartnerId, isTyping: false });
+        } else if (sessionId) {
+          // ─── Session-Gated Messaging Path ───
+          socket.emit('send_message', { sessionId, text });
+          appendMsg(containerId, 'Me', text, true, 'TEXT', null, null, sessionId, role, token);
+          inputEl.value = '';
+          socket.emit('typing', { sessionId, isTyping: false });
+        } else {
+          alert('Please select a user to chat with first.');
+        }
+      });
+
+      let typingTimeout = null;
+      inputEl.addEventListener('input', () => {
+        const socket = getSocket();
+        if (!socket) return;
+        const directPartnerId = getDirectPartnerIdFn();
+        const sessionId = getSessionIdFn();
+
+        if (directPartnerId) {
+          socket.emit('chat:typing', { recipientId: directPartnerId, isTyping: true });
+          clearTimeout(typingTimeout);
+          typingTimeout = setTimeout(() => socket.emit('chat:typing', { recipientId: directPartnerId, isTyping: false }), 1500);
+        } else if (sessionId) {
+          socket.emit('typing', { sessionId, isTyping: true });
+          clearTimeout(typingTimeout);
+          typingTimeout = setTimeout(() => socket.emit('typing', { sessionId, isTyping: false }), 1500);
+        }
+      });
+    }
+
+    setupChatConsole(
+      document.getElementById('customerMsgInput'),
+      document.getElementById('btnCustomerSend'),
+      () => customerSocket,
+      () => activeCustomerSessionId,
+      () => customerDirectPartnerId
+    );
+
+    setupChatConsole(
+      document.getElementById('listenerMsgInput'),
+      document.getElementById('btnListenerSend'),
+      () => listenerSocket,
+      () => activeListenerSessionId,
+      () => listenerDirectPartnerId
+    );
+
+    // ─── Button: Customer starts Instant WhatsApp Chat (No Request) ───
+    document.getElementById('btnCustomerDirectChat')?.addEventListener('click', () => {
+      const listenerId = document.getElementById('selectedListenerId')?.textContent.trim();
+      if (!listenerId || listenerId === 'None') return alert('Please select a listener from the list first.');
+      const listenerName = document.getElementById('selectedListenerName')?.textContent.trim() || 'Listener';
+      openCustomerDirectChat(listenerId, listenerName);
+    });
+
+    // ─── Button: Listener starts Instant WhatsApp Chat with Selected Customer ───
+    document.getElementById('btnListenerDirectChat')?.addEventListener('click', () => {
+      const customerId = document.getElementById('listenerSelectedCustomerId')?.textContent.trim();
+      if (!customerId || customerId === '--') return alert('Please select a customer first.');
+      const customerName = document.getElementById('listenerSelectedCustomerName')?.textContent.trim() || 'Customer';
+      openListenerDirectChat(customerId, customerName);
+    });
 
     // Listener availability
     async function setListenerAvailability(status) {
@@ -2663,10 +3093,49 @@
         item.className = 'listener-item';
         item.dataset.customerId = u.id;
         const dot = u.isOnline ? '🟢' : '⚫';
-        item.innerHTML = `<div class="listener-info"><div class="listener-name">${dot} ${u.firstName || ''} ${u.lastName || ''}</div><div class="listener-meta">Lv.${u.currentLevel || 1}</div></div>`;
+        item.innerHTML = `<div class="listener-info"><div class="listener-name">${dot} ${u.firstName || ''} ${u.lastName || ''}</div><div class="listener-meta">Lv.${u.currentLevel || 1} • <span style="color:#818cf8;font-weight:600;">📞 Call</span></div></div><div class="listener-status status-${u.isOnline ? 'online' : 'offline'}">${u.isOnline ? 'Online' : 'Offline'}</div>`;
+        item.addEventListener('click', () => {
+          document.querySelectorAll('.listener-item').forEach(e => e.classList.remove('selected'));
+          item.classList.add('selected');
+          document.getElementById('listenerSelectedCustomerName').textContent = `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Customer';
+          document.getElementById('listenerSelectedCustomerId').textContent = u.id;
+          document.getElementById('listenerCallCustomerArea').style.display = 'block';
+        });
         el.appendChild(item);
       });
     }
+
+    // Listener outbound call to customer actions
+    document.getElementById('btnListenerInitiateCallCustomer')?.addEventListener('click', () => {
+      const customerId = document.getElementById('listenerSelectedCustomerId').textContent.trim();
+      if (!listenerSocket || !customerId || customerId === '--') return alert('Please select a customer first.');
+      const mode = document.querySelector('input[name="listenerOutboundCallMode"]:checked')?.value || 'AUDIO';
+      appendLog('Listener', `📞 Requesting ${mode} call to Customer ${customerId}...`);
+      listenerSocket.emit('request_call', {
+        targetUserId: customerId,
+        customerId: customerId,
+        mode: mode,
+      });
+      document.getElementById('listenerCallCustomerArea').style.display = 'none';
+      document.getElementById('listenerCallWaitingBanner').style.display = 'flex';
+    });
+
+    document.getElementById('btnListenerCloseCallArea')?.addEventListener('click', () => {
+      document.getElementById('listenerCallCustomerArea').style.display = 'none';
+    });
+
+    document.getElementById('btnListenerCancelOutboundCall')?.addEventListener('click', () => {
+      const customerId = document.getElementById('listenerSelectedCustomerId').textContent.trim();
+      if (listenerSocket && customerId && customerId !== '--') {
+        listenerSocket.emit('cancel_call', {
+          targetUserId: customerId,
+          customerId: customerId,
+        });
+      }
+      document.getElementById('listenerCallWaitingBanner').style.display = 'none';
+      document.getElementById('listenerCallCustomerArea').style.display = 'block';
+      appendLog('Listener', 'Outbound call to customer cancelled.');
+    });
 
     let listenerHomeCache = { onlineUsers: null, newUsers: null, popularUsers: null };
 
@@ -2805,7 +3274,6 @@
         document.getElementById('btnCustomerUpgradeAudio').style.display = 'inline-flex';
         document.getElementById('btnCustomerUpgradeVideo').style.display = 'inline-flex';
         document.getElementById('requestArea').style.display = 'none';
-        document.getElementById('customerSessionStatusBanner').style.display = 'none';
         document.getElementById('customerSessionIdVal').textContent = sessionId;
         document.getElementById('customerChatBox').style.display = 'flex';
         document.getElementById('customerMsgInput').disabled = !isOngoing;
@@ -2821,7 +3289,6 @@
         badge.className = 'segment-badge segment-chat';
         document.getElementById('listenerCallStatusNotice').style.display = 'none';
         document.getElementById('btnListenerHangupCall').style.display = 'none';
-        document.getElementById('incomingRequestBanner').style.display = 'none';
         document.getElementById('listenerSessionIdVal').textContent = sessionId;
         document.getElementById('listenerChatBox').style.display = 'flex';
         document.getElementById('listenerMsgInput').disabled = !isOngoing;
@@ -2870,11 +3337,12 @@
       }
     }
 
-    function appendMsg(containerId, sender, text, isSelf, messageType = 'TEXT', fileUrl = null, msgId = null, sessionId = null, role = null, token = null, deletedAt = null) {
+    function appendMsg(containerId, sender, text, isSelf, messageType = 'TEXT', fileUrl = null, msgId = null, sessionId = null, role = null, token = null, deletedAt = null, clientMsgId = null) {
       const container = document.getElementById(containerId);
       const bubble = document.createElement('div');
       bubble.className = `msg-bubble ${isSelf ? 'sent' : 'received'}`;
       if (msgId) bubble.setAttribute('data-message-id', msgId);
+      if (clientMsgId) bubble.setAttribute('data-client-msg-id', clientMsgId);
 
       if (!isSelf && sender !== 'System') {
         const label = document.createElement('div');
@@ -2923,6 +3391,15 @@
       const time = document.createElement('span');
       time.className = 'msg-time';
       time.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      if (isSelf) {
+        const tick = document.createElement('span');
+        tick.className = 'msg-tick';
+        tick.style.cssText = 'font-size:11px;margin-left:5px;color:var(--text-muted);font-weight:bold;';
+        tick.textContent = ' ✓';
+        if (clientMsgId) tick.dataset.clientMsgId = clientMsgId;
+        time.appendChild(tick);
+      }
 
       bubble.appendChild(content);
       bubble.appendChild(time);
@@ -3007,16 +3484,17 @@
       socket.on('incoming_call_request', (data) => {
         appendLog('Receiver', `📞 Incoming call from ${data.callerId} (${data.mode})`);
         incomingCallData = data;
-        document.getElementById('incomingCallerCallName').textContent = `${data.callerInfo.firstName} ${data.callerInfo.lastName}`;
-        document.getElementById('incomingCallMode').textContent = data.mode;
-        document.getElementById('incomingCallRate').textContent = data.ratePerMinute;
-        document.getElementById('incomingCallBanner').style.display = 'flex';
-        document.getElementById('receiverIdleMsg').style.display = 'none';
+        document.getElementById('callTabIncomingCallerCallName').textContent = `${data.callerInfo?.firstName || ''} ${data.callerInfo?.lastName || ''}`.trim() || 'Caller';
+        document.getElementById('callTabIncomingCallMode').textContent = data.mode;
+        document.getElementById('callTabIncomingCallRate').textContent = data.ratePerMinute;
+        document.getElementById('callTabReceiverIncomingBanner').style.display = 'flex';
+        const idleEl = document.getElementById('receiverIdleMsg');
+        if (idleEl) idleEl.style.display = 'none';
       });
 
       socket.on('call_started', async (data) => {
         appendLog('Receiver', `✅ Call started! Session: ${data.sessionId}, Mode: ${data.mode}`);
-        document.getElementById('incomingCallBanner').style.display = 'none';
+        document.getElementById('callTabReceiverIncomingBanner').style.display = 'none';
         incomingCallData = null;
         socket.emit('join_session', { sessionId: data.sessionId });
         await startAgoraCall('receiver', data.agora, data.mode, data.sessionId);
@@ -3025,6 +3503,7 @@
       socket.on('call_ended', (data) => {
         appendLog('Receiver', `Call ended. Reason: ${data.reason}`);
         incomingCallData = null;
+        document.getElementById('callTabReceiverIncomingBanner').style.display = 'none';
         stopAgoraCall('receiver');
       });
     }
@@ -3043,36 +3522,77 @@
       setupReceiverSocketListeners(receiverSocket);
     });
 
-    // Load listeners for call tab
+    // Load directory for call tab (Listeners or Online Customers)
     document.getElementById('btnLoadCallListeners').addEventListener('click', async () => {
       const token = document.getElementById('callerToken').value.trim();
-      if (!token) return;
+      if (!token) return alert('Please enter Caller JWT token');
+      const targetType = document.getElementById('callTargetType')?.value || 'LISTENERS';
+      const listDiv = document.getElementById('callListenersList');
+      listDiv.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:15px;">Loading directory...</div>';
+
       try {
-        const res = await fetch(`${getBackendUrl()}/api/v1/listeners`, { headers: { 'Authorization': `Bearer ${token}` } });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message);
-        const listDiv = document.getElementById('callListenersList');
-        listDiv.innerHTML = '';
-        const listeners = data.data.docs || [];
-        if (!listeners.length) { listDiv.innerHTML = `<div style="text-align:center;color:var(--text-muted);padding:20px;">No listeners.</div>`; return; }
-        listeners.forEach(profile => {
-          const user = profile.user || {};
-          const item = document.createElement('div');
-          item.className = 'listener-item';
-          item.innerHTML = `<div class="listener-info"><div class="listener-name">${user.firstName || ''} ${user.lastName || ''}</div><div class="listener-meta">Voice: ${profile.voiceRate || 0} | Video: ${profile.videoRate || 0} coins/min</div></div><div class="listener-status status-${profile.availability.toLowerCase()}">${profile.availability}</div>`;
-          item.addEventListener('click', () => {
-            document.querySelectorAll('#callListenersList .listener-item').forEach(el => el.classList.remove('selected'));
-            item.classList.add('selected');
-            callSelectedListenerId = profile.userId;
-            document.getElementById('callSelectedName').textContent = `${user.firstName || ''} ${user.lastName || ''}`;
-            document.getElementById('callSelectedId').textContent = profile.userId;
-            document.getElementById('callSelectedVoiceRate').textContent = profile.voiceRate || 0;
-            document.getElementById('callSelectedVideoRate').textContent = profile.videoRate || 0;
-            document.getElementById('callRequestArea').style.display = 'block';
+        if (targetType === 'CUSTOMERS') {
+          const res = await fetch(`${getBackendUrl()}/api/v1/home/listener-home?onlineLimit=30`, {
+            headers: { Authorization: `Bearer ${token}` },
           });
-          listDiv.appendChild(item);
-        });
-      } catch (err) { appendLog('Caller', `❌ ${err.message}`); }
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
+          listDiv.innerHTML = '';
+          const users = data.data?.onlineUsers?.docs || [];
+          if (!users.length) {
+            listDiv.innerHTML = `<div style="text-align:center;color:var(--text-muted);padding:20px;">No online customers found.</div>`;
+            return;
+          }
+          users.forEach(u => {
+            const item = document.createElement('div');
+            item.className = 'listener-item';
+            item.innerHTML = `<div class="listener-info"><div class="listener-name">🟢 ${u.firstName || ''} ${u.lastName || ''}</div><div class="listener-meta">Customer • Level ${u.currentLevel || 1} • ID: ${u.id}</div></div><div class="listener-status status-online">Online</div>`;
+            item.addEventListener('click', () => {
+              document.querySelectorAll('#callListenersList .listener-item').forEach(el => el.classList.remove('selected'));
+              item.classList.add('selected');
+              callSelectedListenerId = u.id;
+              document.getElementById('callSelectedName').textContent = `${u.firstName || ''} ${u.lastName || ''}`;
+              document.getElementById('callSelectedId').textContent = u.id;
+              document.getElementById('callSelectedVoiceRate').textContent = 'Authoritative';
+              document.getElementById('callSelectedVideoRate').textContent = 'Authoritative';
+              document.getElementById('callRequestArea').style.display = 'block';
+            });
+            listDiv.appendChild(item);
+          });
+        } else {
+          const res = await fetch(`${getBackendUrl()}/api/v1/listeners`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message);
+          listDiv.innerHTML = '';
+          const listeners = data.data.docs || [];
+          if (!listeners.length) {
+            listDiv.innerHTML = `<div style="text-align:center;color:var(--text-muted);padding:20px;">No listeners found.</div>`;
+            return;
+          }
+          listeners.forEach(profile => {
+            const user = profile.user || {};
+            const item = document.createElement('div');
+            item.className = 'listener-item';
+            item.innerHTML = `<div class="listener-info"><div class="listener-name">${user.firstName || ''} ${user.lastName || ''}</div><div class="listener-meta">Voice: ${profile.voiceRate || 0} | Video: ${profile.videoRate || 0} coins/min</div></div><div class="listener-status status-${(profile.availability || 'online').toLowerCase()}">${profile.availability || 'ONLINE'}</div>`;
+            item.addEventListener('click', () => {
+              document.querySelectorAll('#callListenersList .listener-item').forEach(el => el.classList.remove('selected'));
+              item.classList.add('selected');
+              callSelectedListenerId = profile.userId;
+              document.getElementById('callSelectedName').textContent = `${user.firstName || ''} ${user.lastName || ''}`;
+              document.getElementById('callSelectedId').textContent = profile.userId;
+              document.getElementById('callSelectedVoiceRate').textContent = profile.voiceRate || 0;
+              document.getElementById('callSelectedVideoRate').textContent = profile.videoRate || 0;
+              document.getElementById('callRequestArea').style.display = 'block';
+            });
+            listDiv.appendChild(item);
+          });
+        }
+      } catch (err) {
+        appendLog('Caller', `❌ ${err.message}`);
+        listDiv.innerHTML = `<div style="text-align:center;color:var(--danger);padding:15px;">Failed to load: ${err.message}</div>`;
+      }
     });
 
     // Request call
@@ -3080,30 +3600,50 @@
       if (!callerSocket || !callSelectedListenerId) return;
       const mode = document.querySelector('input[name="callMode"]:checked').value;
       appendLog('Caller', `Requesting ${mode} call to ${callSelectedListenerId}...`);
-      callerSocket.emit('request_call', { listenerId: callSelectedListenerId, mode });
+      callerSocket.emit('request_call', {
+        targetUserId: callSelectedListenerId,
+        listenerId: callSelectedListenerId,
+        mode,
+      });
       document.getElementById('callRequestArea').style.display = 'none';
       document.getElementById('callerWaitingBanner').style.display = 'flex';
     });
 
     document.getElementById('btnCancelCallRequest').addEventListener('click', () => {
+      if (callerSocket && callSelectedListenerId) {
+        callerSocket.emit('cancel_call', {
+          targetUserId: callSelectedListenerId,
+          listenerId: callSelectedListenerId,
+        });
+      }
       document.getElementById('callerWaitingBanner').style.display = 'none';
       document.getElementById('callRequestArea').style.display = 'block';
       appendLog('Caller', 'Call request cancelled.');
     });
 
-    // Accept / Reject call
-    document.getElementById('btnAcceptCall').addEventListener('click', () => {
+    // Accept / Reject call in Call Tab
+    document.getElementById('btnCallTabAcceptCall')?.addEventListener('click', () => {
       if (!receiverSocket || !incomingCallData) return;
       appendLog('Receiver', `Accepting call from ${incomingCallData.callerId}...`);
-      receiverSocket.emit('accept_call', { callerId: incomingCallData.callerId });
+      receiverSocket.emit('accept_call', {
+        callRequestId: incomingCallData.callRequestId,
+        callerId: incomingCallData.callerId,
+      });
+      document.getElementById('callTabReceiverIncomingBanner').style.display = 'none';
     });
 
-    document.getElementById('btnRejectCall').addEventListener('click', () => {
+    document.getElementById('btnCallTabRejectCall')?.addEventListener('click', () => {
       if (!receiverSocket || !incomingCallData) return;
-      receiverSocket.emit('reject_call', { callerId: incomingCallData.callerId, reason: 'Declined.' });
-      document.getElementById('incomingCallBanner').style.display = 'none';
-      document.getElementById('receiverIdleMsg').style.display = 'block';
+      receiverSocket.emit('reject_call', {
+        callRequestId: incomingCallData.callRequestId,
+        callerId: incomingCallData.callerId,
+        reason: 'Declined.',
+      });
+      document.getElementById('callTabReceiverIncomingBanner').style.display = 'none';
+      const idleEl = document.getElementById('receiverIdleMsg');
+      if (idleEl) idleEl.style.display = 'block';
       incomingCallData = null;
+      appendLog('Receiver', 'Call rejected.');
     });
 
     // Hang up

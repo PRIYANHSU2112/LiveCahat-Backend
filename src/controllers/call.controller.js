@@ -19,9 +19,11 @@ class CallController extends BaseController {
    */
   initiateCall = catchAsync(async (req, res) => {
     const callerId = req.user._id.toString();
-    const { listenerId, mode } = req.body;
+    const callerRole = req.user.type; // 'CUSTOMER' or 'LISTENER'
+    const targetUserId = req.body.targetUserId || req.body.listenerId || req.body.customerId;
+    const { mode } = req.body;
 
-    const result = await callService.initiateCall(callerId, listenerId, mode);
+    const result = await callService.initiateCall(callerId, targetUserId, mode, callerRole);
 
     this.sendResponse(res, 201, 'Call session initiated successfully', {
       sessionId: result.session._id,

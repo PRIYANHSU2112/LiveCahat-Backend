@@ -104,6 +104,33 @@ class BillingService {
     // Calculate elapsed duration (after any stale-segment heal so startTime is current)
     const elapsedSeconds = Math.max(0, Math.floor((timePoint.getTime() - new Date(startTime).getTime()) / 1000));
 
+    // Inactivity check for CHAT mode: pause billing on 2 minutes of silence
+    if (sessionData && sessionData.mode === 'CHAT') {
+      const lastActivityTime = sessionData.lastActivityAt
+        ? new Date(sessionData.lastActivityAt).getTime()
+        : new Date(startTime).getTime();
+      const idleSeconds = Math.floor((timePoint.getTime() - lastActivityTime) / 1000);
+
+      // If idle for >= 120s (2 minutes), pause billing so customer is not charged for silence
+      if (idleSeconds >= 120 || sessionData.isPaused === '1') {
+        if (sessionData.isPaused !== '1' && redisClient.isRedisAvailable) {
+          await redisClient.hset(KEYS.activeSession(sessionId), 'isPaused', '1');
+          const io = getSocketIo();
+          if (io) {
+            emitToSession(io, sessionId, SERVER_EVENTS.CHAT_PAUSED || 'chat:paused', {
+              sessionId,
+              reason: 'INACTIVITY',
+              message: 'Chat session paused due to 2 minutes of inactivity. Coins are not being charged.',
+            });
+          }
+        }
+        // During periodic cron cycle (!isFinal), pause billing so user is not billed for idle silence
+        if (!isFinal) {
+          return;
+        }
+      }
+    }
+
     const coinsAlreadyCharged = segment.coinsCharged || 0;
 
     // Calculate total minutes to bill

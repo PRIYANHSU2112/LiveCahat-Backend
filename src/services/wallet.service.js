@@ -579,3 +579,4 @@ class WalletService extends BaseService {
 }
 
 export const walletService = new WalletService();
+export default walletService;

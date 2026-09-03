@@ -66,6 +66,12 @@ class ConnectionHandler {
     // Track presence online
     await presenceService.goOnline(userId, socket.id, userType);
 
+    // Deliver any queued offline messages from Redis Stream (ACK-gated)
+    const { default: directChatHandler } = await import('./direct-chat.handler.js');
+    directChatHandler.deliverOfflineMessages(io, socket).catch((err) => {
+      logger.error(`[Socket Connection] Error delivering offline messages: ${err.message}`);
+    });
+
     // Register disconnect listener
     socket.on('disconnect', () => this.handleDisconnect(io, socket));
   }

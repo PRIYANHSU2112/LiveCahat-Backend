@@ -7,6 +7,7 @@ import logger from '../utils/logger.util.js';
  * Runs every 2 minutes to mark expired boosts as EXPIRED in the database
  * and invalidate the home feed cache.
  */
+
 export const initializeVisibilityBoostJob = () => {
   cron.schedule('*/5 * * * *', async () => {
     try {
