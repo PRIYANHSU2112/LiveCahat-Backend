@@ -60,6 +60,7 @@ export const uploadListenerProfileMedia = (req, res, next) => {
 };
 export const uploadBannerImage = upload.single('image');
 export const uploadGiftIcon = upload.single('icon');
+export const uploadStoryMedia = upload.single('media');
 
 export const uploadKYCDocuments = upload.fields([
   { name: 'documentFront', maxCount: 1 },
@@ -114,6 +115,10 @@ export const processAndUploadImage = catchAsync(async (req, res, next) => {
       const fileUrl = handleMedia(req.file);
       req.body.iconUrl = fileUrl;
       req.body.icon = fileUrl;
+    } else if (req.file.fieldname === 'media') {
+      const fileUrl = handleMedia(req.file);
+      req.body.mediaUrl = fileUrl;
+      req.body.imageUrl = fileUrl;
     } else {
       req.body.profileImage = handleMedia(req.file);
     }

@@ -162,12 +162,19 @@ const listenerProfileSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    // Dynamic profile view counter (incremented on profile views, throttled)
+    viewCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
   {
     timestamps: true,
   }
 );
 
+listenerProfileSchema.index({ viewCount: -1 });
 listenerProfileSchema.index({ kycStatus: 1 });
 listenerProfileSchema.index({ availability: 1 });
 listenerProfileSchema.index({ isFeatured: 1 });

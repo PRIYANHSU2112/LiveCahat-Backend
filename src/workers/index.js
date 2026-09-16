@@ -1,6 +1,7 @@
 import { createNotificationWorker } from './notification.worker.js';
 import { createSessionPersistenceWorker } from './session-persistence.worker.js';
 import { createChatPersistenceWorker } from './chat-persistence.worker.js';
+import { createStoryCleanupWorker } from './story-cleanup.worker.js';
 import logger from '../utils/logger.util.js';
 
 let activeWorkers = [];
@@ -14,7 +15,13 @@ export const initializeWorkers = () => {
   const notificationWorker = createNotificationWorker();
   const sessionPersistenceWorker = createSessionPersistenceWorker();
   const chatPersistenceWorker = createChatPersistenceWorker();
-  activeWorkers = [notificationWorker, sessionPersistenceWorker, chatPersistenceWorker];
+  const storyCleanupWorker = createStoryCleanupWorker();
+  activeWorkers = [
+    notificationWorker,
+    sessionPersistenceWorker,
+    chatPersistenceWorker,
+    storyCleanupWorker,
+  ];
 
   logger.info(`[BullMQ] ${activeWorkers.length} background worker(s) running.`);
   return activeWorkers;
@@ -41,4 +48,9 @@ export {
 export {
   createChatPersistenceWorker,
 } from './chat-persistence.worker.js';
+
+export {
+  createStoryCleanupWorker,
+} from './story-cleanup.worker.js';
+
 

@@ -42,6 +42,22 @@ const chatMessageSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    storyContext: {
+      storyId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Story',
+        default: null,
+      },
+      type: {
+        type: String,
+        enum: ['IMAGE', 'VIDEO', 'TEXT', 'LIVE', null],
+        default: null,
+      },
+      thumbnailUrl: {
+        type: String,
+        default: null,
+      },
+    },
     deliveryStatus: {
       type: String,
       enum: ['SENT', 'DELIVERED', 'READ'],

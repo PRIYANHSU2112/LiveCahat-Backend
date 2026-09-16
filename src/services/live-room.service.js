@@ -4,6 +4,7 @@ import liveCommentRepository from '../repositories/live-comment.repository.js';
 import redisClient from '../config/redis.js';
 import { KEYS } from '../utils/socket-redis-keys.util.js';
 import { buildLiveChannelName } from '../utils/agora.util.js';
+import storyService from './story.service.js';
 import logger from '../utils/logger.util.js';
 
 // Pending host-disconnect timers (in-memory, per-instance).
@@ -74,10 +75,20 @@ class LiveRoomService extends BaseService {
       ]);
     }
 
+    // Sync active LIVE status in Stories module (zero RTC disruption)
+    storyService.syncLiveStoryStarted(hostId, room).catch((err) => {
+      logger.error(`[LiveRoomService] Error syncing live story start: ${err.message}`);
+    });
+
     return room;
   }
 
   async endRoom(roomId, hostId) {
+    // Immediately mark LIVE story status as ENDED in Stories module
+    storyService.syncLiveStoryEnded(roomId, hostId).catch((err) => {
+      logger.error(`[LiveRoomService] Error syncing live story ended: ${err.message}`);
+    });
+
     let viewerCount = 0;
     let peakViewers = 0;
     let likeCount = 0;

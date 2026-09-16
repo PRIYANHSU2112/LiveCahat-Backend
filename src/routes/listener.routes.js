@@ -21,17 +21,29 @@ router.post('/agent', restrictTo('AGENT'), validate(agentCreateListenerSchema), 
 router.get('/admin/stats', restrictTo('ADMIN'), authorize('listener.stats.view'), listenerController.getAdminStats);
 router.get('/admin/performance', restrictTo('ADMIN'), authorize('listener.performance.view'), validate(adminListenerPerformanceQuerySchema), listenerController.getAdminListenerPerformance);
 router.get('/admin/availability-monitoring', restrictTo('ADMIN'), authorize('listener.availability.view'), listenerController.getAdminAvailabilityMonitoring);
+
 router.get('/admin/boost-config', restrictTo('ADMIN'), authorize('listener.read'), visibilityBoostController.getConfig);
 router.put('/admin/boost-config', restrictTo('ADMIN'), authorize('listener.update'), validate(updateBoostConfigSchema), visibilityBoostController.updateConfig);
 router.get('/admin/active-boosts', restrictTo('ADMIN'), authorize('listener.read'), visibilityBoostController.getActiveBoosts);
+
 router.get('/export', restrictTo('ADMIN'), authorize('listener.read'), adminExportController.exportListeners);
-router.get('/admin/:id([0-9a-fA-F]{24})', restrictTo('ADMIN'), authorize('listener.read'), listenerController.getListenerById);
-router.put('/admin/:id([0-9a-fA-F]{24})', restrictTo('ADMIN'), authorize('listener.update'), listenerController.updateListenerByAdmin);
+router.get('/admin/:id', restrictTo('ADMIN'), authorize('listener.read'), listenerController.getListenerById);
+router.put('/admin/:id', restrictTo('ADMIN'), authorize('listener.update'), listenerController.updateListenerByAdmin);
 router.get('/', restrictTo('ADMIN', 'CUSTOMER'), listenerController.getAllListeners);
 router.get(
   '/public/:userId',
   restrictTo('CUSTOMER', 'LISTENER', 'ADMIN', 'AGENT'),
   listenerController.getPublicProfile,
+);
+router.post(
+  '/public/:userId/view',
+  restrictTo('CUSTOMER', 'LISTENER', 'ADMIN', 'AGENT'),
+  listenerController.recordView,
+);
+router.post(
+  '/:userId/view',
+  restrictTo('CUSTOMER', 'LISTENER', 'ADMIN', 'AGENT'),
+  listenerController.recordView,
 );
 router.post('/:id/kyc', restrictTo('ADMIN'), authorize('listener.kyc.moderate'), validate(updateKycStatusSchema), listenerController.approveOrRejectListener);
 

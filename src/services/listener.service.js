@@ -121,6 +121,7 @@ class ListenerService extends BaseService {
       totalRatings: profile.totalRatings,
       totalSessions: profile.totalSessions,
       followersCount: profile.followersCount,
+      viewCount: profile.viewCount || 0,
       anchorLevel: profile.anchorLevel,
       isFeatured: profile.isFeatured,
       availability,
@@ -142,6 +143,33 @@ class ListenerService extends BaseService {
         currentLevel: user?.currentLevel,
       },
     };
+  }
+
+  /**
+   * Records a profile view for a listener.
+   * Throttled with a 1-hour Redis TTL to prevent duplicate increments or view-botting.
+   */
+  async recordProfileView(listenerUserId, viewerUserId, ip = '') {
+    const dedupeIdentifier = viewerUserId ? viewerUserId.toString() : ip || 'anon';
+    const cacheKey = `view:listener:${listenerUserId}:${dedupeIdentifier}`;
+
+    const alreadyViewed = await getCache(cacheKey);
+    if (alreadyViewed) {
+      return { incremented: false };
+    }
+
+    // Set dedupe flag for 1 hour
+    await setCache(cacheKey, '1', 3600);
+
+    const ListenerProfile = (await import('../modules/listener-profile.model.js')).default;
+    await ListenerProfile.updateOne(
+      { userId: new mongoose.Types.ObjectId(listenerUserId) },
+      { $inc: { viewCount: 1 } }
+    );
+
+    // Invalidate listener profile cache so updated view count is returned immediately
+    await deleteCache(`listener:${listenerUserId}`);
+    return { incremented: true };
   }
 
   async createOrUpdateProfile(userId, data) {

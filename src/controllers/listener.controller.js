@@ -52,6 +52,15 @@ class ListenerController extends BaseController {
     this.sendResponse(res, 200, 'Public listener profile fetched', profile);
   });
 
+  recordView = catchAsync(async (req, res) => {
+    const result = await listenerService.recordProfileView(
+      req.params.userId || req.params.id,
+      req.user?._id,
+      req.ip || req.headers['x-forwarded-for']
+    );
+    this.sendResponse(res, 200, 'Profile view recorded', result);
+  });
+
   submitKyc = catchAsync(async (req, res) => {
     const profile = await listenerService.submitKyc(req.user._id, req.body);
     this.sendResponse(res, 200, 'KYC submitted successfully', profile);

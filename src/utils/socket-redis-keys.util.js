@@ -160,6 +160,40 @@ export const KEYS = {
 
   /** Monotonic read timestamp for a conversation. Value: ISO timestamp string. */
   convReadTs: (userId, partnerId) => `conv:read:ts:${userId}:${partnerId}`,
+
+  // ─── Instagram-Style Stories / Status ──────────────────────────────────────
+
+  /**
+   * Redis ZSET of userIds who have at least one active story.
+   * Member: ownerId, Score: latestStoryAt (Unix epoch in milliseconds).
+   * Supports range queries, recency sorting, and fast candidate pruning.
+   */
+  storiesActiveOwners: () => 'stories:active_owners',
+
+  /**
+   * Redis SET of listenerIds who are actively LIVE.
+   * Member: listenerId
+   */
+  storiesActiveLive: () => 'stories:active_live',
+
+  /**
+   * Upload authorization token key for media uploads (TTL 30 mins).
+   * Key: story:upload_auth:<fileKey>, Value: JSON { userId, fileType, type }
+   */
+  storyUploadAuth: (fileKey) => `story:upload_auth:${fileKey}`,
+
+  /**
+   * Expiring Redis SET of storyIds viewed by a user.
+   * Key: user:views:<userId>, Value: Set of storyIds.
+   * Strict 24-hour rolling TTL (86400s) matching story lifecycle.
+   */
+  userStoryViews: (userId) => `user:views:${userId}`,
+
+  /**
+   * Cached following set for a user.
+   * Key: user:following:<userId>, Value: Set of followed userIds (TTL 1h).
+   */
+  userFollowingSet: (userId) => `user:following:${userId}`,
 };
 
 export const PATTERNS = {

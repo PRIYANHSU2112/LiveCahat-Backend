@@ -1,12 +1,14 @@
 import { notificationQueue } from './notification.queue.js';
 import { sessionPersistenceQueue } from './session-persistence.queue.js';
 import { chatPersistenceQueue } from './chat-persistence.queue.js';
+import { storyCleanupQueue, enqueueStoryCleanup, initializeStoryCleanupSchedule } from './story-cleanup.queue.js';
 import logger from '../utils/logger.util.js';
 
 export const allQueues = [
   notificationQueue,
   sessionPersistenceQueue,
   chatPersistenceQueue,
+  storyCleanupQueue,
 ];
 
 /**
@@ -35,4 +37,11 @@ export {
   chatPersistenceQueue,
   enqueueChatPersistence,
 } from './chat-persistence.queue.js';
+
+export {
+  storyCleanupQueue,
+  enqueueStoryCleanup,
+  initializeStoryCleanupSchedule,
+} from './story-cleanup.queue.js';
+
 

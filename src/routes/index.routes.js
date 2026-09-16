@@ -36,6 +36,7 @@ import countryRoutes from './country.routes.js';
 import roleRoutes, { permissionRouter, auditLogRouter } from './role.routes.js';
 import platformSettingsRoutes from './platform-settings.routes.js';
 import paymentGatewayRoutes from './payment-gateway.routes.js';
+import storyRoutes from './story.routes.js';
 
 const router = express.Router();
 
@@ -78,6 +79,7 @@ router.use('/anchor-levels', anchorLevelRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/xp', xpRoutes);
 router.use('/search', searchRoutes);
+router.use('/stories', storyRoutes);
 
 export default router;
 

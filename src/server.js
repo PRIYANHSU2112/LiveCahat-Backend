@@ -28,7 +28,7 @@ import { initializePresenceSweeperJob } from './jobs/presence-sweeper.job.js';
 import { initializeVisibilityBoostJob } from './jobs/visibility-boost.job.js';
 import { initializeFirebase } from './config/firebase.js';
 import { initializeWorkers, closeAllWorkers } from './workers/index.js';
-import { closeAllQueues } from './queues/index.js';
+import { closeAllQueues, initializeStoryCleanupSchedule } from './queues/index.js';
 import dailyRewardService from './services/daily-reward.service.js';
 import settingsRuntime from './services/settings-runtime.service.js';
 
@@ -74,6 +74,7 @@ mongoose.connect(DB_URI, {
 
     // Initialize BullMQ Background Workers
     initializeWorkers();
+    initializeStoryCleanupSchedule();
 
     // Warm platform/payment settings into memory (O(1) hot-path reads)
     await settingsRuntime.warm();
