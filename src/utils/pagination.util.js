@@ -16,7 +16,7 @@ export const getPaginationOptions = (query) => {
   return { page, limit, skip, sort };
 };
 
-export const formatPaginatedResponse = (data, totalDocuments, page, limit) => {
+export const formatPaginatedResponse = (data, totalDocuments, page, limit, nextCursor = null) => {
   const totalPages = Math.ceil(totalDocuments / limit);
   return {
     docs: data,
@@ -25,8 +25,9 @@ export const formatPaginatedResponse = (data, totalDocuments, page, limit) => {
       totalPages,
       currentPage: page,
       limit,
-      hasNextPage: page < totalPages,
+      hasNextPage: nextCursor ? true : page < totalPages,
       hasPrevPage: page > 1,
+      nextCursor: nextCursor || null,
     }
   };
 };

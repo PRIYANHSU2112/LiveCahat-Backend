@@ -331,6 +331,7 @@ class MatchService {
    */
   async discoverListeners(customer, queryParams = {}) {
     const { page, limit, skip } = getPaginationOptions(queryParams);
+    const cursor = queryParams.cursor || null;
     const sortKey = DISCOVER_SORTS[queryParams.sort] ? queryParams.sort : 'combined';
     const sort = DISCOVER_SORTS[sortKey];
 
@@ -351,6 +352,7 @@ class MatchService {
       page,
       limit,
       skip,
+      cursor,
     });
 
     if (
@@ -367,13 +369,20 @@ class MatchService {
         page,
         limit,
         skip,
+        cursor,
       });
     }
 
     const docs = await this._overlayDiscoverPresence(result.docs);
+    const baseResponse = formatPaginatedResponse(docs, result.total, page, limit);
 
     return {
-      ...formatPaginatedResponse(docs, result.total, page, limit),
+      ...baseResponse,
+      meta: {
+        ...baseResponse.meta,
+        nextCursor: result.nextCursor || null,
+        hasNextPage: result.hasNextPage || false,
+      },
       appliedFilters: {
         sort: sortKey,
         sameCountry,
@@ -437,21 +446,28 @@ class MatchService {
     return userMatch;
   }
 
-  async _fetchDiscoverPage({ filters, q, sort, sortKey, page, limit, skip }) {
+  async _fetchDiscoverPage({ filters, q, sort, sortKey, page, limit, skip, cursor = null }) {
     const version = await getCacheVersion('listeners');
-    const cacheKey = `match:discover:v${version}:${JSON.stringify({ filters, q: q || '', sortKey, page, limit })}`;
+    const cacheKey = `match:discover:v${version}:${JSON.stringify({ filters, q: q || '', sortKey, page, limit, cursor: cursor || '' })}`;
 
     const cached = await getCache(cacheKey);
     if (cached) {
       return cached;
     }
 
-    const [languageId, countryId, activeBoostDocs] = await Promise.all([
+    const [languageId, countryId, boostedUserIds] = await Promise.all([
       this._resolveLanguageId(filters.language),
       this._resolveCountryId(filters.countryId),
-      VisibilityBoost.find({ status: 'ACTIVE', expiresAt: { $gt: new Date() } })
-        .select('listenerId')
-        .lean(),
+      (async () => {
+        const cachedBoosts = await getCache('active_boost_listener_ids');
+        if (cachedBoosts && Array.isArray(cachedBoosts)) return cachedBoosts;
+        const activeBoostDocs = await VisibilityBoost.find({ status: 'ACTIVE', expiresAt: { $gt: new Date() } })
+          .select('listenerId')
+          .lean();
+        const ids = activeBoostDocs.map((b) => b.listenerId);
+        await setCache('active_boost_listener_ids', ids, 60);
+        return ids;
+      })(),
     ]);
 
     const profileMatch = { kycStatus: 'APPROVED' };
@@ -483,18 +499,18 @@ class MatchService {
     if (Object.keys(ratingRange).length) profileMatch.avgRating = ratingRange;
 
     const userMatch = await this._buildDiscoverUserMatch(q, profileMatch);
-    const boostedUserIds = activeBoostDocs.map((b) => b.listenerId);
 
-    const { total, data } = await listenerRepository.getHomeListeners(
+    const { total, data, nextCursor, hasNextPage } = await listenerRepository.getHomeListeners(
       profileMatch,
       userMatch,
       sort,
       skip,
       limit,
-      boostedUserIds
+      boostedUserIds,
+      cursor
     );
 
-    const payload = { total, docs: data };
+    const payload = { total, docs: data, nextCursor, hasNextPage };
     await setCache(cacheKey, payload, DISCOVER_CACHE_TTL);
     return payload;
   }

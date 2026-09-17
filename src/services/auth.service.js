@@ -56,6 +56,14 @@ class AuthService {
       });
     }
 
+    // Auto-grant Level 0 Welcome Reward (stored as UNCLAIMED in inventory)
+    try {
+      const xpService = (await import('./xp.service.js')).default;
+      await xpService.grantWelcomeReward(user._id);
+    } catch (err) {
+      console.error('[AuthService] Welcome reward grant failed:', err?.message);
+    }
+
     return user;
   }
 

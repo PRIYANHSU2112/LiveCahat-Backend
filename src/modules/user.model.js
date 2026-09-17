@@ -161,8 +161,8 @@ const userSchema = new mongoose.Schema(
     },
     currentLevel: {
       type: Number,
-      default: 1,
-      min: 1,
+      default: 0,
+      min: 0,
     },
     badges: [
       {

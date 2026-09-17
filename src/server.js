@@ -1,4 +1,8 @@
 import 'dotenv/config';
+import dns from 'node:dns';
+try {
+  dns.setDefaultResultOrder('ipv4first');
+} catch {}
 import './observability/tracing.js';
 import { createServer } from 'http';
 import dotenv from 'dotenv';
@@ -49,14 +53,28 @@ io.adapter(createAdapter(pubClient, subClient));
 // Initialize Socket.io Server (Bootstrap)
 initializeSockets(io);
 
-// Database Connection
-mongoose.connect(DB_URI, {
-  serverSelectionTimeoutMS: 30000,
-  connectTimeoutMS: 30000,
-})
-  .then(async () => {
-    logger.info('DB connection successful!');
+// Database Connection with Retry
+async function startServer() {
+  const maxRetries = 10;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      await mongoose.connect(DB_URI, {
+        serverSelectionTimeoutMS: 30000,
+        connectTimeoutMS: 30000,
+      });
+      logger.info('DB connection successful!');
+      break;
+    } catch (err) {
+      logger.error(`DB Connection Attempt ${attempt} failed: ${err.message || err}`);
+      if (attempt === maxRetries) {
+        logger.error('Exhausted DB connection retries. Shutting down...');
+        process.exit(1);
+      }
+      await new Promise(res => setTimeout(res, 3000));
+    }
+  }
 
+  try {
     // Initialize Firebase Admin SDK
     initializeFirebase();
 
@@ -93,10 +111,12 @@ mongoose.connect(DB_URI, {
         logger.info(`[Agora] App ID ${masked}, auth mode: ${config.agora.authMode}`);
       }
     });
-  })
-  .catch((err) => {
-    logger.error('DB Connection Error:', err);
-  });
+  } catch (initErr) {
+    logger.error('Startup initialization failed:', initErr);
+  }
+}
+
+startServer();
 
 // Graceful Shutdown Management
 const gracefulShutdown = async (signal) => {

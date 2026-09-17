@@ -85,6 +85,16 @@ class StoryController extends BaseController {
     const result = await storyService.deleteStory(storyId, req.user._id);
     this.sendResponse(res, 200, 'Story deleted successfully', result);
   });
+
+  /**
+   * PATCH /stories/:storyId
+   * Update caption or text of a story owned by the user.
+   */
+  updateStory = catchAsync(async (req, res) => {
+    const { storyId } = req.params;
+    const result = await storyService.updateStory(storyId, req.user._id, req.body);
+    this.sendResponse(res, 200, 'Story updated successfully', result);
+  });
 }
 
 export default new StoryController();

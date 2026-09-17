@@ -11,6 +11,7 @@ const CUSTOMER_MATCH = {
 const CUSTOMER_PROJECT = {
   firstName: 1,
   lastName: 1,
+  username: 1,
   profileImage: 1,
   gender: 1,
   countryCode: 1,

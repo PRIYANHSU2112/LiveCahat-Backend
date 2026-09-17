@@ -35,6 +35,14 @@ class XpController extends BaseController {
   // ─── User: Reward Inventory Endpoints ───────────────────────────
 
   /**
+   * GET /xp/rewards/latest-unclaimed — Get newest pending reward for popup
+   */
+  getLatestUnclaimedReward = catchAsync(async (req, res) => {
+    const data = await xpService.getLatestUnclaimedReward(req.user._id);
+    this.sendResponse(res, 200, 'Latest unclaimed reward fetched successfully', data);
+  });
+
+  /**
    * GET /xp/rewards/inventory — My reward inventory (?status=UNCLAIMED|CLAIMED)
    */
   getRewardInventory = catchAsync(async (req, res) => {

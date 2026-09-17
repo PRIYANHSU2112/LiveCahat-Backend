@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import ListenerProfile from '../modules/listener-profile.model.js';
 
 class ListenerRepository {
@@ -56,147 +57,172 @@ class ListenerRepository {
    * @param {Number} skip
    * @param {Number} limit
    * @param {Array}  [boostedUserIds=[]] List of currently active boosted listener ObjectIds
-   * @returns {{ total: Number, data: Array }}
+   * @param {String} [cursor=null] Optional opaque base64 cursor for keyset pagination
+   * @returns {{ total: Number, data: Array, nextCursor: String|null, hasNextPage: Boolean }}
    */
-  async getHomeListeners(profileMatch, userMatch, sort, skip, limit, boostedUserIds = []) {
-    const pipeline = [
-      // 1. Narrow on the indexed profile fields first (kycStatus, availability, languages, rating, anchorLevel, country).
-      { $match: profileMatch },
-      // 2. Dynamic priorities:
-      // - boostPriority: 1 for Boosted (Top), 2 for Normal
-      // - statusPriority: ONLINE/LIVE (1) -> BUSY (2) -> OFFLINE (3) -> Other (4) for normal listeners
-      {
-        $addFields: {
-          isBoosted: {
-            $in: ['$userId', boostedUserIds],
-          },
-          boostPriority: {
-            $cond: [
-              { $in: ['$userId', boostedUserIds] },
-              1,
-              2,
-            ],
-          },
-          statusPriority: {
-            $switch: {
-              branches: [
-                { case: { $in: ['$availability', ['ONLINE', 'LIVE']] }, then: 1 },
-                { case: { $eq: ['$availability', 'BUSY'] }, then: 2 },
-                { case: { $eq: ['$availability', 'OFFLINE'] }, then: 3 },
-              ],
-              default: 4,
-            },
-          },
+  async getHomeListeners(profileMatch, userMatch, sort, skip = 0, limit = 10, boostedUserIds = [], cursor = null) {
+    const match = { ...profileMatch };
+
+    // Decode opaque cursor if present
+    let effectiveSkip = skip;
+    let isCursorPaging = false;
+    if (cursor) {
+      try {
+        const decoded = JSON.parse(Buffer.from(cursor, 'base64').toString('utf8'));
+        if (typeof decoded?.offset === 'number' && decoded.offset >= 0) {
+          effectiveSkip = decoded.offset;
+          isCursorPaging = true;
+        }
+      } catch (_) {}
+    }
+
+    const hasBoosts = Array.isArray(boostedUserIds) && boostedUserIds.length > 0;
+    const isStatusFixed = Boolean(match.availability);
+
+    // Optimized streaming pipeline with Limit Pushdown (NO blocking $facet)
+    const pipeline = [{ $match: match }];
+
+    const addFields = {};
+    if (hasBoosts) {
+      addFields.isBoosted = { $in: ['$userId', boostedUserIds] };
+      addFields.boostPriority = { $cond: [{ $in: ['$userId', boostedUserIds] }, 1, 2] };
+    } else {
+      addFields.isBoosted = false;
+    }
+
+    if (!isStatusFixed) {
+      addFields.statusPriority = {
+        $switch: {
+          branches: [
+            { case: { $in: ['$availability', ['ONLINE', 'LIVE']] }, then: 1 },
+            { case: { $eq: ['$availability', 'BUSY'] }, then: 2 },
+            { case: { $eq: ['$availability', 'OFFLINE'] }, then: 3 },
+          ],
+          default: 4,
         },
-      },
-      // 3. Tiered sort:
-      // 1. boostPriority (Boosted listeners first)
-      // 2. statusPriority (ONLINE > BUSY > OFFLINE)
-      // 3. Secondary sort criteria (featured / popular / rating / newest)
+      };
+    }
+
+    if (Object.keys(addFields).length > 0) {
+      pipeline.push({ $addFields: addFields });
+    }
+
+    const sortStage = {};
+    if (hasBoosts) sortStage.boostPriority = 1;
+    if (!isStatusFixed) sortStage.statusPriority = 1;
+    Object.assign(sortStage, sort || { _id: -1 });
+    pipeline.push({ $sort: sortStage });
+
+    // Streamlined pagination without duplicate results
+    if (effectiveSkip > 0) {
+      pipeline.push({ $skip: effectiveSkip });
+    }
+    // Fetch limit + 1 to know if there is a next page
+    pipeline.push({ $limit: limit + 1 });
+
+    // Lookups run ONLY on the sliced items (max limit + 1 items)
+    pipeline.push(
       {
-        $sort: {
-          boostPriority: 1,
-          statusPriority: 1,
-          ...(sort || {}),
-        },
-      },
-      // 4. Pagination facet — All lookups happen ONLY on the 10 sliced items!
-      {
-        $facet: {
-          metadata: [{ $count: 'total' }],
-          data: [
-            { $skip: skip },
-            { $limit: limit },
-            // Resolve user info ONLY on the paginated slice
-            {
-              $lookup: {
-                from: 'users',
-                localField: 'userId',
-                foreignField: '_id',
-                pipeline: [
-                  {
-                    $project: {
-                      _id: 1,
-                      firstName: 1,
-                      lastName: 1,
-                      profileImage: 1,
-                      isOnline: 1,
-                    },
-                  },
-                ],
-                as: 'user',
-              },
-            },
-            { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
-            // Resolve language references ONLY on the paginated slice
-            {
-              $lookup: {
-                from: 'languages',
-                localField: 'languages',
-                foreignField: '_id',
-                pipeline: [
-                  {
-                    $project: {
-                      _id: 1,
-                      name: 1,
-                      code: 1,
-                    },
-                  },
-                ],
-                as: 'languageDetails',
-              },
-            },
-            // Resolve country reference ONLY on the paginated slice
-            {
-              $lookup: {
-                from: 'countries',
-                localField: 'country',
-                foreignField: '_id',
-                pipeline: [
-                  {
-                    $project: {
-                      _id: 1,
-                      name: 1,
-                      code: 1,
-                      dialCode: 1,
-                      flagUrl: 1,
-                    },
-                  },
-                ],
-                as: 'countryDetails',
-              },
-            },
-            { $unwind: { path: '$countryDetails', preserveNullAndEmptyArrays: true } },
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          pipeline: [
             {
               $project: {
                 _id: 1,
-                userId: 1,
-                videoRate: 1,
-                avgRating: 1,
-                availability: 1,
-                isFeatured: 1,
-                isBoosted: 1,
-                user: {
-                  _id: '$user._id',
-                  firstName: '$user.firstName',
-                  lastName: '$user.lastName',
-                  profileImage: '$user.profileImage',
-                  isOnline: '$user.isOnline',
-                },
-                languageDetails: 1,
-                countryDetails: 1,
+                firstName: 1,
+                lastName: 1,
+                profileImage: 1,
+                isOnline: 1,
               },
             },
           ],
+          as: 'user',
         },
       },
-    ];
+      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: 'languages',
+          localField: 'languages',
+          foreignField: '_id',
+          pipeline: [
+            {
+              $project: {
+                _id: 1,
+                name: 1,
+                code: 1,
+              },
+            },
+          ],
+          as: 'languageDetails',
+        },
+      },
+      {
+        $lookup: {
+          from: 'countries',
+          localField: 'country',
+          foreignField: '_id',
+          pipeline: [
+            {
+              $project: {
+                _id: 1,
+                name: 1,
+                code: 1,
+                dialCode: 1,
+                flagUrl: 1,
+              },
+            },
+          ],
+          as: 'countryDetails',
+        },
+      },
+      { $unwind: { path: '$countryDetails', preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          _id: 1,
+          userId: 1,
+          videoRate: 1,
+          voiceRate: 1,
+          chatRate: 1,
+          avgRating: 1,
+          availability: 1,
+          isFeatured: 1,
+          isBoosted: 1,
+          user: {
+            _id: '$user._id',
+            firstName: '$user.firstName',
+            lastName: '$user.lastName',
+            profileImage: '$user.profileImage',
+            isOnline: '$user.isOnline',
+          },
+          languageDetails: 1,
+          countryDetails: 1,
+        },
+      }
+    );
 
-    const result = await this.aggregate(pipeline);
-    const total = result[0]?.metadata[0]?.total || 0;
-    const data = result[0]?.data || [];
+    // Cursor pagination skips total count to avoid redundant cloud DB round-trip
+    let total = 0;
+    let rawDocs = [];
+    if (isCursorPaging || effectiveSkip > 0) {
+      rawDocs = await this.aggregate(pipeline);
+    } else {
+      [total, rawDocs] = await Promise.all([
+        ListenerProfile.countDocuments(profileMatch),
+        this.aggregate(pipeline),
+      ]);
+    }
 
-    return { total, data };
+    const hasNextPage = rawDocs.length > limit;
+    const data = hasNextPage ? rawDocs.slice(0, limit) : rawDocs;
+    const nextOffset = effectiveSkip + data.length;
+    const nextCursor = hasNextPage
+      ? Buffer.from(JSON.stringify({ offset: nextOffset })).toString('base64')
+      : null;
+
+    return { total, data, nextCursor, hasNextPage };
   }
 
   async getPaginatedListeners(matchQuery, sort, skip, limit, userMatch = {}) {

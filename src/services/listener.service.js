@@ -310,8 +310,54 @@ class ListenerService extends BaseService {
    * @param {Number} [queryParams.minRating] Minimum average rating (0–5)
    * @param {String} [queryParams.sort]     featured | popular | rating | newest
    */
+  _langCache = new Map();
+  _countryCache = new Map();
+
+  async _resolveLanguage(language) {
+    if (!language) return null;
+    const str = String(language).trim();
+    if (this._langCache.has(str)) return this._langCache.get(str);
+
+    if (mongoose.Types.ObjectId.isValid(str)) {
+      const id = new mongoose.Types.ObjectId(str);
+      this._langCache.set(str, id);
+      return id;
+    }
+    const lang = await Language.findOne({
+      $or: [
+        { name: { $regex: `^${str}$`, $options: 'i' } },
+        { code: str.toUpperCase() },
+      ],
+    }).select('_id').lean();
+
+    const id = lang ? lang._id : new mongoose.Types.ObjectId();
+    this._langCache.set(str, id);
+    return id;
+  }
+
+  async _resolveCountry(country) {
+    if (!country) return null;
+    const str = String(country).trim();
+    if (this._countryCache.has(str)) return this._countryCache.get(str);
+
+    if (mongoose.Types.ObjectId.isValid(str)) {
+      const id = new mongoose.Types.ObjectId(str);
+      this._countryCache.set(str, id);
+      return id;
+    }
+    const found =
+      (await countryRepository.findByCode(str)) ||
+      (await countryRepository.findByDialCode(str)) ||
+      (await countryRepository.findOne({ name: { $regex: `^${str}$`, $options: 'i' } }));
+
+    const id = found ? found._id : new mongoose.Types.ObjectId();
+    this._countryCache.set(str, id);
+    return id;
+  }
+
   async getHomeListeners(queryParams = {}) {
     const { page, limit, skip } = getPaginationOptions(queryParams);
+    const cursor = queryParams.cursor || null;
     const sort = HOME_SORTS[queryParams.sort] || HOME_SORTS.featured;
 
     // ── Version-scoped cache key (auto-invalidates when `listeners` version bumps) ──
@@ -322,9 +368,11 @@ class ListenerService extends BaseService {
       country: (queryParams.country || '').trim().toLowerCase(),
       status: (queryParams.status || '').trim().toUpperCase(),
       minRating: queryParams.minRating !== undefined && queryParams.minRating !== '' ? Number(queryParams.minRating) : '',
+      anchorLevel: queryParams.anchorLevel !== undefined && queryParams.anchorLevel !== '' ? Number(queryParams.anchorLevel) : '',
       sort: queryParams.sort || 'featured',
       page,
       limit,
+      cursor: cursor || '',
     })}`;
 
     const cached = await getCache(cacheKey);
@@ -333,38 +381,21 @@ class ListenerService extends BaseService {
       return await this._overlayPresenceOnHomePage(cached);
     }
 
-    // ── Resolve language filter (accept ObjectId, name, or code) ──
-    let languageId = null;
-    if (queryParams.language) {
-      if (mongoose.Types.ObjectId.isValid(queryParams.language)) {
-        languageId = new mongoose.Types.ObjectId(queryParams.language);
-      } else {
-        const lang = await Language.findOne({
-          $or: [
-            { name: { $regex: `^${queryParams.language}$`, $options: 'i' } },
-            { code: queryParams.language.toUpperCase() },
-          ],
-        }).select('_id').lean();
-        // Unknown language → guaranteed-empty match instead of ignoring the filter.
-        languageId = lang ? lang._id : new mongoose.Types.ObjectId();
-      }
-    }
-
-    // ── Resolve country filter (accept ObjectId, ISO code, dial code, or name) ──
-    let countryId = null;
-    if (queryParams.country) {
-      const c = queryParams.country.trim();
-      if (mongoose.Types.ObjectId.isValid(c)) {
-        countryId = new mongoose.Types.ObjectId(c);
-      } else {
-        const country =
-          (await countryRepository.findByCode(c)) ||
-          (await countryRepository.findByDialCode(c)) ||
-          (await countryRepository.findOne({ name: { $regex: `^${c}$`, $options: 'i' } }));
-        // Unknown country → guaranteed-empty match instead of ignoring the filter.
-        countryId = country ? country._id : new mongoose.Types.ObjectId();
-      }
-    }
+    const [languageId, countryId, boostedUserIds] = await Promise.all([
+      this._resolveLanguage(queryParams.language),
+      this._resolveCountry(queryParams.country),
+      (async () => {
+        const cachedBoosts = await getCache('active_boost_listener_ids');
+        if (cachedBoosts && Array.isArray(cachedBoosts)) return cachedBoosts;
+        const activeBoostDocs = await VisibilityBoost.find({
+          status: 'ACTIVE',
+          expiresAt: { $gt: new Date() },
+        }).select('listenerId').lean();
+        const ids = activeBoostDocs.map((b) => b.listenerId);
+        await setCache('active_boost_listener_ids', ids, 60);
+        return ids;
+      })(),
+    ]);
 
     // ── Listener-profile match (indexed fields first) ──
     const profileMatch = { kycStatus: 'APPROVED' };
@@ -373,6 +404,9 @@ class ListenerService extends BaseService {
     if (countryId) profileMatch.country = countryId;
     if (queryParams.minRating !== undefined && queryParams.minRating !== '') {
       profileMatch.avgRating = { $gte: Number(queryParams.minRating) };
+    }
+    if (queryParams.anchorLevel !== undefined && queryParams.anchorLevel !== '') {
+      profileMatch.anchorLevel = Number(queryParams.anchorLevel);
     }
 
     // ── Fast User Search via Indexed User Collection ──
@@ -398,26 +432,25 @@ class ListenerService extends BaseService {
     // ── Joined-user match (active = not deleted, not blocked by admin) ──
     const userMatch = { 'user.isDeleted': false, 'user.isBlocked': false };
 
-    // ── Fast Active Boosts lookup (max 20 IDs) ──
-    const activeBoostDocs = await VisibilityBoost.find({
-      status: 'ACTIVE',
-      expiresAt: { $gt: new Date() },
-    })
-      .select('listenerId')
-      .lean();
-
-    const boostedUserIds = activeBoostDocs.map((b) => b.listenerId);
-
-    const { total, data } = await this.repository.getHomeListeners(
+    const { total, data, nextCursor, hasNextPage } = await this.repository.getHomeListeners(
       profileMatch,
       userMatch,
       sort,
       skip,
       limit,
-      boostedUserIds
+      boostedUserIds,
+      cursor
     );
 
-    const response = formatPaginatedResponse(data, total, page, limit);
+    const baseResponse = formatPaginatedResponse(data, total, page, limit);
+    const response = {
+      ...baseResponse,
+      meta: {
+        ...baseResponse.meta,
+        nextCursor,
+        hasNextPage,
+      },
+    };
     await setCache(cacheKey, response, 300); // 5 mins cache; presence dynamically overlaid per read
     return await this._overlayPresenceOnHomePage(response);
   }

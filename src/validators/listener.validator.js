@@ -48,9 +48,11 @@ export const homeListenersQuerySchema = Joi.object({
     country: Joi.string().trim().max(50), // ObjectId, ISO code (e.g. "IN"), dialCode, or name
     status: Joi.string().valid(...AVAILABILITY_STATUSES), // ONLINE | OFFLINE | BUSY
     minRating: Joi.number().min(0).max(5),
+    anchorLevel: Joi.number().integer().min(0).max(10),
     sort: Joi.string().valid('featured', 'popular', 'rating', 'newest').default('featured'),
     page: Joi.number().integer().min(1),
-    limit: Joi.number().integer().min(1).max(50),
+    limit: Joi.number().integer().min(1).max(50).default(10),
+    cursor: Joi.string().trim().allow('', null).optional(),
   }),
 });
 

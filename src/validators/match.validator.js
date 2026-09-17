@@ -35,7 +35,8 @@ const matchValidator = {
   discoverListeners: {
     query: Joi.object({
       page: Joi.number().integer().min(1),
-      limit: Joi.number().integer().min(1).max(50),
+      limit: Joi.number().integer().min(1).max(50).default(10),
+      cursor: Joi.string().trim().allow('', null).optional(),
       sort: Joi.string()
         .valid('combined', 'rating', 'anchor_level', 'featured', 'popular')
         .default('combined'),

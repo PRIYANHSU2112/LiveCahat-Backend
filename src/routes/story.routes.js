@@ -11,6 +11,7 @@ import {
   storyIdParamSchema,
   batchViewsSchema,
   replyStorySchema,
+  updateStorySchema,
 } from '../validators/story.validator.js';
 
 const router = express.Router();
@@ -86,5 +87,11 @@ router.post('/:storyId/reply', validate(replyStorySchema), storyController.reply
  * Delete own story
  */
 router.delete('/:storyId', validate(storyIdParamSchema), storyController.deleteStory);
+
+/**
+ * PATCH /stories/:storyId
+ * Edit own story caption/text
+ */
+router.patch('/:storyId', validate(updateStorySchema), storyController.updateStory);
 
 export default router;

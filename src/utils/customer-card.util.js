@@ -7,10 +7,15 @@ export const formatCustomerCard = (user, presence = {}, extra = {}) => {
   const liveStatus = presence.liveStatus ?? (user.isOnline ? 'ONLINE' : 'OFFLINE');
   const isOnline = presence.isOnline ?? liveStatus !== 'OFFLINE';
 
+  const fullName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
+  const displayName = fullName || user.username || 'User';
+
   return {
     id,
     firstName: user.firstName,
     lastName: user.lastName,
+    username: user.username,
+    name: displayName,
     profileImage: user.profileImage,
     gender: user.gender,
     countryCode: user.countryCode,

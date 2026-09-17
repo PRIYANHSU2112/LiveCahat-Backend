@@ -46,7 +46,6 @@ class PresenceService {
           }
           await ListenerProfile.findOneAndUpdate({ userId }, { availability: 'ONLINE' });
           await deleteCache(`listener:${userId}`);
-          await bumpCacheVersion('listeners');
           this.broadcastStatusChange(userId, 'ONLINE');
           this._touchAgentDashboard(userId, { type: 'online', text: 'Listener went online' });
         } else {
@@ -77,7 +76,6 @@ class PresenceService {
             }
             await ListenerProfile.findOneAndUpdate({ userId }, { availability: 'LIVE' });
             await deleteCache(`listener:${userId}`);
-            await bumpCacheVersion('listeners');
             this.broadcastStatusChange(userId, 'LIVE');
           } else if (profile && profile.availability === 'BUSY' && activeSessionId) {
             if (redisClient.isRedisAvailable) {
@@ -89,7 +87,6 @@ class PresenceService {
             }
             await ListenerProfile.findOneAndUpdate({ userId }, { availability: 'ONLINE' });
             await deleteCache(`listener:${userId}`);
-            await bumpCacheVersion('listeners');
             this.broadcastStatusChange(userId, 'ONLINE');
           }
         }
@@ -132,7 +129,6 @@ class PresenceService {
         if (userType === 'LISTENER') {
           await ListenerProfile.findOneAndUpdate({ userId }, { availability: 'OFFLINE' });
           await deleteCache(`listener:${userId}`);
-          await bumpCacheVersion('listeners');
           this.broadcastStatusChange(userId, 'OFFLINE');
           this._touchAgentDashboard(userId, { type: 'offline', text: 'Listener went offline' });
         } else {
@@ -155,7 +151,6 @@ class PresenceService {
       }
       await ListenerProfile.findOneAndUpdate({ userId }, { availability: 'LIVE' });
       await deleteCache(`listener:${userId}`);
-      await bumpCacheVersion('listeners');
       this.broadcastStatusChange(userId, 'LIVE');
       await this.recordAgentOnlinePeak(userId);
       await this._touchAgentDashboard(userId, { type: 'live', text: 'Listener went live' });
@@ -175,7 +170,6 @@ class PresenceService {
       }
       await ListenerProfile.findOneAndUpdate({ userId }, { availability: 'BUSY' });
       await deleteCache(`listener:${userId}`);
-      await bumpCacheVersion('listeners');
       this.broadcastStatusChange(userId, 'BUSY');
       await this.recordAgentOnlinePeak(userId);
       await this._touchAgentDashboard(userId);
@@ -195,7 +189,6 @@ class PresenceService {
       }
       await ListenerProfile.findOneAndUpdate({ userId }, { availability: 'ONLINE' });
       await deleteCache(`listener:${userId}`);
-      await bumpCacheVersion('listeners');
       this.broadcastStatusChange(userId, 'ONLINE');
       await this.recordAgentOnlinePeak(userId);
       await this._touchAgentDashboard(userId);
@@ -215,7 +208,6 @@ class PresenceService {
       }
       await ListenerProfile.findOneAndUpdate({ userId }, { availability: 'OFFLINE' });
       await deleteCache(`listener:${userId}`);
-      await bumpCacheVersion('listeners');
       this.broadcastStatusChange(userId, 'OFFLINE');
     } catch (err) {
       logger.error(`[Presence setOffline Error] Failed for listener ${userId}: ${err.message}`);

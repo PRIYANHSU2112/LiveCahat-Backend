@@ -27,6 +27,7 @@ router.get('/history', xpController.getHistory);
 router.get('/leaderboard', xpController.getLeaderboard);
 
 // Reward Inventory (claimable level-up rewards)
+router.get('/rewards/latest-unclaimed', xpController.getLatestUnclaimedReward);
 router.get('/rewards/inventory', validate(rewardInventoryQuerySchema), xpController.getRewardInventory);
 router.post('/rewards/claim-all', xpController.claimAllRewards);
 router.post('/rewards/:inventoryId/claim', validate(claimRewardSchema), xpController.claimReward);

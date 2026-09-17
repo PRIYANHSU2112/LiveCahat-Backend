@@ -15,9 +15,28 @@ import logger from '../utils/logger.util.js';
  */
 export const seedXpSystem = async () => {
   try {
-    // Skip if already seeded (check if any LevelConfig exists)
+    // If level 0 is missing, ensure it gets created
+    const level0Exists = await LevelConfig.findOne({ level: 0 });
+    if (!level0Exists) {
+      const reward50 = await Reward.findOne({ type: 'COINS', value: 50 }) || await Reward.create({
+        type: 'COINS',
+        value: 50,
+        label: '50 Bonus Coins',
+        isActive: true,
+      });
+      await LevelConfig.create({
+        level: 0,
+        xpRequired: 0,
+        title: 'Welcome Newcomer',
+        rewards: [reward50._id],
+        isActive: true,
+      });
+      logger.info('[XP Seeder] Level 0 config seeded successfully');
+    }
+
+    // Skip full seeding if levels already exist
     const existingLevels = await LevelConfig.countDocuments();
-    if (existingLevels > 0) {
+    if (existingLevels > 1) {
       return; // Already seeded — skip silently
     }
 
@@ -79,8 +98,9 @@ export const seedXpSystem = async () => {
     // ═══════════════════════════════════════════════════════════════
 
     const levelConfigs = [
-      { level: 1, xpRequired: 0, title: 'Newcomer', rewards: [] },
-      { level: 2, xpRequired: 100, title: 'Explorer', rewards: [coinRewards[50]] },
+      { level: 0, xpRequired: 0, title: 'Welcome Newcomer', rewards: [coinRewards[50]].filter(Boolean) },
+      { level: 1, xpRequired: 50, title: 'Newcomer', rewards: [coinRewards[100]].filter(Boolean) },
+      { level: 2, xpRequired: 150, title: 'Explorer', rewards: [coinRewards[150]].filter(Boolean) },
       { level: 3, xpRequired: 250, title: 'Chatter', rewards: [coinRewards[100]] },
       {
         level: 4, xpRequired: 500, title: 'Regular',

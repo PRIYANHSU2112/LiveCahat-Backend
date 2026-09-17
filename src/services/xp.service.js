@@ -54,7 +54,7 @@ class XpService {
       if (!user) return null;
 
       const xpBefore = user.totalXp || 0;
-      const levelBefore = user.currentLevel || 1;
+      const levelBefore = typeof user.currentLevel === 'number' ? user.currentLevel : 0;
       const newXp = xpBefore + xpConfig.xp;
 
       // 4. Determine new level
@@ -124,7 +124,7 @@ class XpService {
 
     const levelConfigs = await this._getLevelConfigs();
     const currentXp = user.totalXp || 0;
-    const currentLevel = user.currentLevel || 1;
+    const currentLevel = typeof user.currentLevel === 'number' ? user.currentLevel : 0;
 
     const currentLevelConfig = levelConfigs.find(l => l.level === currentLevel);
     const nextLevelConfig = levelConfigs.find(l => l.level === currentLevel + 1);
@@ -450,7 +450,7 @@ class XpService {
     if (!user) throw new ApiError(404, 'User not found');
 
     const xpBefore = user.totalXp || 0;
-    const levelBefore = user.currentLevel || 1;
+    const levelBefore = typeof user.currentLevel === 'number' ? user.currentLevel : 0;
     const newXp = xpBefore + xpAmount;
 
     const levelConfigs = await this._getLevelConfigs();
@@ -502,6 +502,144 @@ class XpService {
   // ═══════════════════════════════════════════════════════════════════
   // PUBLIC: Reward Inventory (claimable rewards earned via level-ups)
   // ═══════════════════════════════════════════════════════════════════
+
+  /**
+   * Get latest unclaimed reward for popup display across any screen.
+   */
+  async getLatestUnclaimedReward(userId) {
+    // Self-healing: if user never received Level 0 welcome reward, auto-grant it now
+    const hasLevel0 = await RewardHistory.exists({ userId, level: 0 });
+    if (!hasLevel0) {
+      try {
+        await this.grantWelcomeReward(userId);
+      } catch (e) {
+        logger.warn(`[XpService] Auto-grant welcome reward failed in getLatestUnclaimedReward: ${e.message}`);
+      }
+    }
+
+    const item = await RewardHistory.findOne({ userId, status: 'UNCLAIMED' })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    if (!item) {
+      return { hasUnclaimed: false, reward: null };
+    }
+
+    return {
+      hasUnclaimed: true,
+      reward: {
+        inventoryId: item._id,
+        level: typeof item.level === 'number' ? item.level : 0,
+        title: item.label || `Level ${item.level} Reward`,
+        rewardType: item.rewardType,
+        value: item.value,
+        icon: item.icon || null,
+        description: item.description || item.label || '',
+        createdAt: item.createdAt,
+      },
+    };
+  }
+
+  /**
+   * Grant Level 0 welcome reward to a newly registered user (stored as UNCLAIMED in inventory).
+   */
+  async grantWelcomeReward(userId) {
+    try {
+      logger.info(`[XpService] grantWelcomeReward: starting for user ${userId}`);
+
+      // 1. Guard against duplicate welcome reward
+      const existing = await RewardHistory.findOne({ userId, level: 0 });
+      if (existing) {
+        logger.info(`[XpService] grantWelcomeReward: already exists for user ${userId}, skipping`);
+        return existing;
+      }
+
+      // 2. Fetch Level 0 config
+      const level0Config = await LevelConfig.findOne({ level: 0, isActive: true })
+        .populate('rewards')
+        .lean();
+
+      logger.info(`[XpService] grantWelcomeReward: level0Config ${level0Config ? 'found' : 'NOT FOUND'} for user ${userId}`);
+
+      const rewardsToGrant = (level0Config?.rewards || []).filter(r => r && r.isActive !== false);
+
+      const itemsCreated = [];
+
+      if (rewardsToGrant.length > 0) {
+        logger.info(`[XpService] grantWelcomeReward: granting ${rewardsToGrant.length} configured rewards to user ${userId}`);
+        for (const reward of rewardsToGrant) {
+          const item = await RewardHistory.create({
+            userId,
+            level: 0,
+            rewardId: reward._id,
+            rewardType: reward.type,
+            referenceId: reward.referenceId || null,
+            value: reward.value,
+            label: reward.label,
+            icon: reward.icon || undefined,
+            coinsGranted: 0,
+            description: reward.label,
+            status: 'UNCLAIMED',
+          });
+          itemsCreated.push(item);
+        }
+      } else {
+        // Fallback default welcome reward: 50 Free Coins
+        logger.info(`[XpService] grantWelcomeReward: no level0 rewards configured, using 50-coin default for user ${userId}`);
+        const defaultReward = await RewardHistory.create({
+          userId,
+          level: 0,
+          rewardType: 'COINS',
+          value: 50,
+          label: '50 Free Coins',
+          coinsGranted: 0,
+          description: 'Welcome Bonus for joining LiveChat!',
+          status: 'UNCLAIMED',
+        });
+        itemsCreated.push(defaultReward);
+      }
+
+      logger.info(`[XpService] grantWelcomeReward: ✅ created ${itemsCreated.length} reward(s) in inventory for user ${userId}`);
+
+      // 3. Create welcome in-app notification (non-blocking, don't let failure abort reward grant)
+      try {
+        await Notification.create({
+          recipientId: userId,
+          title: '🎁 Welcome Reward Ready!',
+          body: 'Welcome to LiveChat! Your Level 0 Welcome Reward is waiting in your inventory. Claim it now!',
+          type: 'LEVEL_UP',
+          metadata: {
+            level: '0',
+            title: level0Config?.title || 'Welcome Newcomer',
+          },
+        });
+      } catch (notifErr) {
+        logger.warn(`[XpService] grantWelcomeReward: notification creation failed (non-fatal): ${notifErr.message}`);
+      }
+
+      // 4. Emit socket event (fire-and-forget — user may not be connected yet at registration time)
+      const firstItem = itemsCreated[0];
+      emitToUser(userId.toString(), 'xp:level_up', {
+        newLevel: 0,
+        levelTitle: level0Config?.title || 'Welcome Newcomer',
+        badge: level0Config?.badge || null,
+        rewards: itemsCreated.map(i => ({
+          inventoryId: i._id,
+          type: i.rewardType,
+          label: i.label,
+          value: i.value,
+          icon: i.icon || null,
+        })),
+        claimable: true,
+        celebrationMessage: '🎉 Welcome to LiveChat! Claim your welcome gift.',
+      });
+
+      return firstItem;
+    } catch (err) {
+      logger.error(`[XpService] grantWelcomeReward: FAILED for user ${userId}: ${err.message}`, { stack: err.stack });
+      return null;
+    }
+  }
 
   /**
    * List a user's reward inventory, optionally filtered by status.
@@ -631,7 +769,7 @@ class XpService {
           // Deposit into inventory as UNCLAIMED — nothing is granted yet.
           // A full snapshot is stored so admin edits/deletes can't change
           // what the user was promised.
-          await RewardHistory.create([{
+          const [historyItem] = await RewardHistory.create([{
             userId,
             level: lvl,
             rewardId: reward._id,
@@ -646,6 +784,7 @@ class XpService {
           }], { session });
 
           allRewards.push({
+            inventoryId: historyItem._id,
             type: reward.type,
             label: reward.label,
             value: reward.value,
@@ -803,7 +942,7 @@ class XpService {
     // Sort descending by xpRequired, find first config where xp >= xpRequired
     const sorted = [...levelConfigs].sort((a, b) => b.xpRequired - a.xpRequired);
     const matched = sorted.find(l => totalXp >= l.xpRequired);
-    return matched?.level ?? 1;
+    return matched?.level ?? 0;
   }
 
   /**

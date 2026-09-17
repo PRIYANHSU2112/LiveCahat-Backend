@@ -7,7 +7,7 @@ import { XP_ACTIONS, LEVEL_REWARD_TYPES } from '../constants/enum.constant.js';
 
 export const createLevelConfigSchema = {
   body: Joi.object().keys({
-    level: Joi.number().integer().min(1).required(),
+    level: Joi.number().integer().min(0).required(),
     xpRequired: Joi.number().integer().min(0).required(),
     title: Joi.string().required().trim(),
     badge: Joi.string().allow('', null).trim(),
@@ -18,7 +18,7 @@ export const createLevelConfigSchema = {
 
 export const updateLevelConfigSchema = {
   body: Joi.object().keys({
-    level: Joi.number().integer().min(1),
+    level: Joi.number().integer().min(0),
     xpRequired: Joi.number().integer().min(0),
     title: Joi.string().trim(),
     badge: Joi.string().allow('', null).trim(),

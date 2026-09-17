@@ -210,7 +210,13 @@ class StoryService extends BaseService {
         bubble.latestStoryAt = story.createdAt;
       }
 
+      const isHostCurrentlyLive = activeLiveSet.has(ownerIdStr);
+
       if (story.type === 'LIVE') {
+        if (!isHostCurrentlyLive) {
+          // Stale LIVE story whose room has ended; skip counting it as an active story
+          continue;
+        }
         bubble.isLive = true;
         const rawSessionId = story.liveSessionId?._id || story.liveSessionId;
         bubble.liveSessionId = rawSessionId ? rawSessionId.toString() : null;
@@ -560,6 +566,28 @@ class StoryService extends BaseService {
     return { success: true };
   }
 
+  /**
+   * Update a story (edit caption or text).
+   */
+  async updateStory(storyId, userId, updateData) {
+    const story = await this.repository.findById(storyId);
+    if (!story) {
+      throw new ApiError(404, 'Story not found');
+    }
+
+    const ownerIdStr = (story.ownerId._id || story.ownerId).toString();
+    if (ownerIdStr !== userId.toString()) {
+      throw new ApiError(403, 'You are not authorized to edit this story');
+    }
+
+    const updates = {};
+    if (typeof updateData.caption === 'string') updates.caption = updateData.caption.trim();
+    if (typeof updateData.text === 'string') updates.text = updateData.text.trim();
+
+    const updated = await this.repository.updateById(storyId, updates);
+    return updated;
+  }
+
   // ─── LIVE STORY SYNCHRONIZATION ───────────────────────────────────────────
 
   /**
@@ -748,18 +776,22 @@ class StoryService extends BaseService {
   }
 
   async _getActiveLiveHosts() {
+    // Authoritative check: only hosts with status = 'live' rooms in MongoDB
+    const liveRooms = await LiveRoom.find({ status: 'live' }).select('hostId').lean();
+    const liveHostIds = new Set(liveRooms.map((r) => r.hostId.toString()));
+
     if (redisClient.isRedisAvailable) {
       try {
-        const hosts = await redisClient.smembers(KEYS.storiesActiveLive());
-        if (hosts) return new Set(hosts);
+        await redisClient.del(KEYS.storiesActiveLive());
+        if (liveHostIds.size > 0) {
+          await redisClient.sadd(KEYS.storiesActiveLive(), ...Array.from(liveHostIds));
+        }
       } catch (err) {
-        logger.error(`[StoryService] Error reading active live hosts: ${err.message}`);
+        // ignore cache write error
       }
     }
 
-    // Fallback: query active live rooms
-    const liveRooms = await LiveRoom.find({ status: 'live' }).select('hostId').lean();
-    return new Set(liveRooms.map((r) => r.hostId.toString()));
+    return liveHostIds;
   }
 
   async _getActiveOwnersFromZset(activeThresholdMs) {

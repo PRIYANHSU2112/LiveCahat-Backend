@@ -97,3 +97,17 @@ export const replyStorySchema = Joi.object({
     }),
   }),
 });
+
+export const updateStorySchema = Joi.object({
+  params: Joi.object({
+    storyId: Joi.string()
+      .regex(objectIdPattern)
+      .required()
+      .messages({ 'string.pattern.base': 'storyId must be a valid 24-character hex ObjectId' }),
+  }),
+  body: Joi.object({
+    caption: Joi.string().trim().max(500).allow('', null).optional(),
+    text: Joi.string().trim().max(1000).allow('', null).optional(),
+  }),
+});
+
