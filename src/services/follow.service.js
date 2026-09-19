@@ -143,50 +143,71 @@ class FollowService extends BaseService {
 
   // ─── GET FOLLOW COUNTS ────────────────────────────────────────────
   /**
-   * Get follower + following counts for a user (reads from denormalized fields, cached).
+   * Get follower + following counts for a user (reads real counts and caches for 120s).
    */
   async getFollowCounts(userId) {
     const cacheKey = `follow:counts:${userId}`;
     const cached = await getCache(cacheKey);
     if (cached) return cached;
 
-    // Read denormalized counts in parallel
-    const [user, listenerProfile] = await Promise.all([
+    // Read user type & count actual documents in parallel
+    const [user, realFollowingCount, realFollowersCount, realFavoritesCount] = await Promise.all([
       User.findById(userId).select('followingCount type').lean(),
-      ListenerProfile.findOne({ userId }).select('followersCount').lean(),
+      followRepository.countFollowing(userId),
+      followRepository.countFollowers(userId),
+      followRepository.countFavorites(userId),
     ]);
 
     if (!user) {
       throw new ApiError(404, 'User not found');
     }
 
+    // Auto-heal denormalized counters if out of sync (asynchronously)
+    if (user.followingCount !== realFollowingCount) {
+      User.updateOne({ _id: userId }, { $set: { followingCount: realFollowingCount } }).catch(() => {});
+    }
+    if (user.type === 'LISTENER') {
+      ListenerProfile.updateOne({ userId }, { $set: { followersCount: realFollowersCount } }).catch(() => {});
+    }
+
     const counts = {
-      followingCount: user.followingCount || 0,
-      followersCount: listenerProfile?.followersCount || 0,
+      followingCount: realFollowingCount,
+      followersCount: realFollowersCount,
+      favoritesCount: realFavoritesCount,
       isListener: user.type === 'LISTENER',
     };
 
-    await setCache(cacheKey, counts, 600); // 10 min TTL
+    await setCache(cacheKey, counts, 120); // 2 min TTL
     return counts;
   }
 
   // ─── TOGGLE FAVORITE ──────────────────────────────────────────────
   /**
-   * Mark/unmark a followed listener as favourite.
-   * Must already be following the listener.
+   * Mark/unmark a listener as favourite.
+   * Auto-follows the listener if not already following.
    */
   async toggleFavorite(followerId, followingId) {
-    // Check if following first
-    const existingFollow = await followRepository.isFollowing(followerId, followingId);
+    let existingFollow = await followRepository.isFollowing(followerId, followingId);
+    let newFavoriteStatus = true;
+    let updatedDoc;
+
     if (!existingFollow) {
-      throw new ApiError(400, 'You must follow this listener before marking as favourite');
+      // Auto-follow and mark favorite seamlessly
+      const { doc } = await followRepository.follow(followerId, followingId);
+      updatedDoc = await followRepository.toggleFavorite(followerId, followingId, true);
+      // Increment counters
+      await Promise.all([
+        ListenerProfile.updateOne({ userId: followingId }, { $inc: { followersCount: 1 } }),
+        User.updateOne({ _id: followerId }, { $inc: { followingCount: 1 } }),
+      ]);
+      await this._invalidateFollowCaches(followerId, followingId);
+      followEvents.emit('user:followed', { followerId, followingId, timestamp: new Date() });
+    } else {
+      newFavoriteStatus = !existingFollow.isFavorite;
+      updatedDoc = await followRepository.toggleFavorite(followerId, followingId, newFavoriteStatus);
+      await bumpCacheVersion(`follow:${followerId}`);
+      await deleteCache(`follow:counts:${followerId}`);
     }
-
-    const newFavoriteStatus = !existingFollow.isFavorite;
-    const updatedDoc = await followRepository.toggleFavorite(followerId, followingId, newFavoriteStatus);
-
-    // Invalidate following list cache (favorites are a subset)
-    await bumpCacheVersion(`follow:${followerId}`);
 
     // Emit event
     followEvents.emit('user:favorite:toggled', {

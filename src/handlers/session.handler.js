@@ -37,10 +37,10 @@ class SessionHandler {
         callerId = sessionData.callerId;
         listenerId = sessionData.listenerId;
       } else {
-        // Fallback to DB query
-        const sessionDoc = await communicationSessionService.getItemById(sessionId);
+        const sessionDoc = await communicationSessionService.getItemById(sessionId).catch(() => null);
         if (!sessionDoc || sessionDoc.status !== 'ONGOING') {
-          return socket.emit(SERVER_EVENTS.ERROR, { message: 'Session is not active or does not exist.' });
+          // If not an ongoing call session, quietly return without fatal socket error
+          return;
         }
         callerId = sessionDoc.callerId.toString();
         listenerId = sessionDoc.listenerId.toString();

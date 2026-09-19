@@ -32,6 +32,11 @@ class MatchController extends BaseController {
     const result = await matchService.discoverListeners(req.user, req.query);
     this.sendResponse(res, 200, 'Listeners discovered successfully', result);
   });
+
+  aroundYou = catchAsync(async (req, res) => {
+    const result = await matchService.getAroundYouListeners(req.user, req.query);
+    this.sendResponse(res, 200, 'Nearby listeners fetched successfully', result);
+  });
 }
 
 export default new MatchController();

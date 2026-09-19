@@ -58,6 +58,18 @@ const giftTransactionSchema = new mongoose.Schema(
       default: 'SUCCESS',
       required: true,
     },
+    clientGiftId: {
+      type: String,
+      unique: true,
+      sparse: true,
+      index: true,
+    },
+    sessionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'CommunicationSession',
+      default: null,
+      index: true,
+    },
   },
   {
     timestamps: true,

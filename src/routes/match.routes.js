@@ -39,4 +39,10 @@ router.get('/status', validate(matchValidator.matchStatus), matchController.matc
  */
 router.get('/discover', validate(matchValidator.discoverListeners), matchController.discoverListeners);
 
+/**
+ * GET /api/v1/match/around-you
+ * Ultra-fast (<100ms) nearby/country listener discovery for Discover carousel.
+ */
+router.get('/around-you', validate(matchValidator.aroundYou), matchController.aroundYou);
+
 export default router;

@@ -54,6 +54,12 @@ const communicationConfigSchema = new mongoose.Schema(
       min: 0,
       max: 100,
     },
+    /** Admin-configured default coins per message when users are not in active chat room */
+    defaultCoinsPerMessage: {
+      type: Number,
+      default: 1,
+      min: 0,
+    },
   },
   {
     timestamps: true,

@@ -174,6 +174,36 @@ class ChatController extends BaseController {
     );
     this.sendResponse(res, 200, 'Direct messages fetched successfully', { messages });
   });
+
+  /**
+   * POST /chats/conversations/direct
+   * Get or create a direct conversation reference with partner.
+   */
+  getOrCreateDirectConversation = catchAsync(async (req, res) => {
+    const { partnerId } = req.body;
+    if (!partnerId) {
+      return this.sendError(res, 400, 'Partner ID is required');
+    }
+
+    const result = await chatMessageService.getOrCreateDirectConversation(req.user._id, partnerId);
+    this.sendResponse(res, 200, 'Direct conversation resolved successfully', result);
+  });
+
+  /**
+   * PATCH /chats/conversations/:partnerId/read
+   * Mark all unread incoming messages from a specific partner as read.
+   */
+  markConversationAsRead = catchAsync(async (req, res) => {
+    const { partnerId } = req.params;
+    if (!partnerId) {
+      return this.sendError(res, 400, 'Partner ID is required');
+    }
+
+    const result = await chatMessageService.markConversationAsRead(req.user._id, partnerId);
+    this.sendResponse(res, 200, 'Conversation messages marked as read successfully', {
+      markedCount: result.modifiedCount || 0,
+    });
+  });
 }
 
 export default new ChatController();

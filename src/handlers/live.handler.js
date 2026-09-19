@@ -9,6 +9,7 @@ import Wallet from '../modules/wallet.model.js';
 import CommunicationConfig from '../modules/communication-config.model.js';
 import { stringToUid } from '../utils/agora.util.js';
 import { joinLiveRoom, leaveLiveRoom, emitToLiveRoom } from '../utils/socket-room.util.js';
+import liveAnnouncementService from '../services/live-announcement.service.js';
 import config from '../config/index.js';
 import logger from '../utils/logger.util.js';
 
@@ -251,6 +252,19 @@ class LiveHandler {
         userId,
       });
 
+      // Enqueue announcement to Redis buffer for high-concurrency rate-controlled broadcast
+      const joiningUserName =
+        `${socket.user.firstName || ''} ${socket.user.lastName || ''}`.trim() ||
+        socket.user.email?.split('@')[0] ||
+        'User';
+
+      liveAnnouncementService.enqueueJoinAnnouncement(io, roomId, {
+        userId,
+        name: joiningUserName,
+        avatar: socket.user.profileImage || null,
+        userType: socket.user.type || 'CUSTOMER',
+      });
+
       logger.info(`[Live Join] User ${userId} joined room ${roomId}. Viewers: ${viewerCount}, rate: ${liveRate}`);
     } catch (err) {
       logger.error(`[Live Join Error] ${err.message}`);
@@ -422,6 +436,9 @@ class LiveHandler {
   async _tearDownRoom(io, roomId, hostId) {
     // Settle all active viewer billing before ending the room
     await liveBillingService.reconcileRoomBilling(roomId);
+
+    // Clean up Redis announcement queue for this room
+    liveAnnouncementService.cleanupRoom(roomId);
 
     await liveRoomService.endRoom(roomId, hostId);
     emitToLiveRoom(io, roomId, SERVER_EVENTS.LIVE_ENDED, { roomId });

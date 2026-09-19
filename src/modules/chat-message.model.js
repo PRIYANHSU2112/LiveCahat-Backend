@@ -35,7 +35,7 @@ const chatMessageSchema = new mongoose.Schema(
     },
     messageType: {
       type: String,
-      enum: ['TEXT', 'SYSTEM', 'IMAGE', 'VIDEO', 'AUDIO'],
+      enum: ['TEXT', 'SYSTEM', 'IMAGE', 'VIDEO', 'AUDIO', 'GIFT'],
       default: 'TEXT',
     },
     fileUrl: {
@@ -92,6 +92,9 @@ const chatMessageSchema = new mongoose.Schema(
 chatMessageSchema.index({ sessionId: 1, createdAt: 1 });
 chatMessageSchema.index({ sessionId: 1, createdAt: -1 });
 chatMessageSchema.index({ senderId: 1, recipientId: 1, createdAt: -1 });
+chatMessageSchema.index({ recipientId: 1, senderId: 1, createdAt: -1 });
+chatMessageSchema.index({ recipientId: 1, readAt: 1, deletedAt: 1 });
+chatMessageSchema.index({ recipientId: 1, senderId: 1, readAt: 1 });
 chatMessageSchema.index({ recipientId: 1, deliveryStatus: 1 });
 chatMessageSchema.index({ sessionId: 1, senderId: 1, readAt: 1 });
 

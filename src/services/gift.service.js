@@ -6,6 +6,9 @@ import Wallet from '../modules/wallet.model.js';
 import ListenerProfile from '../modules/listener-profile.model.js';
 import CoinTransaction from '../modules/coin-transaction.model.js';
 import GiftTransaction from '../modules/gift-transaction.model.js';
+import ChatMessage from '../modules/chat-message.model.js';
+import redisClient from '../config/redis.js';
+import { KEYS } from '../utils/socket-redis-keys.util.js';
 import ApiError from '../utils/ApiError.js';
 import { getCache, setCache, deleteCache, bumpCacheVersion, getCacheVersion } from '../utils/redis.util.js';
 import { emitToUser, getSocketIo } from '../utils/socket.util.js';
@@ -173,13 +176,43 @@ class GiftService {
    */
   async sendGift(senderId, senderRole, data) {
     const { giftId, receiverId, liveRoomId, sessionId: callSessionId } = data || {};
+    const clientGiftId = data?.idempotencyKey || data?.clientGiftId || null;
 
     if (!giftId || !receiverId) {
       throw new ApiError(400, 'Gift ID and Receiver ID are required');
     }
 
-    if (senderId.toString() === receiverId.toString()) {
+    const senderIdStr = senderId.toString();
+    const receiverIdStr = receiverId.toString();
+
+    if (senderIdStr === receiverIdStr) {
       throw new ApiError(400, 'You cannot send a gift to yourself');
+    }
+
+    // Idempotency check to prevent duplicate gift deductions
+    let idempotencyKey = null;
+    if (clientGiftId) {
+      idempotencyKey = `gift:idempotency:${senderIdStr}:${clientGiftId}`;
+      const cached = await getCache(idempotencyKey);
+      if (cached) {
+        if (cached === 'PROCESSING') {
+          throw new ApiError(409, 'Gift send is already in progress');
+        }
+        return typeof cached === 'string' ? JSON.parse(cached) : cached;
+      }
+
+      const existingTx = await GiftTransaction.findOne({ clientGiftId });
+      if (existingTx) {
+        return {
+          success: true,
+          giftId: existingTx.giftId,
+          coins: existingTx.coins,
+          earningCoins: existingTx.earningCoins,
+          clientGiftId,
+        };
+      }
+
+      await setCache(idempotencyKey, 'PROCESSING', 30);
     }
 
     const session = await mongoose.startSession();
@@ -198,6 +231,7 @@ class GiftService {
         throw new ApiError(404, 'Gift not found or is currently inactive');
       }
 
+      // Sender can send to listener regardless of status (ONLINE, OFFLINE, BUSY)
       if (!receiver || receiver.isDeleted || receiver.isBlocked) {
         throw new ApiError(404, 'Receiver user not found or is inactive');
       }
@@ -352,10 +386,25 @@ class GiftService {
         throw new ApiError(403, 'Unauthorized sender role for sending gifts');
       }
 
-      // 5. Execute document saves and create ledger + gift transaction in parallel
+      // 5. Persistent ChatMessage creation (so gift appears in conversation history even if receiver is OFFLINE/BUSY)
+      const msgClientMsgId = clientGiftId ? `gift_${clientGiftId}` : `gift_${new mongoose.Types.ObjectId().toString()}`;
+      const sessIdObj = callSessionId && mongoose.Types.ObjectId.isValid(callSessionId) ? new mongoose.Types.ObjectId(callSessionId) : null;
+
+      const [chatMessageDoc] = await ChatMessage.create([{
+        clientMsgId: msgClientMsgId,
+        senderId,
+        recipientId: receiverId,
+        sessionId: sessIdObj,
+        text: gift.name,
+        messageType: 'GIFT',
+        fileUrl: gift.icon || null,
+        deliveryStatus: 'SENT',
+      }], { session, ordered: true });
+
+      // 6. Execute document saves and create ledger + gift transaction in parallel
       await Promise.all([
         ...dbSavePromises,
-        CoinTransaction.create(coinLedgerEntries, { session }),
+        CoinTransaction.create(coinLedgerEntries, { session, ordered: true }),
         GiftTransaction.create([{
           giftId,
           senderId,
@@ -367,15 +416,35 @@ class GiftService {
           adminCoins,
           type: transactionType,
           status: 'SUCCESS',
-        }], { session }),
+          clientGiftId: clientGiftId || undefined,
+          sessionId: sessIdObj,
+        }], { session, ordered: true }),
       ]);
 
       await session.commitTransaction();
       session.endSession();
 
-      // 6. Non-blocking Post-Transaction Operations (Fire-and-forget background pipeline)
-      const senderIdStr = senderId.toString();
-      const receiverIdStr = receiverId.toString();
+      // 7. Non-blocking Post-Transaction Operations (Fire-and-forget background pipeline)
+      const finalResult = {
+        success: true,
+        giftId,
+        giftName: gift.name,
+        icon: gift.icon,
+        gift: {
+          id: gift._id,
+          name: gift.name,
+          icon: gift.icon,
+          category: gift.category,
+        },
+        coins: gift.coin,
+        earningCoins,
+        senderBalanceAfter: wallet.coinBalance,
+        clientGiftId,
+      };
+
+      if (idempotencyKey) {
+        setCache(idempotencyKey, JSON.stringify(finalResult), 300).catch(() => {});
+      }
 
       // Async cache invalidations
       const cacheBumps = [
@@ -393,6 +462,11 @@ class GiftService {
       Promise.all(cacheBumps).catch((err) =>
         logger.error(`[Gift Service] Cache bump error: ${err.message}`)
       );
+
+      // Increment recipient unread counter in Redis for chat list badge
+      if (redisClient?.isRedisAvailable) {
+        redisClient.hincrby(KEYS.unreadUser(receiverIdStr), senderIdStr, 1).catch(() => {});
+      }
 
       // Async Agent analytics & Anchor evaluation
       if (receiver.type === 'LISTENER') {
@@ -424,7 +498,7 @@ class GiftService {
         );
       }
 
-      // 7. Real-Time Socket Broadcast
+      // 8. Real-Time Socket Broadcast (1-second animation + live chat message)
       const senderName =
         `${sender?.firstName || ''} ${sender?.lastName || ''}`.trim() || 'Viewer';
       const senderAvatar = sender?.profileImage || null;
@@ -457,6 +531,34 @@ class GiftService {
       // Emit to receiver directly
       emitToUser(receiverIdStr, 'gift:received', giftEventData);
 
+      // Emit to sender for confirmation
+      emitToUser(senderIdStr, 'gift:sent', giftEventData);
+
+      // Also emit chat:receive_message so receiver sees the gift immediately in their active chat view
+      const directMessagePayload = {
+        _id: chatMessageDoc._id,
+        clientMsgId: chatMessageDoc.clientMsgId,
+        senderId: {
+          _id: senderId,
+          firstName: sender?.firstName,
+          lastName: sender?.lastName,
+          profileImage: senderAvatar,
+        },
+        recipientId: {
+          _id: receiverId,
+          firstName: receiver?.firstName,
+          lastName: receiver?.lastName,
+          profileImage: receiver?.profileImage || null,
+        },
+        sessionId: callSessionId || null,
+        text: gift.name,
+        messageType: 'GIFT',
+        fileUrl: gift.icon || null,
+        deliveryStatus: 'SENT',
+        createdAt: chatMessageDoc.createdAt || new Date().toISOString(),
+      };
+      emitToUser(receiverIdStr, 'chat:receive_message', directMessagePayload);
+
       // Broadcast to live room or session room if provided
       const io = getSocketIo();
       if (io && liveRoomId) {
@@ -466,15 +568,11 @@ class GiftService {
         io.to(`session:${callSessionId}`).emit('gift:received', giftEventData);
       }
 
-      return {
-        success: true,
-        giftId,
-        giftName: gift.name,
-        coins: gift.coin,
-        earningCoins,
-        senderBalanceAfter: wallet.coinBalance,
-      };
+      return finalResult;
     } catch (error) {
+      if (idempotencyKey) {
+        deleteCache(idempotencyKey).catch(() => {});
+      }
       await session.abortTransaction();
       session.endSession();
       throw error;

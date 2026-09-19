@@ -40,4 +40,16 @@ router.post('/sessions/:sessionId/media', uploadChatAttachment, chatController.s
  */
 router.get('/direct/:partnerId/messages', chatController.getDirectMessages);
 
+/**
+ * POST /chats/conversations/direct
+ * Resolve or initialize direct conversation with partner.
+ */
+router.post('/conversations/direct', chatController.getOrCreateDirectConversation);
+
+/**
+ * PATCH /chats/conversations/:partnerId/read
+ * Mark all messages from partner as read.
+ */
+router.patch('/conversations/:partnerId/read', chatController.markConversationAsRead);
+
 export default router;

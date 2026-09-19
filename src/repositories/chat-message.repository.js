@@ -48,11 +48,13 @@ class ChatMessageRepository extends BaseRepository {
   }
 
   /**
-   * Optimized conversation list for a user (single aggregation, no N+1).
-   * Groups chat partners, attaches last message, unread count, and user profile.
+   * Optimized conversation list for a user (single aggregation on ChatMessage).
+   * Groups chat partners, attaches true latest message, accurate unread count, and user profile.
    */
   async findConversationsForUser(userId, { page = 1, limit = 20, search = '' } = {}) {
-    const userObjectId = new mongoose.Types.ObjectId(userId);
+    const userIdStr = userId ? userId.toString() : '';
+    const userObjectId = mongoose.Types.ObjectId.isValid(userIdStr) ? new mongoose.Types.ObjectId(userIdStr) : null;
+    const matchUserIds = userObjectId ? [userObjectId, userIdStr] : [userIdStr];
     const skip = (page - 1) * limit;
     const searchTerm = (search || '').trim();
     const searchRegex = searchTerm ? new RegExp(searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') : null;
@@ -60,93 +62,98 @@ class ChatMessageRepository extends BaseRepository {
     const baseStages = [
       {
         $match: {
-          $or: [{ callerId: userObjectId }, { listenerId: userObjectId }],
-          status: { $in: ['ONGOING', 'COMPLETED'] },
+          $or: [
+            { senderId: { $in: matchUserIds } },
+            { recipientId: { $in: matchUserIds } },
+          ],
+          deletedAt: null,
         },
       },
       {
         $addFields: {
-          otherUserId: {
+          partnerId: {
             $cond: {
-              if: { $eq: ['$callerId', userObjectId] },
-              then: '$listenerId',
-              else: '$callerId',
+              if: {
+                $or: [
+                  { $eq: ['$senderId', userObjectId] },
+                  { $eq: [{ $toString: '$senderId' }, userIdStr] },
+                ],
+              },
+              then: '$recipientId',
+              else: '$senderId',
             },
           },
         },
       },
-      { $sort: { updatedAt: -1 } },
+      {
+        $match: {
+          partnerId: { $ne: null, $exists: true },
+        },
+      },
+      {
+        $sort: { createdAt: -1 },
+      },
       {
         $group: {
-          _id: '$otherUserId',
-          sessionIds: { $addToSet: '$_id' },
-          latestSessionId: { $first: '$_id' },
-          lastSessionAt: { $max: '$updatedAt' },
-        },
-      },
-      {
-        $lookup: {
-          from: 'chatmessages',
-          let: { sids: '$sessionIds' },
-          pipeline: [
-            { $match: { $expr: { $in: ['$sessionId', '$$sids'] } } },
-            { $sort: { createdAt: -1 } },
-            { $limit: 1 },
-            {
-              $project: {
-                _id: 1,
-                text: 1,
-                messageType: 1,
-                senderId: 1,
-                fileUrl: 1,
-                createdAt: 1,
-              },
-            },
-          ],
-          as: 'lastMessageArr',
-        },
-      },
-      {
-        $lookup: {
-          from: 'chatmessages',
-          let: { sids: '$sessionIds', me: userObjectId },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
+          _id: '$partnerId',
+          lastMessage: { $first: '$$ROOT' },
+          lastMessageAt: { $first: '$createdAt' },
+          unreadCount: {
+            $sum: {
+              $cond: {
+                if: {
                   $and: [
-                    { $in: ['$sessionId', '$$sids'] },
-                    { $ne: ['$senderId', '$$me'] },
+                    {
+                      $or: [
+                        { $eq: ['$recipientId', userObjectId] },
+                        { $eq: [{ $toString: '$recipientId' }, userIdStr] },
+                      ],
+                    },
                     { $eq: [{ $ifNull: ['$readAt', null] }, null] },
-                    { $eq: [{ $ifNull: ['$deletedAt', null] }, null] },
                   ],
                 },
+                then: 1,
+                else: 0,
               },
             },
-            { $count: 'count' },
-          ],
-          as: 'unreadArr',
+          },
+        },
+      },
+      {
+        $addFields: {
+          partnerObjectId: {
+            $convert: { input: '$_id', to: 'objectId', onError: '$_id', onNull: '$_id' },
+          },
         },
       },
       {
         $lookup: {
           from: 'users',
-          localField: '_id',
-          foreignField: '_id',
-          as: 'user',
+          let: { pObj: '$partnerObjectId', pRaw: '$_id' },
           pipeline: [
-            { $match: { isDeleted: { $ne: true } } },
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $ne: ['$isDeleted', true] },
+                    {
+                      $or: [
+                        { $eq: ['$_id', '$$pObj'] },
+                        { $eq: [{ $toString: '$_id' }, { $toString: '$$pRaw' }] },
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
             { $project: { firstName: 1, lastName: 1, profileImage: 1, isOnline: 1 } },
           ],
+          as: 'user',
         },
       },
-      { $unwind: { path: '$user', preserveNullAndEmptyArrays: false } },
+      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
       {
         $addFields: {
-          lastMessage: { $arrayElemAt: ['$lastMessageArr', 0] },
-          unreadCount: {
-            $ifNull: [{ $arrayElemAt: ['$unreadArr.count', 0] }, 0],
-          },
           fullName: {
             $trim: {
               input: {
@@ -160,8 +167,6 @@ class ChatMessageRepository extends BaseRepository {
           },
         },
       },
-      // Only conversations that have at least one message
-      { $match: { lastMessage: { $ne: null } } },
     ];
 
     if (searchRegex) {
@@ -177,11 +182,6 @@ class ChatMessageRepository extends BaseRepository {
     }
 
     baseStages.push(
-      {
-        $addFields: {
-          lastMessageAt: { $ifNull: ['$lastMessage.createdAt', '$lastSessionAt'] },
-        },
-      },
       { $sort: { lastMessageAt: -1 } },
       {
         $facet: {
@@ -196,7 +196,7 @@ class ChatMessageRepository extends BaseRepository {
                   id: '$_id',
                   name: {
                     $cond: {
-                      if: { $gt: [{ $strLenCP: '$fullName' }, 0] },
+                      if: { $gt: [{ $strLenCP: { $ifNull: ['$fullName', ''] } }, 0] },
                       then: '$fullName',
                       else: 'User',
                     },
@@ -204,7 +204,7 @@ class ChatMessageRepository extends BaseRepository {
                   profilePicture: '$user.profileImage',
                   isOnline: { $ifNull: ['$user.isOnline', false] },
                 },
-                sessionId: '$latestSessionId',
+                sessionId: { $ifNull: ['$lastMessage.sessionId', '$_id'] },
                 lastMessage: {
                   id: '$lastMessage._id',
                   text: '$lastMessage.text',
@@ -213,8 +213,8 @@ class ChatMessageRepository extends BaseRepository {
                   fileUrl: '$lastMessage.fileUrl',
                   createdAt: '$lastMessage.createdAt',
                 },
-                lastMessageAt: 1,
-                unreadCount: 1,
+                lastMessageAt: '$lastMessageAt',
+                unreadCount: '$unreadCount',
               },
             },
           ],
@@ -222,7 +222,7 @@ class ChatMessageRepository extends BaseRepository {
       }
     );
 
-    const [result] = await communicationSessionRepository.model.aggregate(baseStages);
+    const [result] = await this.model.aggregate(baseStages);
     const total = result?.metadata?.[0]?.total ?? 0;
 
     return {

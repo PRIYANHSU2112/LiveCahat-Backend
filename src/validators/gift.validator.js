@@ -40,7 +40,11 @@ export const sendGiftSchema = {
     receiverId: Joi.string().hex().length(24).required().messages({
       'string.length': 'receiverId must be a valid 24-character ObjectId',
     }),
-  })
+    sessionId: Joi.string().hex().length(24).allow(null, '').optional(),
+    liveRoomId: Joi.string().allow(null, '').optional(),
+    idempotencyKey: Joi.string().trim().max(128).allow(null, '').optional(),
+    clientGiftId: Joi.string().trim().max(128).allow(null, '').optional(),
+  }),
 };
 
 export const queryGiftSchema = {

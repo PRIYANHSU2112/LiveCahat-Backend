@@ -95,6 +95,7 @@ export const SERVER_EVENTS = {
   LIVE_VIEWER_LEFT: 'live:viewer_left',
   LIVE_VIEWER_COUNT_UPDATE: 'live:viewer_count_update',
   LIVE_NEW_COMMENT: 'live:new_comment',
+  LIVE_USER_ANNOUNCEMENT: 'live:user_announcement',
   // ─── Story Events ──────────────────────────────────────────────
   STORY_LIVE_STARTED: 'story:live_started',
   STORY_LIVE_ENDED: 'story:live_ended',

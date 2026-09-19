@@ -17,20 +17,37 @@ class FollowRepository extends BaseRepository {
 
   /**
    * Atomically follow a user (idempotent — no duplicate, no race condition).
-   * Uses findOneAndUpdate + upsert so concurrent requests only create one document.
    * @returns {{ doc, isNewFollow: boolean }}
    */
   async follow(followerId, followingId) {
-    const result = await this.model.findOneAndUpdate(
-      { followerId, followingId },
-      { $setOnInsert: { followerId, followingId, isFavorite: false } },
-      { upsert: true, new: true, rawResult: true, lean: true }
-    );
+    const existing = await this.model.findOne({ followerId, followingId }).lean();
+    if (existing) {
+      return {
+        doc: existing,
+        isNewFollow: false,
+      };
+    }
 
-    return {
-      doc: result.value,
-      isNewFollow: result.lastErrorObject?.upserted != null,
-    };
+    try {
+      const doc = await this.model.create({
+        followerId,
+        followingId,
+        isFavorite: false,
+      });
+      return {
+        doc: doc.toObject ? doc.toObject() : doc,
+        isNewFollow: true,
+      };
+    } catch (err) {
+      if (err.code === 11000) {
+        const found = await this.model.findOne({ followerId, followingId }).lean();
+        return {
+          doc: found,
+          isNewFollow: false,
+        };
+      }
+      throw err;
+    }
   }
 
   /**
@@ -316,6 +333,13 @@ class FollowRepository extends BaseRepository {
    */
   async countFollowing(followerId) {
     return await this.model.countDocuments({ followerId });
+  }
+
+  /**
+   * Count favorites for a specific user.
+   */
+  async countFavorites(followerId) {
+    return await this.model.countDocuments({ followerId, isFavorite: true });
   }
 
   /**

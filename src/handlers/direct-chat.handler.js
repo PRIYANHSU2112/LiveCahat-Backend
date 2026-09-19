@@ -9,16 +9,20 @@ import {
 import { enqueueChatPersistence } from '../queues/chat-persistence.queue.js';
 import presenceService from '../services/presence.service.js';
 import communicationSessionService from '../services/communication-session.service.js';
+import chatMessageService from '../services/chat-message.service.js';
+import mongoose from 'mongoose';
+import ChatMessage from '../modules/chat-message.model.js';
 import Wallet from '../modules/wallet.model.js';
 import ListenerProfile from '../modules/listener-profile.model.js';
+import CommunicationConfig from '../modules/communication-config.model.js';
 import redisClient from '../config/redis.js';
 import logger from '../utils/logger.util.js';
 
 /**
  * WhatsApp-Style Direct Chat Handler.
  *
- * Handles conversation-based messaging that works independently of active call/session.
- * Messages route through Redis (hot path) and persist asynchronously via BullMQ.
+ * Handles conversation-based messaging that works reliably whether receiver is
+ * ONLINE, BUSY, or OFFLINE. Messages never get lost.
  */
 class DirectChatHandler {
   /**
@@ -26,6 +30,8 @@ class DirectChatHandler {
    */
   register(io, socket) {
     socket.on(CLIENT_EVENTS.CHAT_SEND_MESSAGE, (data) => this.handleSendMessage(io, socket, data));
+    socket.on('chat:join_room', (data) => this.handleJoinRoom(io, socket, data));
+    socket.on('chat:leave_room', (data) => this.handleLeaveRoom(io, socket, data));
     socket.on(CLIENT_EVENTS.CHAT_ACK_DELIVERED, (data) => this.handleAckDelivered(io, socket, data));
     socket.on(CLIENT_EVENTS.CHAT_READ_CONVERSATION, (data) => this.handleReadConversation(io, socket, data));
     socket.on(CLIENT_EVENTS.CHAT_TYPING, (data) => this.handleTyping(io, socket, data));
@@ -33,9 +39,59 @@ class DirectChatHandler {
   }
 
   /**
+   * Track when a user actively joins a specific chat room with partnerId.
+   */
+  async handleJoinRoom(io, socket, data) {
+    const userId = socket.user.id;
+    const { partnerId } = data || {};
+    if (!partnerId) return;
+
+    try {
+      const [u1, u2] = [userId.toString(), partnerId.toString()].sort();
+      const roomKey = `chat:room:${u1}:${u2}`;
+      const redisSetKey = `chat:active_room:${u1}:${u2}`;
+
+      socket.join(roomKey);
+      socket.data = socket.data || {};
+      socket.data.activeChatPartnerId = partnerId.toString();
+
+      if (redisClient.isRedisAvailable) {
+        await redisClient.sadd(redisSetKey, userId.toString());
+        await redisClient.expire(redisSetKey, 86400);
+      }
+      logger.info(`[DirectChat] User ${userId} joined room ${roomKey}`);
+    } catch (err) {
+      logger.error(`[DirectChat handleJoinRoom Error] ${err.message}`);
+    }
+  }
+
+  /**
+   * Track when a user leaves the chat room with partnerId.
+   */
+  async handleLeaveRoom(io, socket, data) {
+    const userId = socket.user.id;
+    const partnerId = data?.partnerId || socket.data?.activeChatPartnerId;
+    if (!partnerId) return;
+
+    try {
+      const [u1, u2] = [userId.toString(), partnerId.toString()].sort();
+      const roomKey = `chat:room:${u1}:${u2}`;
+      const redisSetKey = `chat:active_room:${u1}:${u2}`;
+
+      socket.leave(roomKey);
+      if (socket.data) delete socket.data.activeChatPartnerId;
+
+      if (redisClient.isRedisAvailable) {
+        await redisClient.srem(redisSetKey, userId.toString());
+      }
+      logger.info(`[DirectChat] User ${userId} left room ${roomKey}`);
+    } catch (err) {
+      logger.error(`[DirectChat handleLeaveRoom Error] ${err.message}`);
+    }
+  }
+
+  /**
    * Deliver any pending offline messages from Redis Stream on socket connect.
-   * Called from connection.handler.js during handleConnection.
-   * Messages are NOT deleted until receiver sends ack_delivered.
    */
   async deliverOfflineMessages(io, socket) {
     const userId = socket.user.id;
@@ -62,187 +118,220 @@ class DirectChatHandler {
 
   /**
    * Handle: chat:send_message
-   * Client sends: { clientMsgId, recipientId, text, messageType?, fileUrl?, cost? }
    *
    * Flow:
-   *  1. Atomic Lua: idempotency check → balance check → debit → stream route → unread inc
-   *  2. If receiver online → emit chat:receive_message directly
-   *  3. Enqueue BullMQ job for MongoDB persistence
-   *  4. ACK sender with chat:ack_sent (✓ single tick)
+   *  1. Check room presence: Are both in the same active chat room?
+   *     - YES: Create / continue active session segment (session-based billing).
+   *     - NO: Charge admin-configured coins per message (no session segment).
+   *  2. Failure fault-tolerance: Session or billing errors NEVER block or drop message delivery!
+   *  3. Immediate socket delivery if receiver online; Redis stream queue if offline.
+   *  4. Persist in MongoDB with both senderId and recipientId.
+   *  5. ACK sender (✓ single tick).
    */
   async handleSendMessage(io, socket, data) {
     const senderId = socket.user.id;
     const senderType = socket.user.type;
-    const { clientMsgId, recipientId, text, messageType = 'TEXT', fileUrl = null, cost = 0 } = data || {};
+    const { clientMsgId, recipientId, text, messageType = 'TEXT', fileUrl = null } = data || {};
 
     try {
-      // Validate required fields
       if (!clientMsgId || !recipientId || !text) {
         return socket.emit(SERVER_EVENTS.ERROR, {
           message: 'clientMsgId, recipientId, and text are required.',
         });
       }
 
-      // ─── 1. Strict Balance Verification for Customer ───
-      let listenerChatRate = 0;
-      if (senderType === 'CUSTOMER') {
-        const wallet = await Wallet.findOne({ userId: senderId }).lean();
-        const customerBalance = wallet ? wallet.coinBalance : 0;
-        if (redisClient.isRedisAvailable) {
-          await redisClient.set(KEYS.walletBalance(senderId), customerBalance.toString());
-        }
-
-        // Check listener profile to determine if listener charges coins
-        const listenerProfile = await ListenerProfile.findOne({ userId: recipientId }).lean();
-        listenerChatRate = listenerProfile?.chatRate || 0;
-        const explicitCost = parseInt(cost, 10) || 0;
-        const requiredBalance = Math.max(explicitCost, listenerChatRate > 0 ? listenerChatRate : 0);
-
-        // Customer must have balance > 0 and >= requiredBalance
-        if (customerBalance <= 0 || (requiredBalance > 0 && customerBalance < requiredBalance)) {
-          return socket.emit(SERVER_EVENTS.CHAT_INSUFFICIENT_BALANCE, {
-            clientMsgId,
-            currentBalance: customerBalance,
-            requiredCost: requiredBalance,
-            message: `Insufficient coins (${customerBalance}). You need at least ${requiredBalance} coins to chat with this listener.`,
-          });
-        }
-      }
-
-      // ─── 2. Receiver Presence & Session Segment Management ───
-      let receiverPresence = 'OFFLINE';
-      if (redisClient.isRedisAvailable) {
-        receiverPresence = (await redisClient.get(KEYS.presenceStatus(recipientId))) || 'OFFLINE';
-      }
-      const isReceiverOnline = receiverPresence === 'ONLINE' || receiverPresence === 'BUSY' || receiverPresence === 'LIVE';
-      const isReceiverActivelyAvailable = receiverPresence === 'ONLINE';
-
+      const serverTimestamp = new Date().toISOString();
       const customerId = senderType === 'CUSTOMER' ? senderId : recipientId;
       const listenerId = senderType === 'CUSTOMER' ? recipientId : senderId;
-      const serverTimestamp = new Date().toISOString();
 
-      // Session segments start/continue ONLY when both are actively in chat
-      if (isReceiverActivelyAvailable) {
+      // ─── 1. Check if both users are inside the SAME active chat room ───
+      const [u1, u2] = [senderId.toString(), recipientId.toString()].sort();
+      const redisSetKey = `chat:active_room:${u1}:${u2}`;
+      let areBothInActiveChatRoom = false;
+
+      if (redisClient.isRedisAvailable) {
+        try {
+          const [isReceiverInRoom, isSenderInRoom] = await Promise.all([
+            redisClient.sismember(redisSetKey, recipientId.toString()),
+            redisClient.sismember(redisSetKey, senderId.toString()),
+          ]);
+          areBothInActiveChatRoom = !!(isReceiverInRoom && isSenderInRoom);
+        } catch {
+          areBothInActiveChatRoom = false;
+        }
+      } else {
+        const room = io.sockets.adapter.rooms.get(`chat:room:${u1}:${u2}`);
+        areBothInActiveChatRoom = !!(room && room.size >= 2);
+      }
+
+      let activeSessionId = null;
+      let calculatedMessageCost = 0;
+
+      // ─── 2. Session / Billing Decision ───
+      if (areBothInActiveChatRoom) {
+        // Case A: Both are inside the same active chat room -> Session-based billing
         try {
           const existingSessionId = await communicationSessionService.getActiveSessionForUser(customerId);
           if (existingSessionId) {
-            let sessionData = null;
+            activeSessionId = existingSessionId;
             if (redisClient.isRedisAvailable) {
-              sessionData = await redisClient.hgetall(KEYS.activeSession(existingSessionId));
-            }
-            if (sessionData && sessionData.listenerId === listenerId) {
               await redisClient.hset(KEYS.activeSession(existingSessionId), {
                 lastActivityAt: serverTimestamp,
                 isPaused: '0',
               });
             }
           } else {
-            // Both are actively in chat and no active session exists — auto-start session segment
-            const ratePerMinute = listenerChatRate || 0;
+            const listenerProfile = await ListenerProfile.findOne({ userId: listenerId }).lean();
+            const ratePerMinute = listenerProfile?.chatRate || 0;
             const session = await communicationSessionService.startSession(
               customerId,
               listenerId,
               'CHAT',
               ratePerMinute
             );
-            const newSessionId = session._id.toString();
-            if (redisClient.isRedisAvailable) {
-              await redisClient.hset(KEYS.activeSession(newSessionId), {
-                lastActivityAt: serverTimestamp,
-                isPaused: '0',
-              });
-            }
+            activeSessionId = session._id.toString();
+
             const startedPayload = {
-              sessionId: newSessionId,
+              sessionId: activeSessionId,
               callerId: customerId,
               listenerId: listenerId,
               ratePerMinute,
               mode: 'CHAT',
             };
-            socket.join(`session:${newSessionId}`);
+            socket.join(`session:${activeSessionId}`);
             io.to(customerId).emit(SERVER_EVENTS.CHAT_STARTED, startedPayload);
             io.to(listenerId).emit(SERVER_EVENTS.CHAT_STARTED, startedPayload);
-            io.to(`session:${newSessionId}`).emit(SERVER_EVENTS.CHAT_STARTED, startedPayload);
-            logger.info(`[DirectChat] Active session ${newSessionId} auto-started between ${customerId} and ${listenerId}`);
+            io.to(`session:${activeSessionId}`).emit(SERVER_EVENTS.CHAT_STARTED, startedPayload);
           }
         } catch (sessErr) {
-          logger.error(`[DirectChat] Error auto-managing session segment: ${sessErr.message}`);
+          logger.error(`[DirectChat] Session management failed: ${sessErr.message}`);
+          // NEVER block message delivery on session failure!
+        }
+        calculatedMessageCost = 0; // Session covers billing
+      } else {
+        // Case B: Not in the same active chat room -> Deduct coins per message
+        if (senderType === 'CUSTOMER') {
+          try {
+            const config = await CommunicationConfig.findOne().lean();
+            const defaultCoins = config?.defaultCoinsPerMessage ?? 1;
+            const listenerProfile = await ListenerProfile.findOne({ userId: recipientId }).lean();
+            calculatedMessageCost = listenerProfile?.chatRate > 0 ? listenerProfile.chatRate : defaultCoins;
+
+            const wallet = await Wallet.findOne({ userId: senderId }).lean();
+            const currentBalance = wallet?.coinBalance ?? 0;
+            if (currentBalance < calculatedMessageCost) {
+              socket.emit(SERVER_EVENTS.CHAT_INSUFFICIENT_BALANCE, {
+                clientMsgId,
+                currentBalance,
+                requiredCost: calculatedMessageCost,
+                message: `Low coin balance (${currentBalance}).`,
+              });
+              // Never block delivery even if balance is low!
+              calculatedMessageCost = 0;
+            }
+          } catch (costErr) {
+            logger.error(`[DirectChat] Cost calculation error: ${costErr.message}`);
+            calculatedMessageCost = 0;
+          }
         }
       }
 
-      // Build the message payload
+      // ─── 3. Receiver Presence ───
+      let receiverPresence = 'OFFLINE';
+      if (redisClient.isRedisAvailable) {
+        receiverPresence = (await redisClient.get(KEYS.presenceStatus(recipientId))) || 'OFFLINE';
+      }
+      const isReceiverOnline = receiverPresence === 'ONLINE' || receiverPresence === 'BUSY' || receiverPresence === 'LIVE';
+
+      // ─── 4. Message Payload ───
       const messagePayload = {
         clientMsgId,
         senderId,
         senderType,
         recipientId,
+        sessionId: activeSessionId || null,
         text,
         messageType,
         fileUrl,
         serverTimestamp,
       };
 
-      // Atomic Lua: idempotency + balance + debit + stream + unread
-      const luaResult = await deductAndRouteMessage({
-        clientMsgId,
-        senderId,
-        receiverId: recipientId,
-        cost: parseInt(cost, 10) || 0,
-        payload: messagePayload,
-        isReceiverOnline,
-        serverTimestamp,
-      });
-
-      // Handle Lua result statuses
-      if (luaResult.status === 'INSUFFICIENT_BALANCE') {
-        return socket.emit(SERVER_EVENTS.CHAT_INSUFFICIENT_BALANCE, {
+      // ─── 5. Hot Path Routing & Stream Queue ───
+      let luaResult = { status: 'OK', balance: 0 };
+      if (redisClient.isRedisAvailable) {
+        luaResult = await deductAndRouteMessage({
           clientMsgId,
-          currentBalance: luaResult.balance,
-          requiredCost: cost,
-          message: 'Insufficient coins. Please recharge to send messages.',
+          senderId,
+          receiverId: recipientId,
+          cost: calculatedMessageCost,
+          payload: messagePayload,
+          isReceiverOnline,
+          serverTimestamp,
         });
       }
 
-      if (luaResult.status === 'REDIS_UNAVAILABLE' || luaResult.status === 'ERROR') {
-        return socket.emit(SERVER_EVENTS.ERROR, {
-          message: 'Messaging service temporarily unavailable. Please retry.',
-          clientMsgId,
-        });
-      }
+      // ─── 6. Deliver to Receiver ───
+      io.to(recipientId.toString()).emit(SERVER_EVENTS.CHAT_RECEIVE_MESSAGE, messagePayload);
+      io.to(`chat:room:${u1}:${u2}`).emit(SERVER_EVENTS.CHAT_RECEIVE_MESSAGE, messagePayload);
 
-      // If receiver is online, deliver message directly via socket
-      if (isReceiverOnline) {
-        io.to(recipientId).emit(SERVER_EVENTS.CHAT_RECEIVE_MESSAGE, messagePayload);
-      }
-
-      // ACK sender: message accepted (✓ single tick)
+      // ─── 7. ACK Sender (✓ single tick) ───
       socket.emit(SERVER_EVENTS.CHAT_ACK_SENT, {
         clientMsgId,
+        recipientId,
+        partnerId: recipientId,
         serverTimestamp,
-        newBalance: luaResult.balance,
+        newBalance: luaResult?.balance ?? 0,
         deliveryStatus: isReceiverOnline ? 'DELIVERED' : 'SENT',
       });
 
-      // If already processed (retry), still ACK the sender but skip persistence
-      if (luaResult.status === 'ALREADY_PROCESSED') {
-        logger.info(`[DirectChat] Duplicate clientMsgId ${clientMsgId} — ACK sent, no re-persist.`);
-        return;
+      // ─── 8. Immediate Persistence in MongoDB ───
+      try {
+        const sIdObj = mongoose.Types.ObjectId.isValid(senderId) ? new mongoose.Types.ObjectId(senderId) : senderId;
+        const rIdObj = mongoose.Types.ObjectId.isValid(recipientId) ? new mongoose.Types.ObjectId(recipientId) : recipientId;
+        const sessIdObj = activeSessionId && mongoose.Types.ObjectId.isValid(activeSessionId) ? new mongoose.Types.ObjectId(activeSessionId) : null;
+
+        await ChatMessage.findOneAndUpdate(
+          { clientMsgId },
+          {
+            $setOnInsert: {
+              clientMsgId,
+              senderId: sIdObj,
+              recipientId: rIdObj,
+              sessionId: sessIdObj,
+              text,
+              messageType,
+              fileUrl,
+              createdAt: serverTimestamp ? new Date(serverTimestamp) : new Date(),
+              deliveryStatus: isReceiverOnline ? 'DELIVERED' : 'SENT',
+            },
+          },
+          { upsert: true, new: true }
+        );
+      } catch (immErr) {
+        logger.error(`[DirectChat] Immediate DB save error: ${immErr.message}`);
       }
 
-      // Enqueue BullMQ job for async MongoDB persistence
-      await enqueueChatPersistence({
-        type: 'SAVE_MESSAGE',
-        clientMsgId,
-        senderId,
-        recipientId,
-        text,
-        messageType,
-        fileUrl,
-        serverTimestamp,
-        coinsCost: parseInt(cost, 10) || 0,
-      });
+      // ─── 9. Enqueue Worker for async reconciliation & wallet deductions ───
+      if (luaResult.status !== 'ALREADY_PROCESSED') {
+        try {
+          await enqueueChatPersistence({
+            type: 'SAVE_MESSAGE',
+            clientMsgId,
+            senderId,
+            recipientId,
+            sessionId: activeSessionId || null,
+            text,
+            messageType,
+            fileUrl,
+            serverTimestamp,
+            coinsCost: calculatedMessageCost,
+          });
+        } catch (qErr) {
+          logger.warn(`[DirectChat] Queue enqueue warning: ${qErr.message}`);
+        }
+      }
 
-      logger.info(`[DirectChat] Message ${clientMsgId} from ${senderId} → ${recipientId} (online=${isReceiverOnline})`);
+      logger.info(`[DirectChat] Message ${clientMsgId} delivered (${senderId} → ${recipientId}, cost=${calculatedMessageCost})`);
     } catch (err) {
       logger.error(`[DirectChat SendMessage Error] ${err.message}`);
       socket.emit(SERVER_EVENTS.ERROR, { message: 'Failed to send message.', clientMsgId });
@@ -251,7 +340,6 @@ class DirectChatHandler {
 
   /**
    * Handle: chat:leave
-   * Client leaves the chat view — settles and cleans up the active session segment.
    */
   async handleLeaveChat(io, socket, data) {
     const userId = socket.user.id;
@@ -268,7 +356,7 @@ class DirectChatHandler {
       });
 
       await communicationSessionService.endSession(activeSessionId, reason);
-      logger.info(`[DirectChat] User ${userId} left chat. Session ${activeSessionId} settled and ended.`);
+      logger.info(`[DirectChat] User ${userId} left chat. Session ${activeSessionId} ended.`);
     } catch (err) {
       logger.error(`[DirectChat LeaveChat Error] ${err.message}`);
     }
@@ -276,10 +364,6 @@ class DirectChatHandler {
 
   /**
    * Handle: chat:ack_delivered
-   * Receiver confirms delivery of offline messages.
-   * ONLY after this ACK do we delete entries from the Redis Stream.
-   *
-   * Client sends: { entryIds: ['1688000000000-0', ...] }
    */
   async handleAckDelivered(io, socket, data) {
     const receiverId = socket.user.id;
@@ -287,14 +371,12 @@ class DirectChatHandler {
 
     try {
       if (!entryIds || !Array.isArray(entryIds) || entryIds.length === 0) {
-        return; // Silently ignore malformed ACKs
+        return;
       }
 
-      // Delete ACK'd entries from the stream
       const deleted = await ackMailboxMessages(receiverId, entryIds);
       logger.info(`[DirectChat] Receiver ${receiverId} ACK'd ${deleted} stream entries.`);
 
-      // Notify each unique sender that their messages were delivered (✓✓ double tick)
       if (senderIds && Array.isArray(senderIds)) {
         const uniqueSenders = [...new Set(senderIds)];
         for (const senderId of uniqueSenders) {
@@ -311,38 +393,27 @@ class DirectChatHandler {
 
   /**
    * Handle: chat:read_conversation
-   * User marks a conversation as read up to a specific messageId.
-   * Uses monotonic lastReadMessageId (forward-only).
-   *
-   * Client sends: { partnerId, lastReadMessageId }
+   * Marks conversation as read in MongoDB & Redis, clears unread counter, and notifies sender.
    */
   async handleReadConversation(io, socket, data) {
     const userId = socket.user.id;
     const { partnerId, lastReadMessageId } = data || {};
 
     try {
-      if (!partnerId || !lastReadMessageId) return;
+      if (!partnerId) return;
 
-      const result = await updateReadPointer(userId, partnerId, lastReadMessageId);
+      // 1. Mark in MongoDB & Redis
+      await chatMessageService.markConversationAsRead(userId, partnerId);
 
-      if (result.updated) {
-        // Notify the partner (sender) that their messages were read (✓✓ blue ticks)
-        io.to(partnerId).emit(SERVER_EVENTS.CHAT_MESSAGES_READ, {
-          readerId: userId,
-          lastReadMessageId,
-          readAt: new Date().toISOString(),
-        });
+      // 2. Notify the partner (sender) that their messages were read (✓✓ blue ticks)
+      io.to(partnerId.toString()).emit(SERVER_EVENTS.CHAT_MESSAGES_READ, {
+        readerId: userId.toString(),
+        partnerId: partnerId.toString(),
+        lastReadMessageId: lastReadMessageId || undefined,
+        readAt: new Date().toISOString(),
+      });
 
-        // Enqueue async DB update for read status
-        await enqueueChatPersistence({
-          type: 'MARK_READ',
-          readerId: userId,
-          partnerId,
-          lastReadMessageId,
-        });
-
-        logger.info(`[DirectChat] ${userId} read conversation with ${partnerId} up to ${lastReadMessageId}`);
-      }
+      logger.info(`[DirectChat] ${userId} read conversation with ${partnerId}`);
     } catch (err) {
       logger.error(`[DirectChat ReadConversation Error] ${err.message}`);
     }
@@ -350,9 +421,6 @@ class DirectChatHandler {
 
   /**
    * Handle: chat:typing
-   * Forwards typing indicators directly to the partner.
-   *
-   * Client sends: { recipientId, isTyping }
    */
   handleTyping(io, socket, data) {
     const userId = socket.user.id;

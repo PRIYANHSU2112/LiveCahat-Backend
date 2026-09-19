@@ -1,4 +1,5 @@
 import { Worker } from 'bullmq';
+import mongoose from 'mongoose';
 import { bullRedisConnection } from '../config/bullmq.js';
 import { CHAT_PERSISTENCE_QUEUE_NAME } from '../queues/chat-persistence.queue.js';
 import ChatMessage from '../modules/chat-message.model.js';
@@ -16,6 +17,7 @@ async function processSaveMessage(data) {
     clientMsgId,
     senderId,
     recipientId,
+    sessionId = null,
     text,
     messageType = 'TEXT',
     fileUrl = null,
@@ -24,14 +26,19 @@ async function processSaveMessage(data) {
   } = data;
 
   try {
+    const sIdObj = mongoose.Types.ObjectId.isValid(senderId) ? new mongoose.Types.ObjectId(senderId) : senderId;
+    const rIdObj = mongoose.Types.ObjectId.isValid(recipientId) ? new mongoose.Types.ObjectId(recipientId) : recipientId;
+    const sessIdObj = sessionId && mongoose.Types.ObjectId.isValid(sessionId) ? new mongoose.Types.ObjectId(sessionId) : null;
+
     // 1. Idempotent upsert of chat message using clientMsgId
     const messageDoc = await ChatMessage.findOneAndUpdate(
       { clientMsgId },
       {
         $setOnInsert: {
           clientMsgId,
-          senderId,
-          recipientId,
+          senderId: sIdObj,
+          recipientId: rIdObj,
+          sessionId: sessIdObj,
           text,
           messageType,
           fileUrl,
@@ -45,14 +52,14 @@ async function processSaveMessage(data) {
     // 2. If coins were deducted on the hot path, record transaction in MongoDB
     if (coinsCost > 0) {
       await Wallet.findOneAndUpdate(
-        { userId: senderId },
+        { userId: sIdObj },
         { $inc: { balance: -coinsCost, totalSpent: coinsCost } }
       ).catch((wErr) => {
         logger.error(`[BullMQ:ChatWorker] Failed to sync wallet for ${senderId}: ${wErr.message}`);
       });
 
       await CoinTransaction.create({
-        userId: senderId,
+        userId: sIdObj,
         type: 'DEBIT',
         amount: coinsCost,
         reason: 'CHAT_MESSAGE',
@@ -80,13 +87,13 @@ async function processMarkRead(data) {
 
   try {
     const filter = {
-      senderId: partnerId,
-      recipientId: readerId,
+      senderId: mongoose.Types.ObjectId.isValid(partnerId) ? new mongoose.Types.ObjectId(partnerId) : partnerId,
+      recipientId: mongoose.Types.ObjectId.isValid(readerId) ? new mongoose.Types.ObjectId(readerId) : readerId,
       readAt: null,
     };
 
-    if (lastReadMessageId) {
-      filter._id = { $lte: lastReadMessageId };
+    if (lastReadMessageId && mongoose.Types.ObjectId.isValid(lastReadMessageId)) {
+      filter._id = { $lte: new mongoose.Types.ObjectId(lastReadMessageId) };
     }
 
     const res = await ChatMessage.updateMany(filter, {

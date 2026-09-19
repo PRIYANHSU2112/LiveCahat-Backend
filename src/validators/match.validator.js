@@ -54,6 +54,14 @@ const matchValidator = {
       q: Joi.string().trim().max(100).allow(''),
     }),
   },
+
+  aroundYou: {
+    query: Joi.object({
+      limit: Joi.number().integer().min(1).max(30).default(12),
+      country: Joi.string().trim().max(50),
+      language: Joi.string().trim().max(50),
+    }),
+  },
 };
 
 export default matchValidator;

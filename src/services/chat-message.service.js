@@ -1,8 +1,12 @@
 import BaseService from './base.service.js';
 import chatMessageRepository from '../repositories/chat-message.repository.js';
 import communicationSessionRepository from '../repositories/communication-session.repository.js';
+import User from '../modules/user.model.js';
 import presenceService from './presence.service.js';
 import redisClient from '../config/redis.js';
+import { KEYS } from '../utils/socket-redis-keys.util.js';
+import { getSocketIo } from '../utils/socket.util.js';
+import { SERVER_EVENTS } from '../constants/socket-event.constant.js';
 import mongoose from 'mongoose';
 import logger from '../utils/logger.util.js';
 import xpService from './xp.service.js';
@@ -16,18 +20,25 @@ class ChatMessageService extends BaseService {
    * Save a message to the database and update the Redis conversation cache.
    */
 
-  async saveMessage(sessionId, senderId, text, messageType = 'TEXT', fileUrl = null) {
+  async saveMessage(sessionId, senderId, text, messageType = 'TEXT', fileUrl = null, recipientId = null) {
     try {
+      let resolvedRecipientId = recipientId;
+      const session = sessionId ? await communicationSessionRepository.findById(sessionId) : null;
+      if (!resolvedRecipientId && session) {
+        const callerIdStr = (session.callerId?._id || session.callerId).toString();
+        const listenerIdStr = (session.listenerId?._id || session.listenerId).toString();
+        const senderIdStr = senderId.toString();
+        resolvedRecipientId = senderIdStr === callerIdStr ? listenerIdStr : callerIdStr;
+      }
+
       const message = await this.repository.create({
-        sessionId,
+        sessionId: session ? session._id : null,
         senderId,
+        recipientId: resolvedRecipientId || null,
         text,
         messageType,
         fileUrl,
       });
-
-      // Append to user pair conversation cache
-      const session = await communicationSessionRepository.findById(sessionId);
       if (session) {
         const callerId = session.callerId.toString();
         const listenerId = session.listenerId.toString();
@@ -483,10 +494,18 @@ class ChatMessageService extends BaseService {
   async getDirectMessages(userId1, userId2, { limit = 50, beforeMessageId = null } = {}) {
     const parsedLimit = Math.min(parseInt(limit, 10) || 50, 100);
 
+    const u1Obj = mongoose.Types.ObjectId.isValid(userId1) ? new mongoose.Types.ObjectId(userId1) : null;
+    const u2Obj = mongoose.Types.ObjectId.isValid(userId2) ? new mongoose.Types.ObjectId(userId2) : null;
+    const u1Str = userId1 ? userId1.toString() : '';
+    const u2Str = userId2 ? userId2.toString() : '';
+
+    const matchU1 = u1Obj ? [u1Obj, u1Str] : [u1Str];
+    const matchU2 = u2Obj ? [u2Obj, u2Str] : [u2Str];
+
     const query = {
       $or: [
-        { senderId: userId1, recipientId: userId2 },
-        { senderId: userId2, recipientId: userId1 },
+        { senderId: { $in: matchU1 }, recipientId: { $in: matchU2 } },
+        { senderId: { $in: matchU2 }, recipientId: { $in: matchU1 } },
       ],
       deletedAt: null,
     };
@@ -505,6 +524,109 @@ class ChatMessageService extends BaseService {
 
     // Return chronological order (oldest to newest)
     return messages.reverse();
+  }
+
+  /**
+   * Mark all unread messages from partnerId to userId as read.
+   * Clears Redis unread counter and informs the partner via socket.
+   */
+  async markConversationAsRead(userId, partnerId) {
+    const userIdObj = new mongoose.Types.ObjectId(userId);
+    const partnerIdObj = new mongoose.Types.ObjectId(partnerId);
+    const now = new Date();
+
+    const result = await this.repository.model.updateMany(
+      {
+        senderId: partnerIdObj,
+        recipientId: userIdObj,
+        readAt: null,
+      },
+      {
+        $set: {
+          readAt: now,
+          deliveryStatus: 'READ',
+        },
+      }
+    );
+
+    // Clear Redis unread count and read pointer
+    if (redisClient.isRedisAvailable) {
+      try {
+        const unreadKey = KEYS.unreadUser(userId.toString());
+        await redisClient.hdel(unreadKey, partnerId.toString());
+        await redisClient.del(KEYS.convRead(userId.toString(), partnerId.toString()));
+      } catch (err) {
+        logger.error(`[ChatMessage Service] Redis clear unread failed: ${err.message}`);
+      }
+    }
+
+    // Emit socket event to partner that messages are read
+    const io = getSocketIo();
+    if (io) {
+      io.to(partnerId.toString()).emit(SERVER_EVENTS.CHAT_MESSAGES_READ, {
+        readerId: userId.toString(),
+        partnerId: partnerId.toString(),
+        readAt: now.toISOString(),
+      });
+    }
+
+    return { modifiedCount: result.modifiedCount || 0 };
+  }
+
+  /**
+   * Get or create a direct conversation reference for the frontend.
+   * Returns partner user info and any active sessionId.
+   */
+  async getOrCreateDirectConversation(userId, partnerId) {
+    const partner = await User.findById(partnerId)
+      .select('firstName lastName profileImage isOnline type')
+      .lean();
+
+    if (!partner) {
+      const error = new Error('Participant not found.');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const partnerName = `${partner.firstName || ''} ${partner.lastName || ''}`.trim() || 'User';
+
+    // Check if there is an active ongoing session between the two users
+    let activeSession = await communicationSessionRepository.model.findOne({
+      $or: [
+        { callerId: userId, listenerId: partnerId },
+        { callerId: partnerId, listenerId: userId },
+      ],
+      status: 'ONGOING',
+    }).select('_id').lean();
+
+    const sessionId = activeSession ? activeSession._id.toString() : partnerId.toString();
+
+    let isOnline = !!partner.isOnline;
+    let status = isOnline ? 'ONLINE' : 'OFFLINE';
+    if (redisClient.isRedisAvailable) {
+      try {
+        const redisStatus = await presenceService.getStatus(partnerId.toString());
+        if (redisStatus) {
+          status = redisStatus;
+          isOnline = status !== 'OFFLINE';
+        }
+      } catch {
+        // ignore presence lookup failure
+      }
+    }
+
+    return {
+      sessionId,
+      partner: {
+        id: partnerId.toString(),
+        name: partnerName,
+        profilePicture: partner.profileImage || null,
+        isOnline,
+        status,
+        type: partner.type || 'USER',
+      },
+      isNew: !activeSession,
+    };
   }
 }
 

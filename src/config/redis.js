@@ -34,6 +34,7 @@ const createRedisClient = (clientName) => {
   const safeMethods = [
     'get', 'set', 'setex', 'del', 'keys', 'unlink', 'hget', 'hgetall', 'hset', 'hdel',
     'getdel', 'eval', 'incr', 'decr', 'sadd', 'srem', 'scard', 'smembers', 'expire',
+    'rpush', 'lpop', 'ltrim', 'llen',
     'publish', 'subscribe', 'psubscribe', 'unsubscribe', 'punsubscribe'
   ];
 

@@ -401,6 +401,74 @@ class MatchService {
     };
   }
 
+  /**
+   * Ultra-fast (<100ms) Nearby / Around-You listeners discovery.
+   * Region-focused, distinct sorting, Redis-cached with real-time presence overlay.
+   */
+  async getAroundYouListeners(customer, queryParams = {}) {
+    const limit = Math.min(Math.max(parseInt(queryParams.limit, 10) || 12, 1), 30);
+    let countryInput = queryParams.country ?? null;
+    if (!countryInput) {
+      countryInput = customer?.country ?? customer?.countryCode ?? null;
+    }
+
+    const countryId = await this._resolveCountryId(countryInput);
+    const languageId = await this._resolveLanguageId(queryParams.language);
+
+    const version = await getCacheVersion('listeners');
+    const cacheKey = `match:around_you:v${version}:${countryId || 'global'}:${languageId || 'all'}:${limit}`;
+
+    let rawDocs = await getCache(cacheKey);
+
+    if (!rawDocs) {
+      const profileMatch = { kycStatus: 'APPROVED' };
+      if (countryId) profileMatch.country = countryId;
+      if (languageId) profileMatch.languages = languageId;
+
+      const userMatch = { 'user.isDeleted': false, 'user.isBlocked': false };
+      // Distinct sort prioritizing active engagement & popularity close to user
+      const sort = { isFeatured: -1, followersCount: -1, totalSessions: -1, avgRating: -1, _id: -1 };
+
+      let { data } = await listenerRepository.getHomeListeners(
+        profileMatch,
+        userMatch,
+        sort,
+        0,
+        limit,
+        [],
+        null
+      );
+
+      // If strict country match has fewer than 4 listeners, gracefully fallback to global listeners
+      if ((!data || data.length < 4) && countryId) {
+        const fallbackMatch = { kycStatus: 'APPROVED' };
+        if (languageId) fallbackMatch.languages = languageId;
+        const fallbackRes = await listenerRepository.getHomeListeners(
+          fallbackMatch,
+          userMatch,
+          sort,
+          0,
+          limit,
+          [],
+          null
+        );
+        data = fallbackRes.data || [];
+      }
+
+      rawDocs = data || [];
+      await setCache(cacheKey, rawDocs, 60);
+    }
+
+    // Dynamic presence overlay from Redis (~1ms)
+    const docs = await this._overlayDiscoverPresence(rawDocs);
+
+    return {
+      docs,
+      total: docs.length,
+      country: countryInput || null,
+    };
+  }
+
   _normalizeDiscoverFilters(queryParams, countryInput) {
     if (
       queryParams.minRating !== undefined
